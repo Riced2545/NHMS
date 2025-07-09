@@ -1,0 +1,30 @@
+/* เพิ่มใน home.css หรือสร้าง edithome.css แล้ว import ใน Edithome.jsx */
+.edit-form-container {
+  max-width: 500px;
+  margin: 40px auto;
+  background: #f9fafb;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px #0001;
+  padding: 32px;
+}
+
+.edit-form-container h2 {
+  margin-bottom: 20px;
+  color: #2563eb;
+}
+
+.edit-form-container label {
+  font-weight: 500;
+  color: #374151;
+}
+
+.edit-form-container input[type="text"] {
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+
+.edit-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}

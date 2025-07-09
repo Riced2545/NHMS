@@ -1,0 +1,28 @@
+
+
+.save-btn, .delete-btn, .edit-form-actions button {
+  min-width: 110px;
+  padding: 0.5rem 0;
+  font-size: 1rem;
+}
+
+.save-btn {
+  background-color: #38bdf8;   /* ฟ้า (tailwind sky-400) */
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  border: none;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+.save-btn:hover {
+  background-color: #0ea5e9;   /* ฟ้าเข้ม (tailwind sky-500) */
+}
+
+.edit-form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem; /* เพิ่มระยะห่างด้านบนให้ปุ่มขยับลง */
+}
+

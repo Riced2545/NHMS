@@ -1,0 +1,219 @@
+.movie-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* ปรับอัตโนมัติตามขนาดหน้าจอ */
+  gap: 20px;
+  padding: 0 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* สำหรับหน้าจอใหญ่ - บังคับให้แสดง 3 คอลัมน์ */
+@media (min-width: 1200px) {
+  .movie-container {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+}
+
+/* สำหรับหน้าจอกลาง */
+@media (max-width: 1199px) and (min-width: 900px) {
+  .movie-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+/* สำหรับหน้าจอเล็ก */
+@media (max-width: 899px) {
+  .movie-container {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 0 12px;
+  }
+}
+
+.movie-card {
+  background: linear-gradient(135deg, #1e293b, #334155);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  width: 100%;
+  min-height: 450px; /* กำหนดความสูงขั้นต่ำ */
+  display: flex;
+  flex-direction: column;
+}
+
+.movie-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.movie-poster {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+  flex-shrink: 0; /* ไม่ให้ส่วนรูปภาพหดเล็กลง */
+}
+
+.movie-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.movie-card:hover .movie-poster img {
+  transform: scale(1.05);
+}
+
+.status-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.movie-info {
+  padding: 1.5rem;
+  color: white;
+  flex: 1; /* ให้ส่วนนี้ขยายเต็มพื้นที่ที่เหลือ */
+  display: flex;
+  flex-direction: column;
+}
+
+.movie-date {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+.movie-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #f1f5f9;
+}
+
+.movie-details {
+  margin-bottom: 1.5rem;
+  flex: 1; /* ให้ส่วนนี้ขยายเต็มพื้นที่ */
+}
+
+.detail-item {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.detail-item strong {
+  color: #f1f5f9;
+}
+
+.status.full {
+  color: #ef4444;
+  font-weight: bold;
+}
+
+.status.available {
+  color: #10b981;
+  font-weight: bold;
+}
+
+.movie-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+  margin-top: auto;
+  flex-wrap: wrap; /* ให้ปุ่มสามารถขึ้นบรรทัดใหม่ได้ */
+}
+
+.btn-primary, .btn-secondary, .btn-edit {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.85rem;
+  min-width: 0; /* ให้ปุ่มสามารถย่อได้ */
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+}
+
+.btn-primary:hover:not(.disabled) {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  transform: translateY(-1px);
+}
+
+.btn-primary.disabled {
+  background: #64748b;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-secondary {
+  background: rgba(148, 163, 184, 0.2);
+  color: #f1f5f9;
+  border: 1px solid #475569;
+}
+
+.btn-secondary:hover {
+  background: rgba(148, 163, 184, 0.3);
+  border-color: #64748b;
+  transform: translateY(-1px);
+}
+
+.btn-edit {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.btn-edit:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  transform: translateY(-1px);
+}
+
+/* สำหรับหน้าจอเล็ก - ให้ปุ่มเรียงเป็น 2 แถว */
+@media (max-width: 768px) {
+  .movie-actions {
+    flex-direction: column;
+  }
+  
+  .btn-primary, .btn-secondary, .btn-edit {
+    flex: none;
+    width: 100%;
+  }
+}
+
+.warning-message {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.no-data {
+  text-align: center;
+  color: #ef4444;
+  font-weight: bold;
+  font-size: 1.2rem;
+  padding: 2rem;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  grid-column: 1 / -1;
+}

@@ -1,0 +1,53 @@
+.guest-table-container {
+  max-width: 800px;
+  margin: 32px auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: 24px;
+}
+
+.guest-table-container h2 {
+  margin-bottom: 20px;
+  color: #0ea5e9;
+  text-align: center;
+}
+
+.guest-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+}
+
+.guest-table th, .guest-table td {
+  border: 1px solid #e5e7eb;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.guest-table th {
+  background: #f0f9ff;
+  color: #0369a1;
+  font-weight: 600;
+}
+
+.guest-table tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+.guest-table tr:hover {
+  background: #e0f2fe;
+}
+
+.delete-btn {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.delete-btn:hover {
+  background: #b91c1c;
+}
