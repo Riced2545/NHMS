@@ -81,6 +81,7 @@ export default function Navbar() {
           >
             หน้าหลัก
           </li>
+          
           {role_id === "1" && (
             <li
               style={{
@@ -94,6 +95,7 @@ export default function Navbar() {
               เพิ่มบ้านพัก
             </li>
           )}
+          
           <li
             style={{
               cursor: "pointer",
@@ -105,6 +107,23 @@ export default function Navbar() {
           >
             ค้นหา
           </li>
+          
+          {/* เพิ่มเมนูใกล้เกษียณ */}
+          <li
+            style={{
+              cursor: "pointer",
+              borderBottom: isActive("/retirement") ? "3px solid #fff" : "none",
+              fontWeight: isActive("/retirement") ? "bold" : "normal",
+              color: isActive("/retirement") ? "#ffe066" : "#fff",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+            onClick={() => navigate("/retirement")}
+          >
+            🕐 ใกล้เกษียณ
+          </li>
+          
           {role_id === "1" && (
             <li
               style={{

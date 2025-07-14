@@ -43,7 +43,7 @@ export default function TwinHomeListPage2() {
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
+    <div style={{ display: "flex", minHeight: "100%", minWidth: "100%" }}>
       <Sidebar />
       <div style={{ flex: 1 }}>
         <h2 style={{ textAlign: "center", marginTop: 32, marginBottom: 24 }}>

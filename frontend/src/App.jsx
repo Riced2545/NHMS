@@ -24,6 +24,7 @@ import EditGuest from "./components/guest/Editguest/editguest.jsx";
 import AuditLog from "./components/Auditlog/auditlog.jsx";
 import ScoreForm from "./components/form/scoreform.jsx";
 import Home from "./pages/Home.jsx";
+import RetirementPage from "./components/retirement/retirement.jsx";
 
 
 function App() {
@@ -68,6 +69,7 @@ function App() {
         <Route path="/auditlog" element={<AuditLog />} />
         <Route path="/score" element={<ScoreForm />} />
         <Route path="/home" element={<Home/>} />
+        <Route path="/retirement" element={<RetirementPage/>} />
         
       </Routes>
     </BrowserRouter>

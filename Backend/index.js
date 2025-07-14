@@ -958,3 +958,32 @@ app.delete("/api/guest_logs", (req, res) => {
 app.listen(3001, () => {
   console.log("🚀 Server running on http://localhost:3001");
 });
+
+// เพิ่ม API สำหรับดูคนใกล้เกษียณ
+app.get("/api/retirement", (req, res) => {
+  const sql = `
+    SELECT 
+      guest.*,
+      ranks.name as rank_name,
+      home.Address,
+      home_types.name as home_type_name,
+      DATEDIFF(DATE_ADD(dob, INTERVAL 60 YEAR), CURDATE()) as days_to_retirement,
+      DATE_ADD(dob, INTERVAL 60 YEAR) as retirement_date,
+      TIMESTAMPDIFF(YEAR, dob, CURDATE()) as current_age
+    FROM guest 
+    LEFT JOIN ranks ON guest.rank_id = ranks.id
+    LEFT JOIN home ON guest.home_id = home.home_id
+    LEFT JOIN home_types ON home.home_type_id = home_types.id
+    WHERE guest.dob IS NOT NULL
+    AND DATEDIFF(DATE_ADD(dob, INTERVAL 60 YEAR), CURDATE()) BETWEEN 0 AND 60
+    ORDER BY days_to_retirement ASC
+  `;
+  
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json(results);
+  });
+});

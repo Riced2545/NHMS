@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import Navbar from "./Sidebar";
+import Navbar from "../../components/Sidebar";
 import { useNavigate } from "react-router-dom";
 import "./index.css";
+import "../../components/Search/Search.css";
 import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import PDFDownload from "./PDF/pdf.jsx";
 
@@ -141,13 +142,13 @@ export default function TypePage() {
           disabled={loading}
         />
         
-        <button onClick={handleLogout} style={{
+        {/* <button onClick={handleLogout} style={{
           background: "#ef4444", color: "#fff", border: "none", borderRadius: 8,
           padding: "8px 24px", fontWeight: "bold", fontSize: 16, cursor: "pointer",
           boxShadow: "0 2px 8px #e5e7eb"
         }}>
           ออกจากระบบ
-        </button>
+        </button> */}
       </div>
       
       <div style={{ flex: 1, padding: 32 }}>
@@ -155,11 +156,11 @@ export default function TypePage() {
           display: "flex", justifyContent: "center", marginTop: 24, marginBottom: 24,
         }}>
           <div style={{
-            background: "#19b0d9", color: "#fff", fontWeight: "bold", fontSize: 36,
-            padding: "18px 48px", borderRadius: 8, border: "6px solid #31c3e7",
-            boxShadow: "4px 4px 0 #31c3e7, 8px 8px 0 #2b2b3d",
-            fontFamily: "'Press Start 2P', 'Courier New', monospace",
-            letterSpacing: 2, textShadow: "2px 2px 0 #31c3e7", userSelect: "none",
+            color: "#19b0d9", 
+            fontWeight: "bold", 
+            fontSize: "36px",
+            fontFamily: "'Kanit', sans-serif",
+            textAlign: "center"
           }}>
             ประเภทบ้านพัก
           </div>
@@ -184,8 +185,8 @@ export default function TypePage() {
                 className="type-card"
                 style={{
                   border: "1px solid #e5e7eb", borderRadius: 18,
-                  boxShadow: "0 4px 24px #e5e7eb", width: 400,
-                  padding: "36px 32px", display: "flex", flexDirection: "column",
+                  boxShadow: "0 4px 24px #e5e7eb", width: 550,
+                  padding: "46px 32px", display: "flex", flexDirection: "column",
                   alignItems: "center", background: "#fff", cursor: "pointer",
                   transition: "transform 0.2s cubic-bezier(.4,2,.6,1), box-shadow 0.2s",
                 }}
@@ -203,17 +204,71 @@ export default function TypePage() {
                       : navigate(`/type/${encodeURIComponent(type)}`)
                 }
                 onMouseEnter={e => {
-                  e.currentTarget.style.transform = "translateY(-12px) scale(1.04)";
-                  e.currentTarget.style.boxShadow = "0 12px 32px #b6b6e7";
+                  e.currentTarget.style.transform = "translateY(-8px) scale(1.02)";
+                  e.currentTarget.style.boxShadow = "0 20px 40px rgba(0,0,0,0.1)";
+                  // เพิ่ม effect ให้ไอคอน
+                  const icon = e.currentTarget.querySelector('div');
+                  if (icon) {
+                    icon.style.transform = "scale(1.1)";
+                  }
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.transform = "none";
                   e.currentTarget.style.boxShadow = "0 4px 24px #e5e7eb";
+                  // รีเซ็ต effect ไอคอน
+                  const icon = e.currentTarget.querySelector('div');
+                  if (icon) {
+                    icon.style.transform = "scale(1)";
+                  }
                 }}
               >
-                <h3 style={{ color: "#0ea5e9" }}>{type}</h3>
-                <div>จำนวนบ้าน: <b style={{ color: "#ff5e62" }}>{count}</b></div>
-                <div>ดูบ้านทั้งหมดในประเภทนี้</div>
+                {/* เพิ่มไอคอนตามประเภทบ้าน */}
+                <div style={{ 
+                  fontSize: 64, 
+                  marginBottom: 20,
+                  transition: "transform 0.3s ease",
+                  transform: "scale(1)"
+                }}>
+                  {type === "แฟลตสัญญาบัตร" ? "🏢" :
+                   type === "บ้านพักแฝดพื้นที่1" ? "🏘️" :
+                   type === "บ้านพักแฝดพื้นที่2" ? "🏘️" :
+                   type === "บ้านพักเรือนแถว" ? "🏠" :
+                   type === "บ้านพักลูกจ้าง" ? "🏡" : "🏗️"}
+                </div>
+                <h3 style={{ 
+                  color: "#0ea5e9", 
+                  margin: "0 0 16px 0",
+                  fontSize: 20,
+                  fontWeight: "600"
+                }}>{type}</h3>
+                <div style={{ 
+                  fontSize: 18, 
+                  marginBottom: 12,
+                  color: "#374151"
+                }}>
+                  จำนวนบ้าน: <b style={{ color: "#dc2626", fontSize: 20 }}>{count}</b> หลัง
+                </div>
+                <div style={{ 
+                  fontSize: 14, 
+                  color: "#6b7280",
+                  textAlign: "center",
+                  lineHeight: 1.4,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  marginTop: 8
+                }}>
+                  <span>👁️</span>
+                  <div>
+                    <div style={{ fontSize: 18,color: "#3b82f6", fontWeight: "500" }}>
+                      คลิกเพื่อดูรายละเอียด
+                    </div>
+                    <div style={{ fontSize: 14, color: "#94a3b8" }}>
+                      บ้านทั้งหมดในประเภทนี้
+                    </div>
+                  </div>
+                </div>
               </div>
             ))
           )}
@@ -225,7 +280,7 @@ export default function TypePage() {
             background: "#fff", borderRadius: 18, boxShadow: "0 4px 24px #e5e7eb",
             padding: 24, paddingTop: 56, paddingBottom: 32, minHeight: 340,
           }}>
-            <h3 style={{ textAlign: "center", marginBottom: 0 }}>สถานะบ้านพัก</h3>
+            <h3 style={{ textAlign: "center", marginBottom: 0, color: "#1f2937", fontSize: 20 }}>สถานะบ้านพัก</h3>
             <PieChart width={320} height={260} style={{ marginTop: 16 }}>
               <Pie data={dataHouseStatus} cx="50%" cy="56%" outerRadius={90} dataKey="value" label>
                 {dataHouseStatus.map((entry, index) => (
