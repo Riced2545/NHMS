@@ -71,17 +71,17 @@ export default function RetirementPage() {
           width: "100%"
         }}>
           <div style={{
-            background: "#19b0d9", 
-            color: "#fff", 
+            // background: "#19b0d9", 
             fontWeight: "bold", 
-            fontSize: "clamp(18px, 4vw, 36px)", // responsive font size
+            fontSize: "30px", // responsive font size
+            color: "#3b2566",
             padding: "18px 48px", 
             borderRadius: "8px", 
             border: "6px solid #31c3e7",
-            boxShadow: "4px 4px 0 #31c3e7, 8px 8px 0 #2b2b3d",
+            boxShadow: " 8px 8px 0 #2b2b3d",
             fontFamily: "'Press Start 2P', 'Courier New', monospace",
             letterSpacing: "2px", 
-            textShadow: "2px 2px 0 #31c3e7", 
+            // textShadow: "2px 2px 0 #31c3e7", 
             userSelect: "none",
             display: "flex",
             alignItems: "center",
@@ -89,7 +89,7 @@ export default function RetirementPage() {
             textAlign: "center",
             maxWidth: "90%"
           }}>
-            🕐 รายชื่อผู้ใกล้เกษียณอายุ (60 ปี)
+            🕐 รายชื่อผู้ใกล้เกษียณ
           </div>
         </div>
 

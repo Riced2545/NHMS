@@ -92,7 +92,7 @@ export default function AuditLog() {
                     padding: 32,
                     width: "100vw",
                     maxWidth: "100vw",
-                    overflowX: "auto"
+                    overflowX: "auto",
                 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: '100%' }}>
                         <h2 style={{ color: "#3b2566", fontWeight: "bold", marginBottom: 24, flexGrow: 1, textAlign: "center" }}>

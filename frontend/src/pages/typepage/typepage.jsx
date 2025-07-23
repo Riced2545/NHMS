@@ -155,14 +155,44 @@ export default function TypePage() {
         <div style={{
           display: "flex", justifyContent: "center", marginTop: 24, marginBottom: 24,
         }}>
-          <div style={{
-            color: "#19b0d9", 
+ <div style={{
+            // background: "#19b0d9", 
+            color: "#3b2566", 
             fontWeight: "bold", 
-            fontSize: "36px",
-            fontFamily: "'Kanit', sans-serif",
-            textAlign: "center"
+            fontSize: "35px", // responsive font size
+            padding: "18px 48px", 
+            borderRadius: "8px", 
+            border: "6px solid #31c3e7",
+            boxShadow: " 8px 8px 0 #2b2b3d",
+            fontFamily: "'Press Start 2P', 'Courier New', monospace",
+            letterSpacing: "2px", 
+            // textShadow: "2px 2px 0 #31c3e7", 
+            userSelect: "none",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            textAlign: "center",
+            maxWidth: "90%",
           }}>
-            ประเภทบ้านพัก
+            ระบบจัดการบ้านพักกรมแพทย์ทหารเรือ
+          </div>
+        </div>
+        
+        {/* เพิ่มคำอธิบายใต้หัวข้อ */}
+        <div style={{
+          display: "flex", 
+          justifyContent: "center", 
+          marginBottom: "48px"
+        }}>
+          <div style={{
+            color: "#6b7280",
+            fontSize: "20px",
+            fontFamily: "'Kanit', sans-serif",
+            textAlign: "center",
+            maxWidth: "600px",
+            lineHeight: "1.6"
+          }}>
+            
           </div>
         </div>
         
