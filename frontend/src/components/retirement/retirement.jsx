@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Navbar from "../Sidebar"; // เปลี่ยนจาก ".././Sidebar" เป็น "../Sidebar"
 import { useNavigate } from "react-router-dom";
+import "./retirement.css";
 
 export default function RetirementPage() {
   const [retirementData, setRetirementData] = useState([]);
@@ -46,8 +47,21 @@ export default function RetirementPage() {
     return "#6b7280"; // เทา
   };
 
+  // คำนวณที่ Frontend แทน
+  const calculateDaysToRetirement = (dob) => {
+    const birthDate = new Date(dob);
+    const retirementDate = new Date(birthDate);
+    retirementDate.setFullYear(birthDate.getFullYear() + 60);
+    
+    const today = new Date();
+    const diffTime = retirementDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+  };
+
   return (
-    <div style={{ 
+    <div className="dashboard-container" style={{ 
       minHeight: "100vh", 
       background: "#fafbff", 
       padding: "0 0 64px 0",
@@ -56,7 +70,7 @@ export default function RetirementPage() {
       overflow: "hidden"
     }}>
       <Navbar />
-      <div style={{ 
+      <div className="content-container" style={{ 
         padding: "32px",
         width: "100%",
         maxWidth: "100%",
@@ -140,147 +154,151 @@ export default function RetirementPage() {
             margin: "0 auto",
             boxSizing: "border-box"
           }}>
-            {retirementData.map((person, index) => (
-              <div
-                key={person.id}
-                style={{
-                  backgroundColor: "#fff",
-                  borderRadius: "18px",
-                  padding: "24px",
-                  boxShadow: "0 4px 24px #e5e7eb",
-                  border: "1px solid #e5e7eb",
-                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                  width: "100%",
-                  maxWidth: "100%",
-                  boxSizing: "border-box"
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.transform = "translateY(-4px)";
-                  e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.15)";
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 4px 24px #e5e7eb";
-                }}
-              >
-                <div style={{ 
-                  display: "flex", 
-                  justifyContent: "space-between", 
-                  alignItems: "flex-start",
-                  flexWrap: "wrap",
-                  gap: "16px"
-                }}>
+            {retirementData.map((person, index) => {
+              const daysToRetirement = calculateDaysToRetirement(person.dob);
+              
+              return (
+                <div
+                  key={person.id}
+                  style={{
+                    backgroundColor: "#fff",
+                    borderRadius: "18px",
+                    padding: "24px",
+                    boxShadow: "0 4px 24px #e5e7eb",
+                    border: "1px solid #e5e7eb",
+                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                    width: "100%",
+                    maxWidth: "100%",
+                    boxSizing: "border-box"
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.15)";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 24px #e5e7eb";
+                  }}
+                >
                   <div style={{ 
-                    flex: 1, 
-                    minWidth: "300px",
-                    width: "100%"
+                    display: "flex", 
+                    justifyContent: "space-between", 
+                    alignItems: "flex-start",
+                    flexWrap: "wrap",
+                    gap: "16px"
                   }}>
-                    <div style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                      marginBottom: "12px"
-                    }}>
-                      <div style={{ fontSize: "24px" }}>👤</div>
-                      <div>
-                        <h3 style={{
-                          margin: "0",
-                          fontSize: "20px",
-                          color: "#1f2937",
-                          fontWeight: "600"
-                        }}>
-                          {person.rank_name} {person.name} {person.lname}
-                        </h3>
-                        <div style={{
-                          fontSize: "14px",
-                          color: "#6b7280",
-                          marginTop: "4px"
-                        }}>
-                          อายุปัจจุบัน: {person.current_age} ปี
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                      gap: "16px",
-                      marginBottom: "16px",
+                    <div style={{ 
+                      flex: 1, 
+                      minWidth: "300px",
                       width: "100%"
                     }}>
-                      <div>
-                        <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
-                          📍 ที่อยู่
-                        </div>
-                        <div style={{ fontWeight: "500" }}>
-                          {person.Address} ({person.home_type_name})
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
-                          🎂 วันเกิด
-                        </div>
-                        <div style={{ fontWeight: "500" }}>
-                          {formatDate(person.dob)}
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        marginBottom: "12px"
+                      }}>
+                        <div style={{ fontSize: "24px" }}>👤</div>
+                        <div>
+                          <h3 style={{
+                            margin: "0",
+                            fontSize: "20px",
+                            color: "#1f2937",
+                            fontWeight: "600"
+                          }}>
+                            {person.rank_name} {person.name} {person.lname}
+                          </h3>
+                          <div style={{
+                            fontSize: "14px",
+                            color: "#6b7280",
+                            marginTop: "4px"
+                          }}>
+                            อายุปัจจุบัน: {person.current_age} ปี
+                          </div>
                         </div>
                       </div>
 
-                      <div>
-                        <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
-                          🏆 วันเกษียณอายุ
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                        gap: "16px",
+                        marginBottom: "16px",
+                        width: "100%"
+                      }}>
+                        <div>
+                          <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
+                            📍 ที่อยู่
+                          </div>
+                          <div style={{ fontWeight: "500" }}>
+                            {person.Address} ({person.home_type_name})
+                          </div>
                         </div>
-                        <div style={{ fontWeight: "500" }}>
-                          {formatDate(person.retirement_date)}
+                        
+                        <div>
+                          <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
+                            🎂 วันเกิด
+                          </div>
+                          <div style={{ fontWeight: "500" }}>
+                            {formatDate(person.dob)}
+                          </div>
                         </div>
+
+                        <div>
+                          <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
+                            🏆 วันเกษียณอายุ
+                          </div>
+                          <div style={{ fontWeight: "500" }}>
+                            {formatDate(person.retirement_date)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{
+                      textAlign: "center",
+                      padding: "16px",
+                      backgroundColor: "#f8fafc",
+                      borderRadius: "12px",
+                      minWidth: "160px",
+                      flexShrink: 0
+                    }}>
+                      <div style={{
+                        fontSize: "28px",
+                        fontWeight: "bold",
+                        color: getStatusColor(daysToRetirement),
+                        marginBottom: "8px"
+                      }}>
+                        {daysToRetirement}
+                      </div>
+                      <div style={{
+                        fontSize: "14px",
+                        color: getStatusColor(daysToRetirement),
+                        fontWeight: "600"
+                      }}>
+                        {getDaysMessage(daysToRetirement)}
                       </div>
                     </div>
                   </div>
 
-                  <div style={{
-                    textAlign: "center",
-                    padding: "16px",
-                    backgroundColor: "#f8fafc",
-                    borderRadius: "12px",
-                    minWidth: "160px",
-                    flexShrink: 0
-                  }}>
+                  {daysToRetirement <= 30 && (
                     <div style={{
-                      fontSize: "28px",
-                      fontWeight: "bold",
-                      color: getStatusColor(person.days_to_retirement),
-                      marginBottom: "8px"
-                    }}>
-                      {person.days_to_retirement}
-                    </div>
-                    <div style={{
+                      marginTop: "16px",
+                      padding: "12px",
+                      backgroundColor: "#fef3c7",
+                      borderRadius: "8px",
+                      border: "1px solid #f59e0b",
+                      color: "#92400e",
                       fontSize: "14px",
-                      color: getStatusColor(person.days_to_retirement),
-                      fontWeight: "600"
+                      fontWeight: "500",
+                      width: "100%",
+                      boxSizing: "border-box"
                     }}>
-                      {getDaysMessage(person.days_to_retirement)}
+                      ⚠️ ต้องเตรียมการสำหรับการเกษียณอายุ
                     </div>
-                  </div>
+                  )}
                 </div>
-
-                {person.days_to_retirement <= 30 && (
-                  <div style={{
-                    marginTop: "16px",
-                    padding: "12px",
-                    backgroundColor: "#fef3c7",
-                    borderRadius: "8px",
-                    border: "1px solid #f59e0b",
-                    color: "#92400e",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    width: "100%",
-                    boxSizing: "border-box"
-                  }}>
-                    ⚠️ ต้องเตรียมการสำหรับการเกษียณอายุ
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

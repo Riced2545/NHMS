@@ -17,6 +17,12 @@ body {
   margin: 40px 0 40px 40px;
   padding: 2rem 1.5rem;
   height: fit-content;
+  
+  /* เพิ่ม position sticky เพื่อให้ติดอยู่เมื่อเลื่อน */
+  position: sticky;
+  top: 40px; /* ระยะห่างจากด้านบน */
+  max-height: calc(100vh - 80px); /* ป้องกันไม่ให้สูงเกินหน้าจอ */
+  overflow-y: auto; /* เพิ่ม scroll ถ้าเนื้อหายาวเกินไป */
 }
 
 .sidebar-title {
@@ -170,4 +176,97 @@ body {
   transform: translateY(-12px) scale(1.04);
   box-shadow: 0 12px 32px #b6b6e7;
   border: 1.5px solid #a78bfa;
+}
+
+/* เพิ่ม CSS สำหรับ movie-container */
+.movie-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+  padding: 1rem 0;
+}
+
+/* ปรับ grid สำหรับหน้าจอขนาดต่างๆ */
+@media (min-width: 1200px) {
+  .movie-container {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1199px) {
+  .movie-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .movie-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  /* ปรับ sidebar สำหรับหน้าจอเล็ก */
+  .sidebar {
+    width: 250px;
+    min-width: 200px;
+    margin: 20px 0 20px 20px;
+    padding: 1.5rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .movie-container {
+    grid-template-columns: 1fr;
+  }
+  
+  /* ซ่อน sidebar ในหน้าจอมือถือ */
+  .sidebar {
+    display: none;
+  }
+  
+  .content {
+    padding: 20px;
+  }
+}
+
+/* สไตล์สำหรับเส้นขีดคั่น */
+.row-divider {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    #cbd5e1 10%, 
+    #94a3b8 30%, 
+    #6b7280 50%, 
+    #94a3b8 70%, 
+    #cbd5e1 90%, 
+    transparent 100%
+  );
+  margin: 2rem 0;
+  border-radius: 1px;
+}
+
+/* เพิ่ม smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ปรับแต่ง scrollbar ของ sidebar */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }

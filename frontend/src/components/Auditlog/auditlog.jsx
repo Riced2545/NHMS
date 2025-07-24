@@ -76,9 +76,9 @@ export default function AuditLog() {
     });
 
     return (
-        <div style={{ background: "#f8fafc", minHeight: "100vh" }}>
+        <div className="dashboard-container" style={{ background: "#f8fafc", minHeight: "100vh" }}>
             <Navbar />
-            <div style={{
+            <div className="content-container" style={{
                 width: "100vw",
                 margin: 0,
                 padding: "32px 0",

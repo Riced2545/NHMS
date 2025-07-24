@@ -10,7 +10,6 @@ export default function Sidebar() {
       <ul>
         <li onClick={() => navigate(-1) }>กลับ</li>
         <li className="active">เพิ่มผู้พักอาศัย</li>
-        <li onClick={() => navigate(`/edithome/${home_id}`)}>แก้ไขบ้าน</li>
       </ul>
     </aside>
   );

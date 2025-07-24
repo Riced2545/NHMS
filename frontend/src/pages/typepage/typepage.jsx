@@ -4,6 +4,7 @@ import Navbar from "../../components/Sidebar";
 import { useNavigate } from "react-router-dom";
 import "./index.css";
 import "../../components/Search/Search.css";
+import "../../pages/dashboard/Dashboard.css"; // เพิ่มบรรทัดนี้
 import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import PDFDownload from "./PDF/pdf.jsx";
 
@@ -130,10 +131,21 @@ export default function TypePage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#fafbff", padding: "0 0 64px 0" }}>
+    <div className="dashboard-container" style={{ minHeight: "100vh", background: "#fafbff", padding: "0 0 64px 0", position: "relative" }}>
       <Navbar />
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, padding: "24px 32px 0 0" }}>
-        {/* ปุ่มรายงานครบถ้วน (สรุป + รายละเอียดแยกประเภท) */}
+      
+      {/* Floating Button ด้านบนขวา */}
+      <div style={{
+        position: "fixed",
+        top: "100px",
+        right: "32px",
+        zIndex: 50, // ลดจาก 1000 เป็น 50
+        borderRadius: "16px",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+        background: "#fff",
+        border: "1px solid #e5e7eb",
+        animation: "float 3s ease-in-out infinite"
+      }}>
         <PDFDownload 
           typeStats={typeStats}
           houseStatus={houseStatus}
@@ -141,32 +153,22 @@ export default function TypePage() {
           reportType="comprehensive"
           disabled={loading}
         />
-        
-        {/* <button onClick={handleLogout} style={{
-          background: "#ef4444", color: "#fff", border: "none", borderRadius: 8,
-          padding: "8px 24px", fontWeight: "bold", fontSize: 16, cursor: "pointer",
-          boxShadow: "0 2px 8px #e5e7eb"
-        }}>
-          ออกจากระบบ
-        </button> */}
       </div>
       
-      <div style={{ flex: 1, padding: 32 }}>
+      <div className="content-container" style={{ flex: 1, padding: 32 }}>
         <div style={{
           display: "flex", justifyContent: "center", marginTop: 24, marginBottom: 24,
         }}>
- <div style={{
-            // background: "#19b0d9", 
+          <div style={{
             color: "#3b2566", 
             fontWeight: "bold", 
-            fontSize: "35px", // responsive font size
+            fontSize: "35px",
             padding: "18px 48px", 
             borderRadius: "8px", 
             border: "6px solid #31c3e7",
             boxShadow: " 8px 8px 0 #2b2b3d",
             fontFamily: "'Press Start 2P', 'Courier New', monospace",
             letterSpacing: "2px", 
-            // textShadow: "2px 2px 0 #31c3e7", 
             userSelect: "none",
             display: "flex",
             alignItems: "center",
@@ -178,24 +180,7 @@ export default function TypePage() {
           </div>
         </div>
         
-        {/* เพิ่มคำอธิบายใต้หัวข้อ */}
-        <div style={{
-          display: "flex", 
-          justifyContent: "center", 
-          marginBottom: "48px"
-        }}>
-          <div style={{
-            color: "#6b7280",
-            fontSize: "20px",
-            fontFamily: "'Kanit', sans-serif",
-            textAlign: "center",
-            maxWidth: "600px",
-            lineHeight: "1.6"
-          }}>
-            
-          </div>
-        </div>
-        
+        {/* ส่วนการ์ดประเภทบ้าน */}
         <div style={{
           display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 32,
           marginTop: 64, width: "96vw", marginLeft: 0, marginRight: 0,
@@ -209,16 +194,17 @@ export default function TypePage() {
               ไม่พบประเภทบ้านพัก
             </div>
           ) : (
-            typeStats.map(({ type, count }) => (
+            typeStats.map(({ type, count }, index) => (
               <div
                 key={type}
-                className="type-card"
+                className="type-card card-container"
                 style={{
                   border: "1px solid #e5e7eb", borderRadius: 18,
                   boxShadow: "0 4px 24px #e5e7eb", width: 550,
                   padding: "46px 32px", display: "flex", flexDirection: "column",
                   alignItems: "center", background: "#fff", cursor: "pointer",
                   transition: "transform 0.2s cubic-bezier(.4,2,.6,1), box-shadow 0.2s",
+                  animationDelay: `${index * 0.1}s` // Stagger animation
                 }}
                 onClick={() =>
                   type === "แฟลตสัญญาบัตร"
@@ -236,7 +222,6 @@ export default function TypePage() {
                 onMouseEnter={e => {
                   e.currentTarget.style.transform = "translateY(-8px) scale(1.02)";
                   e.currentTarget.style.boxShadow = "0 20px 40px rgba(0,0,0,0.1)";
-                  // เพิ่ม effect ให้ไอคอน
                   const icon = e.currentTarget.querySelector('div');
                   if (icon) {
                     icon.style.transform = "scale(1.1)";
@@ -245,14 +230,13 @@ export default function TypePage() {
                 onMouseLeave={e => {
                   e.currentTarget.style.transform = "none";
                   e.currentTarget.style.boxShadow = "0 4px 24px #e5e7eb";
-                  // รีเซ็ต effect ไอคอน
                   const icon = e.currentTarget.querySelector('div');
                   if (icon) {
                     icon.style.transform = "scale(1)";
                   }
                 }}
               >
-                {/* เพิ่มไอคอนตามประเภทบ้าน */}
+                {/* เนื้อหาการ์ดเหมือนเดิม */}
                 <div style={{ 
                   fontSize: 64, 
                   marginBottom: 20,
@@ -302,25 +286,6 @@ export default function TypePage() {
               </div>
             ))
           )}
-        </div>
-        
-        {/* Pie Chart */}
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 48 }}>
-          <div style={{
-            background: "#fff", borderRadius: 18, boxShadow: "0 4px 24px #e5e7eb",
-            padding: 24, paddingTop: 56, paddingBottom: 32, minHeight: 340,
-          }}>
-            <h3 style={{ textAlign: "center", marginBottom: 0, color: "#1f2937", fontSize: 20 }}>สถานะบ้านพัก</h3>
-            <PieChart width={320} height={260} style={{ marginTop: 16 }}>
-              <Pie data={dataHouseStatus} cx="50%" cy="56%" outerRadius={90} dataKey="value" label>
-                {dataHouseStatus.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend verticalAlign="bottom" height={36} />
-            </PieChart>
-          </div>
         </div>
       </div>
     </div>

@@ -27,15 +27,17 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const [homesRes, guestsRes, retirementRes] = await Promise.all([
+      const [homesRes, guestsRes, retirementRes, logsRes] = await Promise.all([
         axios.get("http://localhost:3001/api/homes"),
         axios.get("http://localhost:3001/api/guests"),
-        axios.get("http://localhost:3001/api/retirement")
+        axios.get("http://localhost:3001/api/retirement"),
+        axios.get("http://localhost:3001/api/guest_logs") // เพิ่ม API สำหรับ logs
       ]);
 
       const homes = homesRes.data;
       const guests = guestsRes.data;
       const retirement = retirementRes.data;
+      const logs = logsRes.data;
 
       // คำนวณสถิติหลัก
       const totalHomes = homes.length;
@@ -102,17 +104,111 @@ export default function Dashboard() {
       }
       setNotifications(notifs);
 
-      // กิจกรรมล่าสุด (mock data)
-      setRecentActivities([
-        { id: 1, action: "เข้าพักใหม่", user: "นาวาเอก สมชาย ใจดี", time: "2 ชั่วโมงที่แล้ว", type: "add" },
-        { id: 2, action: "ย้ายออก", user: "ร.อ.หญิง มาลี สวยงาม", time: "5 ชั่วโมงที่แล้ว", type: "remove" },
-        { id: 3, action: "อัพเดทข้อมูล", user: "น.ท. วิชาญ เก่งมาก", time: "1 วันที่แล้ว", type: "update" },
-      ]);
+      // กิจกรรมล่าสุดจาก database (เอา 10 รายการล่าสุด)
+      const recentActivitiesData = logs.slice(0, 10).map(log => {
+        let actionText = "";
+        let userName = "";
+        let locationInfo = "";
+        let activityType = "update";
+        
+        switch(log.action) {
+          case "add":
+            actionText = "เข้าพักใหม่";
+            userName = `${log.rank_name || ''} ${log.name || ''} ${log.lname || ''}`.trim();
+            locationInfo = `บ้านเลขที่ ${log.home_address || 'ไม่ระบุ'} (${log.home_type_name || 'ไม่ระบุประเภท'})`;
+            activityType = "add";
+            break;
+          case "delete":
+            actionText = "ย้ายออก";
+            // ใช้ข้อมูลที่เก็บไว้ใน log แทนการ join
+            userName = `${log.rank_name || ''} ${log.name || ''} ${log.lname || ''}`.trim();
+            locationInfo = `จากบ้านเลขที่ ${log.home_address || 'ไม่ระบุ'} (${log.home_type_name || 'ไม่ระบุประเภท'})`;
+            activityType = "remove";
+            break;
+          case "edit":
+            actionText = "อัพเดทข้อมูล";
+            userName = `${log.rank_name || ''} ${log.name || ''} ${log.lname || ''}`.trim();
+            locationInfo = `บ้านเลขที่ ${log.home_address || 'ไม่ระบุ'} (${log.home_type_name || 'ไม่ระบุประเภท'})`;
+            activityType = "update";
+            break;
+          case "move":
+            actionText = "ย้ายบ้าน";
+            userName = `${log.rank_name || ''} ${log.name || ''} ${log.lname || ''}`.trim();
+            locationInfo = `จากบ้านเลขที่ ${log.old_home_address || 'ไม่ระบุ'} ไปบ้านเลขที่ ${log.new_home_address || log.home_address || 'ไม่ระบุ'}`;
+            activityType = "update";
+            break;
+          case "add_home":
+            actionText = "เพิ่มบ้านใหม่";
+            userName = "ผู้ดูแลระบบ";
+            locationInfo = `บ้านเลขที่ ${log.home_address || log.home_name || 'ไม่ระบุ'} (${log.home_type_name || 'ไม่ระบุประเภท'})`;
+            activityType = "add";
+            break;
+          case "edit_home":
+            actionText = "แก้ไขข้อมูลบ้าน";
+            userName = "ผู้ดูแลระบบ";
+            locationInfo = `บ้านเลขที่ ${log.home_address || log.home_name || 'ไม่ระบุ'} (${log.home_type_name || 'ไม่ระบุประเภท'})`;
+            activityType = "update";
+            break;
+          case "delete_home":
+            actionText = "ลบบ้าน";
+            userName = "ผู้ดูแลระบบ";
+            locationInfo = `บ้านเลขที่ ${log.home_address || log.home_name || 'ไม่ระบุ'} (${log.home_type_name || 'ไม่ระบุประเภท'})`;
+            activityType = "remove";
+            break;
+          default:
+            actionText = log.action || "กิจกรรม";
+            userName = log.detail || "ไม่ระบุ";
+            locationInfo = "";
+            activityType = "update";
+        }
+
+        // คำนวณเวลาที่ผ่านมา
+        const timeAgo = getTimeAgo(new Date(log.created_at));
+        
+        return {
+          id: log.id,
+          action: actionText,
+          user: userName || "ไม่ระบุชื่อ",
+          location: locationInfo,
+          time: timeAgo,
+          type: activityType,
+          detail: log.detail
+        };
+      });
+
+      setRecentActivities(recentActivitiesData);
 
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ฟังก์ชันคำนวณเวลาที่ผ่านมา
+  const getTimeAgo = (date) => {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMinutes < 1) {
+      return "เมื่อสักครู่";
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes} นาทีที่แล้ว`;
+    } else if (diffHours < 24) {
+      return `${diffHours} ชั่วโมงที่แล้ว`;
+    } else if (diffDays === 1) {
+      return "1 วันที่แล้ว";
+    } else if (diffDays < 7) {
+      return `${diffDays} วันที่แล้ว`;
+    } else {
+      return date.toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
     }
   };
 
@@ -256,11 +352,12 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* แถวที่ 2: Pie Chart และกิจกรรมล่าสุด */}
+        {/* แถวที่ 2: Pie Chart และ Card Grid สถิติตามยศ */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          gap: "24px"
+          gap: "24px",
+          marginBottom: "32px"
         }}>
           {/* Pie Chart - สถิติตามยศ */}
           <div style={{
@@ -291,7 +388,177 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
 
-          {/* กิจกรรมล่าสุด */}
+          {/* สถิติตามยศ - Card Grid Style (ดีไซน์ทางการ) */}
+          <div style={{
+            backgroundColor: "#fff",
+            borderRadius: "16px",
+            padding: "28px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+            border: "1px solid #e5e7eb"
+          }}>
+            <div style={{ 
+              textAlign: "center", 
+              marginBottom: "24px",
+              borderBottom: "1px solid #e5e7eb",
+              paddingBottom: "16px"
+            }}>
+              <h3 style={{ 
+                color: "#1f2937", 
+                fontSize: "20px",
+                fontWeight: "600",
+                marginBottom: "4px",
+                fontFamily: "'Inter', sans-serif"
+              }}>
+                สถิติการจำแนกตามยศ
+              </h3>
+              <p style={{ 
+                color: "#6b7280", 
+                fontSize: "13px",
+                margin: 0,
+                fontWeight: "400"
+              }}>
+                จำนวน {rankStats.length} ยศ | เรียงตามจำนวนบุคลากร
+              </p>
+            </div>
+            
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+              gap: "16px",
+              maxHeight: "320px",
+              overflowY: "auto",
+              padding: "2px"
+            }}>
+              {rankStats
+                .sort((a, b) => b.count - a.count)
+                .map((rank, index) => (
+                <div 
+                  key={rank.rank} 
+                  style={{
+                    position: "relative",
+                    padding: "16px 12px",
+                    borderRadius: "8px",
+                    backgroundColor: "#f8fafc",
+                    border: `1px solid ${COLORS[index % COLORS.length]}20`,
+                    textAlign: "center",
+                    minHeight: "90px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    transition: "all 0.2s ease",
+                    cursor: "default",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = `0 4px 12px ${COLORS[index % COLORS.length]}15`;
+                    e.currentTarget.style.borderColor = `${COLORS[index % COLORS.length]}40`;
+                    e.currentTarget.style.backgroundColor = "#ffffff";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
+                    e.currentTarget.style.borderColor = `${COLORS[index % COLORS.length]}20`;
+                    e.currentTarget.style.backgroundColor = "#f8fafc";
+                  }}
+                >
+                  {/* อันดับสำหรับ Top 3 (เรียบร้อยกว่า) */}
+                  {index < 3 && (
+                    <div style={{
+                      position: "absolute",
+                      top: "-6px",
+                      right: "6px",
+                      background: index === 0 ? "#059669" : index === 1 ? "#0891b2" : "#dc2626",
+                      color: "#fff",
+                      fontSize: "9px",
+                      fontWeight: "600",
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                      pointerEvents: "none"
+                    }}>
+                      {index + 1}
+                    </div>
+                  )}
+                  
+                  {/* จำนวนคน */}
+                  <div style={{ 
+                    fontSize: "24px",
+                    fontWeight: "700", 
+                    color: COLORS[index % COLORS.length],
+                    marginBottom: "6px",
+                    pointerEvents: "none",
+                    fontFamily: "'Inter', sans-serif"
+                  }}>
+                    {rank.count}
+                  </div>
+                  
+                  {/* ชื่อยศ */}
+                  <div style={{ 
+                    fontSize: "12px",
+                    color: "#374151",
+                    wordWrap: "break-word",
+                    lineHeight: "1.3",
+                    fontWeight: "500",
+                    pointerEvents: "none",
+                    fontFamily: "'Inter', sans-serif"
+                  }}>
+                    {rank.rank}
+                  </div>
+                  
+                  {/* แถบแสดงสัดส่วน (เรียบง่าย) */}
+                  <div style={{
+                    marginTop: "8px",
+                    height: "2px",
+                    background: "#e5e7eb",
+                    borderRadius: "1px",
+                    overflow: "hidden",
+                    pointerEvents: "none"
+                  }}>
+                    <div style={{
+                      height: "100%",
+                      background: COLORS[index % COLORS.length],
+                      borderRadius: "1px",
+                      width: `${(rank.count / Math.max(...rankStats.map(r => r.count))) * 100}%`,
+                      transition: "width 0.8s ease"
+                    }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* สรุปข้อมูล */}
+            <div style={{
+              marginTop: "20px",
+              padding: "12px",
+              background: "#f9fafb",
+              borderRadius: "6px",
+              textAlign: "center",
+              border: "1px solid #e5e7eb"
+            }}>
+              <div style={{ 
+                fontSize: "11px", 
+                color: "#6b7280",
+                fontFamily: "'Inter', sans-serif"
+              }}>
+                รวมบุคลากรทั้งหมด: <span style={{ 
+                  fontWeight: "600", 
+                  color: "#1f2937" 
+                }}>
+                  {rankStats.reduce((sum, rank) => sum + rank.count, 0)} คน
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* แถวที่ 3: กิจกรรมล่าสุด (เต็มความกว้าง) */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr",
+          gap: "24px"
+        }}>
+          {/* กิจกรรมล่าสุดจาก Database */}
           <div style={{
             backgroundColor: "#fff",
             borderRadius: "18px",
@@ -299,8 +566,14 @@ export default function Dashboard() {
             boxShadow: "0 4px 24px #e5e7eb"
           }}>
             <h3 style={{ marginBottom: "16px", color: "#1f2937" }}>📋 กิจกรรมล่าสุด</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {recentActivities.map((activity) => (
+            <div style={{ 
+              display: "flex", 
+              flexDirection: "column", 
+              gap: "12px",
+              maxHeight: "400px",
+              overflowY: "auto"
+            }}>
+              {recentActivities.length > 0 ? recentActivities.map((activity) => (
                 <div key={activity.id} style={{
                   padding: "12px",
                   borderRadius: "8px",
@@ -308,21 +581,59 @@ export default function Dashboard() {
                   border: "1px solid #e2e8f0",
                   display: "flex",
                   justifyContent: "space-between",
-                  alignItems: "center"
+                  alignItems: "flex-start"
                 }}>
-                  <div>
-                    <div style={{ fontWeight: "500", color: "#1f2937" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: "500", color: "#1f2937", marginBottom: "4px" }}>
                       {getActivityIcon(activity.type)} {activity.action}
                     </div>
-                    <div style={{ fontSize: "14px", color: "#6b7280" }}>
-                      {activity.user}
+                    <div style={{ 
+                      fontSize: "14px", 
+                      color: "#6b7280",
+                      lineHeight: "1.4",
+                      marginBottom: "2px"
+                    }}>
+                      👤 {activity.user}
                     </div>
+                    {activity.location && (
+                      <div style={{ 
+                        fontSize: "13px", 
+                        color: "#059669",
+                        lineHeight: "1.4",
+                        marginBottom: "2px"
+                      }}>
+                        🏠 {activity.location}
+                      </div>
+                    )}
+                    {activity.detail && (
+                      <div style={{ 
+                        fontSize: "12px", 
+                        color: "#9ca3af",
+                        marginTop: "4px",
+                        fontStyle: "italic",
+                        lineHeight: "1.5",
+                        wordWrap: "break-word",
+                        whiteSpace: "pre-wrap"
+                      }}>
+                        {activity.detail}
+                      </div>
+                    )}
                   </div>
-                  <div style={{ fontSize: "12px", color: "#9ca3af" }}>
+                  <div style={{ 
+                    fontSize: "12px", 
+                    color: "#9ca3af",
+                    marginLeft: "8px",
+                    whiteSpace: "nowrap",
+                    alignSelf: "flex-start"
+                  }}>
                     {activity.time}
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div style={{ textAlign: "center", color: "#6b7280", padding: "20px" }}>
+                  ไม่มีกิจกรรมล่าสุด
+                </div>
+              )}
             </div>
           </div>
         </div>

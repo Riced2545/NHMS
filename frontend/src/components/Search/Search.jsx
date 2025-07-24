@@ -58,7 +58,7 @@ export default function Search() {
   };
 
   return (
-    <div className="search-bg">
+    <div className="search-bg dashboard-container">
       <Navbar />
       <div className="search-container">
         <h2 className="search-title">ค้นหาผู้พักอาศัย</h2>
@@ -91,7 +91,7 @@ export default function Search() {
             {loading ? "ค้นหา..." : "ค้นหา"}
           </button>
         </form>
-        <div>
+        <div className="search-results">
           {results.length === 0 && !loading && (
             <div className="search-no-data">ไม่มีข้อมูล</div>
           )}

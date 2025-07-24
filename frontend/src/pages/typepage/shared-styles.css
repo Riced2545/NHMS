@@ -158,83 +158,54 @@ body {
   font-size: 0.97rem;
 }
 
-/* Animation หลัก */
-.dashboard-container {
-  animation: fadeIn 0.5s ease-in-out;
+/* เพิ่ม CSS สำหรับ Navbar + Sidebar Layout */
+.movie-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+  padding: 1rem 0;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.content-container {
-  animation: slideUp 0.6s ease-out;
-}
-
-@keyframes slideUp {
-  from { 
-    opacity: 0; 
-    transform: translateY(30px); 
-  }
-  to { 
-    opacity: 1; 
-    transform: translateY(0); 
+/* ปรับ grid สำหรับหน้าจอขนาดต่างๆ */
+@media (min-width: 1200px) {
+  .movie-container {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
-/* Animation สำหรับการ์ด */
-.card-container {
-  animation: slideUpCard 0.8s ease-out;
-  animation-fill-mode: both;
-}
-
-@keyframes slideUpCard {
-  from { 
-    opacity: 0; 
-    transform: translateY(50px) scale(0.95); 
-  }
-  to { 
-    opacity: 1; 
-    transform: translateY(0) scale(1); 
+@media (max-width: 1199px) {
+  .movie-container {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
-/* Hover effect สำหรับการ์ด */
-.type-card {
-  transition: all 0.3s ease;
-}
-
-.type-card:hover {
-  transform: translateY(-8px) scale(1.02) !important;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.15) !important;
-}
-
-/* Float animation สำหรับ floating button */
-@keyframes float {
-  0%, 100% { 
-    transform: translateY(0px);
-  }
-  50% { 
-    transform: translateY(-10px);
-  }
-}
-
-/* Responsive */
 @media (max-width: 768px) {
-  .card-container {
-    width: 90% !important;
-    padding: 32px 24px !important;
-  }
-  
-  .dashboard-container {
-    padding: 0 16px !important;
+  .movie-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
   }
 }
 
-/* Stagger animation สำหรับการ์ด */
-.type-card:nth-child(1) { animation-delay: 0.1s; }
-.type-card:nth-child(2) { animation-delay: 0.2s; }
-.type-card:nth-child(3) { animation-delay: 0.3s; }
-.type-card:nth-child(4) { animation-delay: 0.4s; }
-.type-card:nth-child(5) { animation-delay: 0.5s; }
+@media (max-width: 480px) {
+  .movie-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* สไตล์สำหรับเส้นขีดคั่น */
+.row-divider {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    #cbd5e1 10%, 
+    #94a3b8 30%, 
+    #6b7280 50%, 
+    #94a3b8 70%, 
+    #cbd5e1 90%, 
+    transparent 100%
+  );
+  margin: 2rem 0;
+  border-radius: 1px;
+}

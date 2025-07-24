@@ -671,60 +671,112 @@ app.post("/api/guests", (req, res) => {
 
 app.delete("/api/guests/:id", (req, res) => {
   const guestId = req.params.id;
-
-  // ดึงข้อมูลก่อนลบ
-  db.query(
-    `SELECT guest.*, ranks.name as rank_name, home.Address, home_types.name as home_type_name
-     FROM guest 
-     LEFT JOIN ranks ON guest.rank_id = ranks.id
-     LEFT JOIN home ON guest.home_id = home.home_id
-     LEFT JOIN home_types ON home.home_type_id = home_types.id
-     WHERE guest.id = ?`,
-    [guestId], 
-    (err, results) => {
-      if (err || results.length === 0) return res.status(404).json({ error: "Guest not found" });
-
-      const guest = results[0];
-      const home_id = guest.home_id;
-      
-      const detail = `ลบผู้พักอาศัย ${guest.rank_name || ''} ${guest.name} ${guest.lname} ออกจากบ้านเลขที่ ${guest.Address} (${guest.home_type_name})`;
-
-      // เพิ่ม audit log ก่อนลบ
-      db.query(
-        "INSERT INTO guest_logs (guest_id, home_id, action, detail) VALUES (?, ?, ?, ?)",
-        [guestId, home_id, "delete", detail],
-        (err2) => {
-          if (err2) return res.status(500).json({ error: "Database error" });
-
-          // ลบ guest
-          db.query("DELETE FROM guest WHERE id = ?", [guestId], (err3) => {
-            if (err3) return res.status(500).json({ error: "Database error" });
-
-            // ตรวจสอบจำนวนผู้พักที่เหลือ
-            db.query("SELECT COUNT(*) AS count FROM guest WHERE home_id = ?", [home_id], (err4, results2) => {
-              if (err4) return res.status(500).json({ error: "Database error" });
-
-              // ถ้าไม่มีผู้พักแล้ว ให้เปลี่ยนสถานะเป็น "ไม่มีผู้พักอาศัย"
-              if (results2[0].count === 0) {
-                db.query("SELECT id FROM status WHERE name = 'ไม่มีผู้พักอาศัย'", (err5, statusResults) => {
-                  if (!err5 && statusResults.length > 0) {
-                    db.query("UPDATE home SET status_id = ? WHERE home_id = ?", [statusResults[0].id, home_id], (err6) => {
-                      if (err6) return res.status(500).json({ error: "Database error" });
-                      res.json({ success: true, message: "ลบผู้พักอาศัยสำเร็จ" });
-                    });
-                  } else {
-                    res.json({ success: true, message: "ลบผู้พักอาศัยสำเร็จ" });
-                  }
-                });
-              } else {
-                res.json({ success: true, message: "ลบผู้พักอาศัยสำเร็จ" });
-              }
-            });
-          });
-        }
-      );
+  
+  // ดึงข้อมูลผู้พักก่อนลบ (แก้ไขชื่อตารางให้ถูกต้อง)
+  const getGuestQuery = `
+    SELECT 
+      g.*,
+      r.name as rank_name,
+      h.Address as home_address,
+      ht.name as home_type_name
+    FROM guest g
+    LEFT JOIN ranks r ON g.rank_id = r.id
+    LEFT JOIN home h ON g.home_id = h.home_id
+    LEFT JOIN home_types ht ON h.home_type_id = ht.id
+    WHERE g.id = ?
+  `;
+  
+  db.query(getGuestQuery, [guestId], (err, guestResult) => {
+    if (err) {
+      console.error("Error fetching guest data:", err);
+      return res.status(500).json({ error: "Database error" });
     }
-  );
+    
+    if (guestResult.length === 0) {
+      return res.status(404).json({ error: "Guest not found" });
+    }
+    
+    const guestData = guestResult[0];
+    
+    // ลบผู้พัก (แก้ไขชื่าตารางให้ถูกต้อง)
+    const deleteQuery = "DELETE FROM guest WHERE id = ?";
+    
+    db.query(deleteQuery, [guestId], (err, result) => {
+      if (err) {
+        console.error("Error deleting guest:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+      
+      // เพิ่มคอลัมน์ที่ขาดในตาราง guest_logs ก่อน
+      const addColumnsQuery = `
+        ALTER TABLE guest_logs 
+        ADD COLUMN IF NOT EXISTS rank_name VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS name VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS lname VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS home_address VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS home_type_name VARCHAR(100)
+      `;
+      
+      db.query(addColumnsQuery, (alterErr) => {
+        if (alterErr) {
+          console.log("Warning: Could not add columns to guest_logs:", alterErr.message);
+        }
+        
+        // บันทึก log หลังลบ (เก็บข้อมูลผู้พักที่ถูกลบไว้)
+        const logQuery = `
+          INSERT INTO guest_logs (
+            action, 
+            guest_id, 
+            home_id, 
+            rank_name, 
+            name, 
+            lname, 
+            home_address, 
+            home_type_name,
+            detail,
+            created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        `;
+        
+        const logValues = [
+          'delete',
+          guestId,
+          guestData.home_id,
+          guestData.rank_name,
+          guestData.name,
+          guestData.lname,
+          guestData.home_address,
+          guestData.home_type_name,
+          `ลบผู้พัก: ${guestData.rank_name} ${guestData.name} ${guestData.lname} ออกจากบ้านเลขที่ ${guestData.home_address}`
+        ];
+        
+        db.query(logQuery, logValues, (logErr) => {
+          if (logErr) {
+            console.error("Error inserting log:", logErr);
+          }
+          
+          // อัปเดตสถานะบ้านเป็นว่าง (ถ้าไม่มีผู้พักคนอื่น)
+          const checkOtherGuestsQuery = "SELECT COUNT(*) as count FROM guest WHERE home_id = ?";
+          
+          db.query(checkOtherGuestsQuery, [guestData.home_id], (err, countResult) => {
+            if (!err && countResult[0].count === 0) {
+              // ไม่มีผู้พักคนอื่นแล้ว ให้เปลี่ยนสถานะบ้านเป็นว่าง
+              const updateHomeQuery = "UPDATE home SET status_id = 2 WHERE home_id = ?";
+              db.query(updateHomeQuery, [guestData.home_id]);
+            }
+          });
+          
+          res.json({ 
+            message: "Guest deleted successfully",
+            deletedGuest: {
+              name: `${guestData.rank_name} ${guestData.name} ${guestData.lname}`,
+              home: `${guestData.home_address} (${guestData.home_type_name})`
+            }
+          });
+        });
+      });
+    });
+  });
 });
 // ดึง guest ทั้งหมด
 app.get("/api/guests", (req, res) => {
@@ -932,20 +984,32 @@ app.get("/api/eligibility", (req, res) => {
   );
 });
 
+// แก้ไข API สำหรับดึง guest logs
 app.get("/api/guest_logs", (req, res) => {
-  db.query(
-    `SELECT guest_logs.*, guest.name, guest.lname, ranks.name as rank_name, home.Address as home_name, home_types.name as home_type_name
-     FROM guest_logs
-     LEFT JOIN guest ON guest_logs.guest_id = guest.id
-     LEFT JOIN ranks ON guest.rank_id = ranks.id
-     LEFT JOIN home ON guest_logs.home_id = home.home_id
-     LEFT JOIN home_types ON home.home_type_id = home_types.id
-     ORDER BY guest_logs.created_at DESC`,
-    (err, results) => {
-      if (err) return res.status(500).json({ error: "Database error" });
-      res.json(results);
+  const query = `
+    SELECT 
+      gl.*,
+      COALESCE(gl.rank_name, r.name) as rank_name,
+      COALESCE(gl.name, g.name) as name,
+      COALESCE(gl.lname, g.lname) as lname,
+      COALESCE(gl.home_address, h.Address) as home_address,
+      COALESCE(gl.home_type_name, ht.name) as home_type_name
+    FROM guest_logs gl
+    LEFT JOIN guest g ON gl.guest_id = g.id
+    LEFT JOIN ranks r ON g.rank_id = r.id
+    LEFT JOIN home h ON gl.home_id = h.home_id
+    LEFT JOIN home_types ht ON h.home_type_id = ht.id
+    ORDER BY gl.created_at DESC
+    LIMIT 50
+  `;
+  
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching guest logs:", err);
+      return res.status(500).json({ error: "Database error" });
     }
-  );
+    res.json(results);
+  });
 });
 
 app.delete("/api/guest_logs", (req, res) => {

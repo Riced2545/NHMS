@@ -75,7 +75,7 @@ export default function Addhome() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#fafbff", padding: "0 0 64px 0" }}>
+    <div className="dashboard-container" style={{ minHeight: "100vh", background: "#fafbff", padding: "0 0 64px 0" }}>
       <Navbar />
       
       {/* Success Message */}
@@ -155,7 +155,7 @@ export default function Addhome() {
         `}
       </style>
 
-      <div style={{ flex: 1, padding: 32 }}>
+      <div className="content-container" style={{ flex: 1, padding: 32 }}>
         <div
           style={{
             display: "flex",

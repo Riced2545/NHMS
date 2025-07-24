@@ -54,3 +54,37 @@
     font-size: 12px !important;
   }
 }
+
+/* Custom scrollbar สำหรับ rank stats */
+.rank-stats-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rank-stats-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.rank-stats-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.rank-stats-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Gradient text animation */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gradient-text {
+  background: linear-gradient(-45deg, #667eea, #764ba2, #667eea, #764ba2);
+  background-size: 400% 400%;
+  animation: gradientShift 3s ease infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

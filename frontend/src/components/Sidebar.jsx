@@ -207,7 +207,7 @@ export default function Navbar() {
                 boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
                 border: "1px solid #e5e7eb",
                 overflow: "hidden",
-                zIndex: 1000,
+                zIndex: 9999, // เพิ่มเป็น 9999
               }}
             >
               {/* User Info Header */}

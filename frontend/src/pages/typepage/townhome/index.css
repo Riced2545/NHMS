@@ -157,3 +157,57 @@ body {
   color: #444;
   font-size: 0.97rem;
 }
+
+/* filepath: d:\เอาจริง\frontend\src\pages\typepage\employee_home\index.css */
+
+/* เพิ่ม CSS สำหรับ Navbar + Sidebar Layout */
+.movie-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+  padding: 1rem 0;
+}
+
+/* ปรับ grid สำหรับหน้าจอขนาดต่างๆ */
+@media (min-width: 1200px) {
+  .movie-container {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1199px) {
+  .movie-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .movie-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .movie-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* สไตล์สำหรับเส้นขีดคั่น */
+.row-divider {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    #cbd5e1 10%, 
+    #94a3b8 30%, 
+    #6b7280 50%, 
+    #94a3b8 70%, 
+    #cbd5e1 90%, 
+    transparent 100%
+  );
+  margin: 2rem 0;
+  border-radius: 1px;
+}

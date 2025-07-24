@@ -40,7 +40,7 @@ export default function GuestTable({
               key={g.id}
               style={{ height: 56, cursor: "pointer", transition: "background 0.15s" }}
               title="ดูรายละเอียดบ้าน"
-              onClick={() => g.home_id && navigate(`/viewhome/${g.home_id}`)}
+              // onClick={() => g.home_id && navigate(`/viewhome/${g.home_id}`)}
               onMouseOver={e => (e.currentTarget.style.background = "#f0f7ff")}
               onMouseOut={e => (e.currentTarget.style.background = "")}
             >
