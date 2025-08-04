@@ -11,6 +11,13 @@ export default function AuditLog() {
 
     useEffect(() => {
         fetchLogs();
+        
+        // เพิ่ม interval เพื่อ refresh ข้อมูลทุก 30 วินาที
+        const interval = setInterval(() => {
+            fetchLogs();
+        }, 30000);
+        
+        return () => clearInterval(interval);
     }, []);
 
     const fetchLogs = () => {
@@ -170,13 +177,13 @@ export default function AuditLog() {
                         <table style={{ width: "100%", borderCollapse: "collapse" }}>
                             <thead>
                                 <tr style={{ background: "#ede9fe" }}>
-                                    <th style={{ padding: 8, textAlign: 'center' }}>บ้านพัก หมายเลข</th>
+                                    {/* <th style={{ padding: 8, textAlign: 'center' }}>บ้านพัก หมายเลข</th> */}
                                     <th style={{ padding: 8, textAlign: 'center' }}>ประเภทบ้านพัก</th>
                                     <th style={{ padding: 8, textAlign: 'center' }}>วันที่</th>
                                     <th style={{ padding: 8, textAlign: 'center' }}>เวลา</th>
                                     <th style={{ padding: 8, textAlign: 'center' }}>การกระทำ</th>
                                     <th style={{ padding: 8, textAlign: 'center' }}>รายละเอียด</th>
-                                    <th style={{ padding: 8, textAlign: 'center' }}>ผู้กระทำ</th>
+                                    {/* <th style={{ padding: 8, textAlign: 'center' }}>ผู้กระทำ</th> */}
                                 </tr>
                             </thead>
                             <tbody>
@@ -189,7 +196,8 @@ export default function AuditLog() {
                                 ) : (
                                     filteredLogs.map((log, idx) => (
                                         <tr key={idx} style={{ borderBottom: "1px solid #eee" }}>
-                                            <td style={{ padding: 8, textAlign: 'center' }}>{log.home_name || log.Address}</td>
+                                            {/* เพิ่มคอลัมน์ หมายเลขบ้าน/แถว */}
+
                                             <td style={{ padding: 8, textAlign: 'center' }}>{log.home_type_name || "-"}</td>
                                             <td style={{ padding: 8, textAlign: 'center' }}>
                                                 {log.created_at ? new Date(log.created_at).toLocaleDateString() : "-"}
@@ -220,8 +228,38 @@ export default function AuditLog() {
                                                 {log.action === "delete_home" && "ลบบ้าน"}
                                                 {!["add", "edit", "delete", "move", "add_home", "edit_home", "delete_home"].includes(log.action) && log.action}
                                             </td>
-                                            <td style={{ padding: 8, textAlign: 'center' }}>{log.detail || "-"}</td>
-                                            <td style={{ padding: 8, textAlign: 'center' }}>{log.username || "-"}</td>
+                                            <td style={{ 
+  padding: 8, 
+  textAlign: 'center',
+
+}}>
+  {(() => {
+    let detailText = log.detail || "-";
+    
+    // เก็บการเพิ่มข้อมูลแถวไว้เฉพาะที่จำเป็น
+    if (log.home_type_name === 'บ้านพักเรือนแถว' && 
+        (log.row_name || log.row_number) && 
+        detailText !== "-") {
+      
+      const rowInfo = log.row_name || `แถว ${log.row_number}`;
+      
+      // เพิ่มข้อมูลแถวเฉพาะกรณีที่ยังไม่มี
+      if (detailText.includes('เข้าพักบ้านเลขที่') && !detailText.includes('แถว')) {
+        detailText = detailText.replace(
+          /(เข้าพักบ้านเลขที่\s*\w+)/g, 
+          `$1 ${rowInfo}`
+        );
+      } else if (detailText.includes('บ้านเลขที่') && !detailText.includes('แถว')) {
+        detailText = detailText.replace(
+          /(บ้านเลขที่\s*\w+)/g, 
+          `$1 ${rowInfo}`
+        );
+      }
+    }
+    
+    return detailText;
+  })()}
+</td>
                                         </tr>
                                     ))
                                 )}

@@ -1,18 +1,23 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import "./index.css";
+import "./townhome/index.css"; // ใช้ CSS ของ townhome
 
 export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeRows }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isRowDropdownOpen, setIsRowDropdownOpen] = useState(false);
 
+  // ตรวจสอบหน้าปัจจุบัน
+  const currentPage = location.pathname.split('/').pop();
+  
   // Debug useEffect
   useEffect(() => {
     console.log("=== Sidebar Debug ===");
+    console.log("Current page:", currentPage);
     console.log("townhomeRows:", townhomeRows);
     console.log("rowCounts:", rowCounts);
     console.log("selectedRow:", selectedRow);
-  }, [townhomeRows, rowCounts, selectedRow]);
+  }, [townhomeRows, rowCounts, selectedRow, currentPage]);
 
   const toggleRowDropdown = () => {
     console.log("Toggle dropdown:", !isRowDropdownOpen);
@@ -21,7 +26,9 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
 
   const selectRow = (rowId) => {
     console.log("Selected row:", rowId);
-    onRowChange(rowId);
+    if (onRowChange) {
+      onRowChange(rowId);
+    }
     setIsRowDropdownOpen(false);
   };
 
@@ -61,33 +68,46 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
   const availableRows = getAvailableRows();
   console.log("Available rows for render:", availableRows);
 
+  // ฟังก์ชันตรวจสอบว่าเป็นหน้าปัจจุบันหรือไม่
+  const isActive = (page) => {
+    return currentPage === page;
+  };
+
   return (
     <aside className="sidebar">
       <div className="sidebar-title">เมนู</div>
       <ul>
-        <li className="" onClick={() => navigate("/")} >หน้าหลัก</li>
-        <li className="" onClick={() => navigate("../flat")} >แฟลตสัญญาบัตร</li>
-        <li onClick={() => navigate("../twin1")}>บ้านพักแฝดพื้นที่ 1</li>
-        <li onClick={() => navigate("../twin2")}>บ้านพักแฝดพื้นที่ 2</li>
+        <li className={isActive('') ? 'active' : ''} onClick={() => navigate("/")} >หน้าหลัก</li>
+        <li className={isActive('flat') ? 'active' : ''} onClick={() => navigate("/flat")} >แฟลตสัญญาบัตร</li>
+        <li className={isActive('twin1') ? 'active' : ''} onClick={() => navigate("/twin1")}>บ้านพักแฝดพื้นที่ 1</li>
+        <li className={isActive('twin2') ? 'active' : ''} onClick={() => navigate("/twin2")}>บ้านพักแฝดพื้นที่ 2</li>
         
-        {/* เปลี่ยนจาก li ธรรมดา เป็น dropdown สำหรับบ้านพักเรือนแถว */}
+        {/* Dropdown สำหรับบ้านพักเรือนแถว */}
         <li 
-          className="active"
+          className={isActive('townhome') ? 'active' : ''}
           style={{
             position: 'relative',
-            padding: '12px 16px', // เหมือนกับ li อื่น
+            padding: '12px 16px',
             marginBottom: '8px',
             borderRadius: '8px',
             cursor: 'pointer',
             transition: 'all 0.2s',
-            fontSize: '14px', // เหมือนกับ li อื่น
-            color: 'white',
-            background: '#4B2993',
-            fontWeight: '500'
+            fontSize: '14px',
+            color: isActive('townhome') ? 'white' : '#6b7280',
+            background: isActive('townhome') ? '#4B2993' : 'transparent',
+            fontWeight: isActive('townhome') ? '500' : 'normal'
           }}
         >
           <div 
-            onClick={toggleRowDropdown}
+            onClick={() => {
+              // ถ้าไม่ใช่หน้า townhome ให้ navigate ไป
+              if (!isActive('townhome')) {
+                navigate("/townhome");
+              } else {
+                // ถ้าอยู่หน้า townhome อยู่แล้ว ให้ toggle dropdown
+                toggleRowDropdown();
+              }
+            }}
             style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -109,8 +129,8 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
             </span>
           </div>
           
-          {/* Dropdown รายการแถว */}
-          {isRowDropdownOpen && (
+          {/* Dropdown รายการแถว - แสดงเฉพาะในหน้า townhome */}
+          {isRowDropdownOpen && isActive('townhome') && (
             <div 
               style={{
                 marginTop: '8px',
@@ -166,18 +186,10 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
           )}
         </li>
         
-        <li className="" onClick={() => navigate("../emphome")}>บ้านพักลูกจ้าง</li>
+        <li className={isActive('emphome') ? 'active' : ''} onClick={() => navigate("/emphome")}>บ้านพักลูกจ้าง</li>
       </ul>
 
-      {/* Debug info */}
-      <div style={{ 
-        marginTop: "20px", 
-        padding: "10px", 
-        background: "#f0f0f0", 
-        fontSize: "12px",
-        borderRadius: "4px"
-      }}>
-      </div>
+      {/* เอา debug info ออกเพื่อให้ sidebar สะอาด */}
     </aside>
   );
 }

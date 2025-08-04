@@ -3,27 +3,51 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Navbar from "./Sidebar";
 import "../styles/home.css";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function Addhome() {
-  const [form, setForm] = useState({ home_type_id: "", Address: "", status: "" });
+  const [form, setForm] = useState({ 
+    home_type_id: "", 
+    Address: "",
+    row_id: ""
+  });
   const [image, setImage] = useState(null);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showError, setShowError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
   const [homeTypes, setHomeTypes] = useState([]);
+  const [townhomeRows, setTownhomeRows] = useState([]);
   const navigate = useNavigate();
 
+  // ฟังก์ชันโหลดข้อมูลเริ่มต้น
+  const loadInitialData = async () => {
+    try {
+      const [homeTypesRes, townhomeRowsRes] = await Promise.all([
+        axios.get("http://localhost:3001/api/home_types"),
+        axios.get("http://localhost:3001/api/townhome-rows")
+      ]);
+      
+      setHomeTypes(homeTypesRes.data);
+      setTownhomeRows(townhomeRowsRes.data);
+    } catch (error) {
+      console.error("Error loading initial data:", error);
+    }
+  };
+
+  // ฟังก์ชันรีเฟรชข้อมูลแถว
+  const refreshTownhomeRows = async () => {
+    try {
+      const response = await axios.get("http://localhost:3001/api/townhome-rows");
+      setTownhomeRows(response.data);
+    } catch (error) {
+      console.error("Error refreshing townhome rows:", error);
+    }
+  };
+
   useEffect(() => {
-    axios.get("http://localhost:3001/api/home_types").then(res => setHomeTypes(res.data));
+    loadInitialData();
   }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    // ซ่อนข้อผิดพลาดเมื่อผู้ใช้เริ่มพิมพ์ใหม่
-    if (showError) {
-      setShowError(false);
-      setErrorMessage("");
-    }
   };
 
   const handleImageChange = (e) => {
@@ -33,44 +57,73 @@ export default function Addhome() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    const selectedHomeType = homeTypes.find(ht => ht.id == form.home_type_id);
+    
+    // ตั้งสถานะเป็น "ไม่มีผู้พักอาศัย" (status = 2)
+    const status = "2";
+    
     try {
       const formData = new FormData();
       formData.append("home_type_id", form.home_type_id);
       formData.append("Address", form.Address);
-      formData.append("status", form.status);
+      formData.append("status", status);
+      
+      // ถ้าเป็นบ้านพักเรือนแถว ให้ส่ง row_id
+      if (selectedHomeType && selectedHomeType.name === 'บ้านพักเรือนแถว') {
+        if (!form.row_id) {
+          toast.error("กรุณาเลือกแถวสำหรับบ้านพักเรือนแถว", {
+            position: "top-right",
+            autoClose: 5000,
+            style: { background: '#ef4444', color: 'white' }
+          });
+          return;
+        }
+        formData.append("row_id", form.row_id);
+      }
+      
       if (image) {
         formData.append("image", image);
       }
 
-      const response = await axios.post("http://localhost:3001/api/homes", formData, {
+      const homeResponse = await axios.post("http://localhost:3001/api/homes", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
-      if (response.data.success) {
-        setShowSuccess(true);
-        // รีเซ็ตฟอร์ม
-        setForm({ home_type_id: "", Address: "", status: "" });
-        setImage(null);
-        setTimeout(() => {
-          setShowSuccess(false);
-          navigate("/");
-        }, 1800);
-      }
+      // รีเฟรชข้อมูลแถวหลังบันทึกสำเร็จ
+      await refreshTownhomeRows();
+
+      toast.success("บันทึกข้อมูลสำเร็จ!", {
+        position: "top-right",
+        autoClose: 3000,
+        style: { background: '#43ec81ff', color: 'white' }
+      });
+      
+      // รีเซ็ตฟอร์ม
+      setForm({ 
+        home_type_id: "", 
+        Address: "",
+        row_id: ""
+      });
+      setImage(null);
+
     } catch (error) {
       console.error("Error:", error);
       
-      // แสดงข้อผิดพลาดจาก server
-      if (error.response && error.response.data && error.response.data.message) {
-        setErrorMessage(error.response.data.message);
-      } else {
-        setErrorMessage("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      let errorMessage = "เกิดข้อผิดพลาดในการบันทึกข้อมูล";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 400) {
+        errorMessage = "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง";
+      } else if (error.response?.status === 500) {
+        errorMessage = "เกิดข้อผิดพลาดของเซิร์ฟเวอร์";
       }
       
-      setShowError(true);
-      setTimeout(() => {
-        setShowError(false);
-        setErrorMessage("");
-      }, 5000); // แสดง error 5 วินาที
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 5000,
+        style: { background: '#ef4444', color: 'white' }
+      });
     }
   };
 
@@ -78,83 +131,6 @@ export default function Addhome() {
     <div className="dashboard-container" style={{ minHeight: "100vh", background: "#fafbff", padding: "0 0 64px 0" }}>
       <Navbar />
       
-      {/* Success Message */}
-      {showSuccess && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: "50%",
-            transform: "translate(-50%, -120%)",
-            background: "#fff",
-            color: "#16a34a",
-            fontWeight: "bold",
-            fontSize: 18,
-            padding: "10px 32px",
-            borderRadius: 12,
-            border: "2px solid #22c55e",
-            boxShadow: "0 4px 16px #a7f3d0",
-            fontFamily: "'Prompt', 'Kanit', 'sans-serif'",
-            letterSpacing: 1,
-            zIndex: 9999,
-            textAlign: "center",
-            animation: "slideDownPop 0.5s cubic-bezier(.4,2,.6,1) forwards",
-          }}
-        >
-          ✅ บันทึกข้อมูลสำเร็จ!
-        </div>
-      )}
-
-      {/* Error Message */}
-      {showError && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: "50%",
-            transform: "translate(-50%, -120%)",
-            background: "#fff",
-            color: "#dc2626",
-            fontWeight: "bold",
-            fontSize: 18,
-            padding: "10px 32px",
-            borderRadius: 12,
-            border: "2px solid #ef4444",
-            boxShadow: "0 4px 16px #fecaca",
-            fontFamily: "'Prompt', 'Kanit', 'sans-serif'",
-            letterSpacing: 1,
-            zIndex: 9999,
-            textAlign: "center",
-            animation: "slideDownPop 0.5s cubic-bezier(.4,2,.6,1) forwards",
-          }}
-        >
-          ❌ {errorMessage}
-        </div>
-      )}
-
-      {/* Animation keyframes */}
-      <style>
-        {`
-          @keyframes slideDownPop {
-            0% {
-              transform: translate(-50%, -120%) scale(0.8);
-              opacity: 0;
-            }
-            60% {
-              transform: translate(-50%, 30px) scale(1.05);
-              opacity: 1;
-            }
-            80% {
-              transform: translate(-50%, 0px) scale(1.01);
-            }
-            100% {
-              transform: translate(-50%, 0px) scale(1);
-              opacity: 1;
-            }
-          }
-        `}
-      </style>
-
       <div className="content-container" style={{ flex: 1, padding: 32 }}>
         <div
           style={{
@@ -164,18 +140,16 @@ export default function Addhome() {
             marginBottom: 10,
           }}
         >
- <div style={{
-            // background: "#19b0d9", 
+          <div style={{
             color: "#3b2566", 
             fontWeight: "bold", 
-            fontSize: "30px", // responsive font size
+            fontSize: "30px",
             padding: "18px 48px", 
             borderRadius: "8px", 
             border: "6px solid #31c3e7",
             boxShadow: " 8px 8px 0 #2b2b3d",
             fontFamily: "'Press Start 2P', 'Courier New', monospace",
             letterSpacing: "2px", 
-            // textShadow: "2px 2px 0 #31c3e7", 
             userSelect: "none",
             display: "flex",
             alignItems: "center",
@@ -204,7 +178,7 @@ export default function Addhome() {
               background: "#fff",
               borderRadius: 18,
               boxShadow: "0 4px 24px #e5e7eb",
-              width: 400,
+              width: 600,
               padding: "36px 32px",
               display: "flex",
               flexDirection: "column",
@@ -212,78 +186,104 @@ export default function Addhome() {
             }}
           >
             <form onSubmit={handleSubmit} style={{ width: "100%" }}>
-              <div style={{ marginBottom: 16 }}>
-                <label>ประเภทบ้าน</label>
-                <select
-                  name="home_type_id"
-                  value={form.home_type_id}
-                  onChange={handleChange}
-                  required
-                  className="border px-2 py-1 rounded w-full"
-                  style={{ width: "100%" }}
-                >
-                  <option value="">เลือกประเภทบ้าน</option>
-                  {homeTypes.map(ht => (
-                    <option key={ht.id} value={ht.id}>{ht.name}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div style={{ marginBottom: 16 }}>
-                <label>หมายเลขบ้าน</label>
-                <input
-                  type="text"
-                  name="Address"
-                  value={form.Address}
-                  onChange={handleChange}
-                  className="border px-2 py-1 rounded w-full"
-                  required
-                  style={{ 
-                    width: "100%",
-                    borderColor: showError ? "#ef4444" : "#d1d5db"
-                  }}
-                  placeholder="กรอกหมายเลขบ้าน (เช่น 101, 201)"
-                />
-                <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                  * หมายเลขบ้านสามารถซ้ำได้ถ้าเป็นคนละประเภทบ้าน
-                </small>
-                {showError && (
-                  <div style={{ 
-                    color: "#dc2626", 
-                    fontSize: "14px", 
-                    marginTop: "4px",
-                    fontWeight: "500"
-                  }}>
-                    {errorMessage}
+              {/* ข้อมูลบ้าน */}
+              <div style={{ marginBottom: 24 }}>
+                <h3 style={{ margin: "0 0 16px 0", color: "#3b2566", fontSize: "18px" }}>ข้อมูลบ้านพัก</h3>
+                
+                <div style={{ marginBottom: 16 }}>
+                  <label>ประเภทบ้าน</label>
+                  <select
+                    name="home_type_id"
+                    value={form.home_type_id}
+                    onChange={handleChange}
+                    required
+                    className="border px-2 py-1 rounded w-full"
+                    style={{ width: "100%" }}
+                  >
+                    <option value="">เลือกประเภทบ้าน</option>
+                    {homeTypes.map(ht => (
+                      <option key={ht.id} value={ht.id}>{ht.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* แสดงเลือกแถวสำหรับบ้านพักเรือนแถว */}
+                {homeTypes.find(ht => ht.id == form.home_type_id)?.name === 'บ้านพักเรือนแถว' && (
+                  <div style={{ marginBottom: 16 }}>
+                    <label>เลือกแถว</label>
+                    <select
+                      name="row_id"
+                      value={form.row_id}
+                      onChange={handleChange}
+                      required
+                      className="border px-2 py-1 rounded w-full"
+                      style={{ width: "100%" }}
+                    >
+                      <option value="">เลือกแถว</option>
+                      {townhomeRows.map(row => (
+                        <option 
+                          key={row.id} 
+                          value={row.id}
+                          disabled={row.home_count >= row.max_capacity}
+                        >
+                          {row.name} ({row.home_count}/{row.max_capacity})
+                          {row.home_count >= row.max_capacity ? ' - เต็ม' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                      * เลือกแถวที่ต้องการเพิ่มบ้าน
+                    </small>
                   </div>
                 )}
-              </div>
-              
-              <div style={{ marginBottom: 16 }}>
-                <label className="block mb-1">เพิ่มภาพ</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="border px-2 py-1 rounded w-full"
-                  style={{ width: "100%" }}
-                />
-                {image && (
-                  <img 
-                    src={URL.createObjectURL(image)}
-                    alt="preview"
-                    style={{
-                      marginTop: 8,
-                      maxWidth: "100%",
-                      maxHeight: 400,
-                      borderRadius: 10,
-                      objectFit: "contain",
-                      display: "block",
-                      marginLeft: "auto",
-                      marginRight: "auto"
-                    }}
+                
+                <div style={{ marginBottom: 16 }}>
+                  <label>หมายเลขบ้าน</label>
+                  <input
+                    type="text"
+                    name="Address"
+                    value={form.Address}
+                    onChange={handleChange}
+                    className="border px-2 py-1 rounded w-full"
+                    required
+                    style={{ width: "100%" }}
+                    placeholder={
+                      homeTypes.find(ht => ht.id == form.home_type_id)?.name === 'บ้านพักเรือนแถว' 
+                        ? "กรอกหมายเลขบ้าน (เช่น 101, 201)"
+                        : "กรอกหมายเลขบ้าน (เช่น 101, 201)"
+                    }
                   />
-                )}
+                  <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                    * หมายเลขบ้านที่แสดงในระบบ
+                  </small>
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label className="block mb-1">เพิ่มภาพ</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="border px-2 py-1 rounded w-full"
+                    style={{ width: "100%" }}
+                  />
+                  {image && (
+                    <img 
+                      src={URL.createObjectURL(image)}
+                      alt="preview"
+                      style={{
+                        marginTop: 8,
+                        maxWidth: "100%",
+                        maxHeight: 200,
+                        borderRadius: 10,
+                        objectFit: "contain",
+                        display: "block",
+                        marginLeft: "auto",
+                        marginRight: "auto"
+                      }}
+                    />
+                  )}
+                </div>
               </div>
               
               <div className="flex gap-2" style={{ marginTop: "24px", display: "flex", justifyContent: "center" }}>
@@ -305,6 +305,19 @@ export default function Addhome() {
           </div>
         </div>
       </div>
+      
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        style={{ zIndex: 9999 }}
+      />
     </div>
   );
 }

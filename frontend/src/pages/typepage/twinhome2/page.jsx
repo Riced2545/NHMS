@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Sidebar from "./Sidebar";
-import Navbar from "../Sidebar";
+import Navbar from "../../../components/Sidebar";
 import { useNavigate } from "react-router-dom";
 import EditHomeModal from "../../component/EditHome";
+import AddGuestModal from "../../../components/guest/Addguest/Addguest";
 import "../ca.css";
 import "../shared-styles.css";
 
 export default function Twin2ListPage() {
   const [homes, setHomes] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
   const [selectedHomeId, setSelectedHomeId] = useState(null);
   const navigate = useNavigate();
 
@@ -32,11 +34,21 @@ export default function Twin2ListPage() {
 
   const handleEditHome = (homeId) => {
     setSelectedHomeId(homeId);
-    setIsModalOpen(true);
+    setIsEditModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  const handleAddGuest = (homeId) => {
+    setSelectedHomeId(homeId);
+    setIsAddGuestModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedHomeId(null);
+  };
+
+  const handleCloseAddGuestModal = () => {
+    setIsAddGuestModalOpen(false);
     setSelectedHomeId(null);
   };
 
@@ -122,7 +134,7 @@ export default function Twin2ListPage() {
                         <div className="movie-actions">
                           <button
                             className={`btn-primary ${home.guest_count >= 4 ? 'disabled' : ''}`}
-                            onClick={() => navigate(`/addguest/${home.home_id}`)}
+                            onClick={() => handleAddGuest(home.home_id)}
                             disabled={home.guest_count >= 4}
                           >
                             {home.guest_count >= 4 ? 'เต็มแล้ว' : 'เพิ่มเข้าพัก'}
@@ -155,9 +167,18 @@ export default function Twin2ListPage() {
         </div>
       </div>
 
+      {/* Edit Home Modal */}
       <EditHomeModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        homeId={selectedHomeId}
+        onUpdate={handleUpdateSuccess}
+      />
+
+      {/* Add Guest Modal */}
+      <AddGuestModal
+        isOpen={isAddGuestModalOpen}
+        onClose={handleCloseAddGuestModal}
         homeId={selectedHomeId}
         onUpdate={handleUpdateSuccess}
       />

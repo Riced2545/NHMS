@@ -359,33 +359,98 @@ export default function Dashboard() {
           gap: "24px",
           marginBottom: "32px"
         }}>
-          {/* Pie Chart - สถิติตามยศ */}
+          {/* Pie Chart - สถิติตามยศ (มีตัวอักษรรอบๆ) */}
           <div style={{
             backgroundColor: "#fff",
             borderRadius: "18px",
             padding: "24px",
-            boxShadow: "0 4px 24px #e5e7eb"
+            boxShadow: "0 4px 24px #e5e7eb",
+            position: "relative"
           }}>
-            <h3 style={{ textAlign: "center", marginBottom: "16px", color: "#1f2937" }}>สถิติตามยศ</h3>
-            <ResponsiveContainer width="100%" height={300}>
+            <h3 style={{ textAlign: "center", marginBottom: "20px", color: "#1f2937" }}>สถิติตามยศ</h3>
+            <ResponsiveContainer width="100%" height={400}>
               <PieChart>
                 <Pie
-                  data={rankStats}
+                  data={rankStats.sort((a, b) => b.count - a.count)}
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
+                  innerRadius={80}
+                  outerRadius={150}
+                  paddingAngle={2}
                   dataKey="count"
                   nameKey="rank"
-                  label
+                  label={({ rank, count, percent }) => `${rank}: ${count}`}
+                  labelLine={false}
+                  fontSize={12}
                 >
                   {rankStats.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={COLORS[index % COLORS.length]} 
+                      stroke="#fff"
+                      strokeWidth={2}
+                    />
                   ))}
                 </Pie>
-                <Tooltip />
-                <Legend />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: "#fff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                  }}
+                  formatter={(value, name) => [`${value} คน`, name]}
+                />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={60}
+                  fontSize={11}
+                  iconType="circle"
+                  wrapperStyle={{
+                    paddingTop: "15px"
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
+            
+            {/* ข้อมูลตรงกลาง Donut */}
+            <div style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -55%)",
+              textAlign: "center",
+              pointerEvents: "none",
+              background: "#fff",
+              borderRadius: "50%",
+              padding: "15px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+            }}>
+              <div style={{
+                fontSize: "32px",
+                fontWeight: "bold",
+                color: "#3b82f6",
+                marginBottom: "4px",
+                fontFamily: "'Inter', sans-serif"
+              }}>
+                {rankStats.reduce((sum, rank) => sum + rank.count, 0)}
+              </div>
+              <div style={{
+                fontSize: "12px",
+                color: "#6b7280",
+                fontWeight: "500",
+                marginBottom: "2px"
+              }}>
+                บุคลากร
+              </div>
+              <div style={{
+                fontSize: "10px",
+                color: "#9ca3af"
+              }}>
+                {rankStats.length} ยศ
+              </div>
+            </div>
           </div>
 
           {/* สถิติตามยศ - Card Grid Style (ดีไซน์ทางการ) */}
@@ -537,7 +602,7 @@ export default function Dashboard() {
               border: "1px solid #e5e7eb"
             }}>
               <div style={{ 
-                fontSize: "11px", 
+                fontSize: "18px", 
                 color: "#6b7280",
                 fontFamily: "'Inter', sans-serif"
               }}>

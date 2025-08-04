@@ -62,6 +62,14 @@ const styles = StyleSheet.create({
     borderBottomStyle: 'solid',
     minHeight: 25,
   },
+  tableRowEmpty: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#000000',
+    borderBottomStyle: 'solid',
+    minHeight: 25,
+    backgroundColor: '#f36363ff', // พื้นหลังสีแดงอ่อน
+  },
   tableHeader: {
     backgroundColor: '#d3d3d3',
     fontWeight: 'bold',
@@ -132,6 +140,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
   },
+  cellTextEmpty: {
+    fontSize: 14,
+    color: '#000000ff', // สีแดง
+    textAlign: 'left',
+    fontWeight: 'bold',
+    backgroundColor: '#f36363ff', // พื้นหลังสีแดงอ่อน
+  },
   summarySection: {
     marginTop: 10,
     marginBottom: 20,
@@ -180,7 +195,7 @@ const ComprehensiveReportPDF = ({ typeStats, houseStatus, detailData }) => {
     if (item.first_name && item.last_name) return `${item.first_name} ${item.last_name}`;
     if (item.fname) return item.fname;
     if (item.first_name) return item.first_name;
-    return 'ไม่มีผู้อยู่อาศัย';
+    return 'ว่าง';
   };
 
   // แยกข้อมูลตามประเภทบ้าน
@@ -286,52 +301,57 @@ const ComprehensiveReportPDF = ({ typeStats, houseStatus, detailData }) => {
               </View>
             </View>
 
-            {houses.map((house, index) => (
-              <View key={index} style={styles.tableRow}>
-                <View style={styles.detailCol1}>
-                  <Text style={styles.cellText}>{index + 1}</Text>
+            {houses.map((house, index) => {
+              const residentName = formatResidentName(house);
+              const isEmpty = residentName === 'ว่าง';
+              
+              return (
+                <View key={index} style={isEmpty ? styles.tableRowEmpty : styles.tableRow}>
+                  <View style={styles.detailCol1}>
+                    <Text style={styles.cellText}>{index + 1}</Text>
+                  </View>
+                  <View style={styles.detailCol2}>
+                    <Text style={styles.cellText}>
+                      {house.hNumber || house.houseNumber || house.house_number || '-'}
+                    </Text>
+                  </View>
+                  <View style={styles.detailCol3}>
+                    <Text style={isEmpty ? styles.cellTextEmpty : styles.cellTextLeft}>
+                      {residentName}
+                    </Text>
+                  </View>
+                  <View style={styles.detailCol4}>
+                    <Text style={styles.cellText}>
+                      {house.phone || house.phoneNumber || house.phone_number || '-'}
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.detailCol2}>
-                  <Text style={styles.cellText}>
-                    {house.hNumber || house.houseNumber || house.house_number || '-'}
-                  </Text>
-                </View>
-                <View style={styles.detailCol3}>
-                  <Text style={styles.cellTextLeft}>
-                    {formatResidentName(house)}
-                  </Text>
-                </View>
-                <View style={styles.detailCol4}>
-                  <Text style={styles.cellText}>
-                    {house.phone || house.phoneNumber || house.phone_number || '-'}
-                  </Text>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
 
           {/* สรุปประเภทนี้ */}
-          {/* <View style={styles.summarySection}>
+          <View style={styles.summarySection}>
             <Text style={styles.summaryTitle}>สรุปข้อมูล {type}</Text>
             <Text style={styles.summaryText}>
               • จำนวนบ้านทั้งหมด: {houses.length} หลัง
             </Text>
             <Text style={styles.summaryText}>
               • จำนวนบ้านที่มีผู้อยู่อาศัย: {houses.filter(house => 
-                formatResidentName(house) !== 'ไม่มีผู้อยู่อาศัย'
+                formatResidentName(house) !== 'ว่าง'
               ).length} หลัง
             </Text>
             <Text style={styles.summaryText}>
               • จำนวนบ้านว่าง: {houses.filter(house => 
-                formatResidentName(house) === 'ไม่มีผู้อยู่อาศัย'
+                formatResidentName(house) === 'ว่าง'
               ).length} หลัง
             </Text>
             <Text style={styles.summaryText}>
               • อัตราการเข้าพัก: {houses.length > 0 ? 
-                ((houses.filter(house => formatResidentName(house) !== 'ไม่มีผู้อยู่อาศัย').length / houses.length) * 100).toFixed(1)
+                ((houses.filter(house => formatResidentName(house) !== 'ว่าง').length / houses.length) * 100).toFixed(1)
                 : 0}%
             </Text>
-          </View> */}
+          </View>
 
           <Text style={styles.footer}>
             สร้างโดยระบบจัดการบ้านพัก • หน้า {typeIndex + 2}

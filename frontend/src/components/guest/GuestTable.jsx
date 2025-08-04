@@ -1,5 +1,7 @@
 import { formatThaiDate } from "../../utils/dateUtils";
 import { useNavigate } from "react-router-dom";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTimes } from '@fortawesome/free-solid-svg-icons';
 
 export default function GuestTable({
   guests = [],
@@ -15,9 +17,7 @@ export default function GuestTable({
     <table className="search-table">
       <thead>
         <tr>
-          <th>คำนำหน้า</th>
-          <th>ชื่อ</th>
-          <th>นามสกุล</th>
+          <th>ชื่อ-นามสกุล</th>
           {showAddress && <th>บ้านเลขที่</th>}
           {showType && <th>ประเภทบ้าน</th>}
           <th>วันเกิด</th>
@@ -44,11 +44,11 @@ export default function GuestTable({
               onMouseOver={e => (e.currentTarget.style.background = "#f0f7ff")}
               onMouseOut={e => (e.currentTarget.style.background = "")}
             >
-              <td style={{ verticalAlign: "middle" }}>{g.rank}</td>
               <td style={{ verticalAlign: "middle" }}>
-                <span style={{ fontWeight: 500 }}>{g.name}</span>
+                <span style={{ fontWeight: 500 }}>{`${g.rank} ${g.name} ${g.lname}`}</span>
+
               </td>
-              <td style={{ verticalAlign: "middle" }}>{g.lname}</td>
+              
               {showAddress && <td style={{ verticalAlign: "middle" }}>{g.Address}</td>}
               {showType && <td style={{ verticalAlign: "middle" }}>{g.hType}</td>}
               <td style={{ verticalAlign: "middle" }}>{g.dob ? formatThaiDate(g.dob) : ""}</td>
@@ -65,7 +65,7 @@ export default function GuestTable({
                     {role_id === "1" && onEdit && (
                       <button
                         style={{
-                          background: "#facc15",
+                          background: "#fcd84aff",
                           color: "#fff",
                           border: "none",
                           borderRadius: 6,
@@ -82,18 +82,19 @@ export default function GuestTable({
                     {role_id === "1" && onDelete && (
                       <button
                         style={{
-                          background: "#ef4444",
+                          background: "#ff6767ff",
                           color: "#fff",
                           border: "none",
                           borderRadius: 6,
-                          padding: "6px 18px",
+                          padding: "15px 18px",
                           fontWeight: "bold",
                           fontSize: 15,
                           cursor: "pointer"
                         }}
                         onClick={() => onDelete(g)}
                       >
-                        ❌ลบ
+                         <FontAwesomeIcon icon={faTimes} style={{ color: "#fff", marginRight: 6 }} />
+                        ลบ
                       </button>
                     )}
                     

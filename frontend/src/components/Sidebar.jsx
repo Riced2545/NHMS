@@ -65,12 +65,12 @@ export default function Navbar() {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <img src="/anchor.png" alt="logo" style={{ width: 36, height: 36 }} />
-        <span style={{ fontWeight: "bold", fontSize: 22 }}>Naval Base Management System ( NBMS )</span>
+        <span style={{ fontWeight: "bold", fontSize: 22 }}>Medicine Smart House ( MSH )</span>
       </div>
       
       <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
         {/* Menu Items */}
-        <ul style={{ display: "flex", gap: 24, listStyle: "none", margin: 0, padding: 0 }}>
+        <ul style={{ display: "flex", gap: 24, listStyle: "none", margin: 0, padding: 0 , fontSize: 17 }}>
           <li
             style={{
               cursor: "pointer",
@@ -93,7 +93,7 @@ export default function Navbar() {
               }}
               onClick={() => navigate("/addhome")}
             >
-              เพิ่มบ้านพัก
+              เพิ่มประเภทบ้านพัก
             </li>
           )}
           
