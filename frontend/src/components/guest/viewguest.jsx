@@ -128,82 +128,82 @@ export default function ViewGuest() {
   };
 
   return (
-    <div style={{ 
-      minHeight: "100vh", 
-      background: "#fafbff",
-      width: "100vw",
-      overflow: "hidden"
+    <div style={{
+      minHeight: '100vh',
+      background: '#fafbff',
+      width: '100vw',
+      overflow: 'hidden'
     }}>
       <Navbar />
       
-      <div style={{ 
-        width: "100%",
-        minHeight: "calc(100vh - 84px)",
-        display: "flex",
-        flexDirection: "column"
+      <div style={{
+        width: '100%',
+        minHeight: 'calc(100vh - 84px)',
+        display: 'flex',
+        flexDirection: 'column'
       }}>
         {/* ปุ่มย้อนกลับ */}
-        <div style={{ 
-          padding: "16px 32px 0 32px",
-          display: "flex",
-          alignItems: "center"
+        <div style={{
+          padding: '16px 32px 0 32px',
+          display: 'flex',
+          alignItems: 'center'
         }}>
           <button
             onClick={() => navigate(-1)}
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              background: "#6366f1",
-              color: "white",
-              border: "none",
-              padding: "10px 16px",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "500",
-              transition: "background-color 0.2s",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: '#6366f1',
+              color: 'white',
+              border: 'none',
+              padding: '10px 16px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'background-color 0.2s',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = "#4f46e5"}
-            onMouseLeave={(e) => e.target.style.backgroundColor = "#6366f1"}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#4f46e5'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#6366f1'}
           >
-            <span style={{ fontSize: "16px" }}>←</span>
+            <span style={{ fontSize: '16px' }}>←</span>
             ย้อนกลับ
           </button>
         </div>
 
-        <h2 style={{ 
-          textAlign: "center", 
-          marginTop: 16,
-          marginBottom: 24,
-          color: "#3b2566",
-          fontSize: "28px",
-          fontWeight: "bold"
+        <h2 style={{
+          textAlign: 'center',
+          marginTop: '16px',
+          marginBottom: '24px',
+          color: '#3b2566',
+          fontSize: '28px',
+          fontWeight: 'bold'
         }}>
           รายชื่อผู้พักอาศัย
           {homeInfo && (
             <div style={{
-              fontSize: "20px",
-              color: "#666",
-              fontWeight: "normal",
-              marginTop: "8px"
+              fontSize: '20px',
+              color: '#666',
+              fontWeight: 'normal',
+              marginTop: '8px'
             }}>
               {homeInfo.hType} - บ้านเลขที่ {homeInfo.Address}
             </div>
           )}
         </h2>
         
-        <div style={{ 
-          padding: "0 32px 32px 32px",
-          width: "100%",
-          boxSizing: "border-box",
+        <div style={{
+          padding: '0 32px 32px 32px',
+          width: '100%',
+          boxSizing: 'border-box',
           flex: 1,
-          overflow: "auto"
+          overflow: 'auto'
         }}>
-          <div style={{ 
-            width: "100%",
-            minHeight: "400px"
+          <div style={{
+            width: '100%',
+            minHeight: '400px'
           }}>
             <GuestTable
               guests={guests}
@@ -213,10 +213,10 @@ export default function ViewGuest() {
             
             {guests.length === 0 && (
               <div style={{
-                textAlign: "center",
-                padding: "40px",
-                color: "#666",
-                fontSize: "18px"
+                textAlign: 'center',
+                padding: '40px',
+                color: '#666',
+                fontSize: '18px'
               }}>
                 ไม่มีข้อมูลผู้พักอาศัย
               </div>

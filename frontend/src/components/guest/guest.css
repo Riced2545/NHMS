@@ -1,0 +1,405 @@
+/* ViewGuest Page Styles */
+.viewguest-container {
+  min-height: 100vh;
+  background: #fafbff;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.viewguest-content {
+  width: 100%;
+  min-height: calc(100vh - 84px);
+  display: flex;
+  flex-direction: column;
+}
+
+.back-button-container {
+  padding: 16px 32px 0 32px;
+  display: flex;
+  align-items: center;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.back-button:hover {
+  background-color: #4f46e5;
+}
+
+.back-button-icon {
+  font-size: 16px;
+}
+
+.page-title {
+  text-align: center;
+  margin-top: 16px;
+  margin-bottom: 24px;
+  color: #3b2566;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.home-info {
+  font-size: 20px;
+  color: #666;
+  font-weight: normal;
+  margin-top: 8px;
+}
+
+.table-container {
+  padding: 0 32px 32px 32px;
+  width: 100%;
+  box-sizing: border-box;
+  flex: 1;
+  overflow: auto;
+}
+
+.table-wrapper {
+  width: 100%;
+  min-height: 400px;
+}
+
+.no-guests-message {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 18px;
+}
+
+/* Toast Confirmation Styles */
+.toast-content {
+  padding: 10px;
+}
+
+.toast-title {
+  margin-bottom: 15px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.toast-message {
+  margin-bottom: 15px;
+  color: #666;
+}
+
+.toast-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.toast-delete-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.toast-cancel-btn {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.toast-custom {
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+  min-width: 400px !important;
+}
+
+/* Guest Table Styles - รวม search-table */
+.search-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-table th {
+  background: #f8fafc;
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.search-table td {
+  padding: 16px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.guest-row {
+  height: 56px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.guest-row:hover {
+  background: #f0f7ff !important;
+}
+
+.guest-name-cell {
+  vertical-align: middle;
+}
+
+.guest-name {
+  font-weight: 500;
+  color: #111827;
+}
+
+.guest-data-cell {
+  vertical-align: middle;
+  color: #374151;
+}
+
+.action-cell {
+  vertical-align: middle;
+}
+
+.no-data-cell {
+  text-align: center;
+  color: #ef4444;
+  font-style: italic;
+  padding: 32px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.btn-edit {
+  background: #fcd84aff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  min-width: auto;
+  max-width: 120px;
+}
+
+.btn-edit:hover {
+  background: #fbbf24;
+  transform: translateY(-1px);
+}
+
+.btn-delete {
+  background: #ff6767ff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  min-width: auto;
+  max-width: 100px;
+}
+
+.btn-delete:hover {
+  background: #ef4444;
+  transform: translateY(-1px);
+}
+
+.btn-detail {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  min-width: auto;
+  max-width: 140px;
+}
+
+.btn-detail:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-icon {
+  color: #fff;
+  margin-right: 6px;
+}
+
+/* Right Holder Styles */
+.right-holder-row {
+  background: rgba(252, 216, 74, 0.1) !important;
+  border-left: 4px solid #fcd84a;
+}
+
+.right-holder-row:hover {
+  background: rgba(252, 216, 74, 0.2) !important;
+}
+
+.right-holder-badge {
+  margin-right: 6px;
+  font-size: 16px;
+}
+
+.status-cell {
+  vertical-align: middle;
+  text-align: center;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.status-badge.right-holder {
+  background: #fcd84a;
+  color: #7c2d12;
+}
+
+.status-badge.family-member {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .search-table {
+    font-size: 14px;
+  }
+  
+  .search-table th,
+  .search-table td {
+    padding: 12px 8px;
+  }
+  
+  .btn-edit,
+  .btn-delete,
+  .btn-detail {
+    padding: 6px 12px;
+    font-size: 13px;
+    max-width: none;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .back-button-container {
+    padding: 12px 16px 0 16px;
+  }
+  
+  .table-container {
+    padding: 0 16px 16px 16px;
+  }
+  
+  .page-title {
+    font-size: 24px;
+  }
+  
+  .home-info {
+    font-size: 18px;
+  }
+  
+  .status-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+  }
+  
+  .right-holder-badge {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-table {
+    font-size: 12px;
+  }
+  
+  .search-table th,
+  .search-table td {
+    padding: 8px 4px;
+  }
+  
+  .guest-name {
+    font-size: 13px;
+  }
+  
+  .btn-edit,
+  .btn-delete,
+  .btn-detail {
+    padding: 4px 8px;
+    font-size: 11px;
+    max-width: none;
+  }
+  
+  .page-title {
+    font-size: 20px;
+  }
+  
+  .home-info {
+    font-size: 16px;
+  }
+  
+  .toast-custom {
+    min-width: 300px !important;
+  }
+  
+  .status-badge {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+  
+  .right-holder-badge {
+    font-size: 12px;
+  }
+}

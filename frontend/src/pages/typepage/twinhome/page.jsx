@@ -111,23 +111,23 @@ export default function Twin1ListPage() {
                         </div>
                       </div>
                       <div className="movie-info">
-                        <div className="movie-date">
+                        {/* <div className="movie-date">
                           {new Date(home.created_at).toLocaleDateString('th-TH')}
-                        </div>
+                        </div> */}
                         <h3 className="movie-title">
-                          {home.hType || "บ้านพักแฝดพื้นที่1"}
+                          <strong>บ้านเลขที่ :</strong> {home.Address}
                         </h3>
                         <div className="movie-details">
                           <div className="detail-item">
-                            <strong>หมายเลขบ้าน:</strong> {home.Address}
+                            <strong> {home.hType || "บ้านพักแฝดพื้นที่1"} </strong> 
                           </div>
                           <div className="detail-item">
-                            <strong>จำนวนผู้พัก:</strong> {home.guest_count || 0}/4 คน
+                            <strong>จำนวนผู้พัก:</strong> {home.guest_count || 0}/6 คน
                           </div>
                           <div className="detail-item">
                             <strong>สถานะ:</strong> 
-                            <span className={`status ${home.guest_count >= 4 ? 'full' : 'available'}`}>
-                              {home.guest_count >= 4 ? 'เต็ม' : home.status}
+                            <span className={`status ${home.guest_count >= 6 ? 'full' : 'available'}`}>
+                              {home.guest_count >= 6 ? 'เต็ม' : home.status}
                             </span>
                           </div>
                         </div>
@@ -152,9 +152,9 @@ export default function Twin1ListPage() {
                             ✏️ แก้ไข
                           </button>
                         </div>
-                        {home.guest_count >= 4 && (
+                        {home.guest_count >= 6 && (
                           <div className="warning-message">
-                            บ้านนี้มีผู้พักอาศัยครบ 4 คนแล้ว
+                            บ้านนี้มีผู้พักอาศัยครบ 6 คนแล้ว
                           </div>
                         )}
                       </div>

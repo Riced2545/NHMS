@@ -96,6 +96,20 @@ export default function Navbar() {
               เพิ่มประเภทบ้านพัก
             </li>
           )}
+
+          {role_id === "1" && (
+            <li
+              style={{
+                cursor: "pointer",
+                borderBottom: isActive("/addtype") ? "3px solid #fff" : "none",
+                fontWeight: isActive("/addtype") ? "bold" : "normal",
+                color: isActive("/addtype") ? "#ffe066" : "#fff",
+              }}
+              onClick={() => navigate("/addtype")}
+            >
+              จัดการประเภทบ้าน
+            </li>
+          )}
           
           <li
             style={{
@@ -140,6 +154,8 @@ export default function Navbar() {
               แสดงประวัติการเข้าพัก
             </li>
           )}
+
+
         </ul>
 
         {/* User Profile Dropdown */}

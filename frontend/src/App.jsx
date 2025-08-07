@@ -26,6 +26,9 @@ import ScoreForm from "./components/form/scoreform.jsx";
 import Home from "./pages/Home.jsx";
 import RetirementPage from "./components/retirement/retirement.jsx";
 import Dashboard from "./pages/dashboard/Dashboard.jsx";
+import Addtype from "./pages/Addtype/Addtype";
+// เพิ่ม import
+import TwinHomeAllPage from "./pages/typepage/twinhome/all";
 
 
 function App() {
@@ -72,7 +75,8 @@ function App() {
         <Route path="/home" element={<Home/>} />
         <Route path="/retirement" element={<RetirementPage/>} />
         <Route path="/dashboard" element={<Dashboard />} />
-        
+        <Route path="/addtype" element={<Addtype />} />
+        <Route path="/twinhome" element={<TwinHomeAllPage />} />
       </Routes>
     </BrowserRouter>
   );

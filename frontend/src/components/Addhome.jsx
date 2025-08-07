@@ -3,32 +3,51 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Navbar from "./Sidebar";
 import "../styles/home.css";
+import "../styles/Sharestyles.css"; // ต้องโหลดหลัง home.css
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import styles from '../styles/Addhome.module.css';
 
 export default function Addhome() {
   const [form, setForm] = useState({ 
     home_type_id: "", 
     Address: "",
-    row_id: ""
+    row_id: "",
+    twin_area_id: ""  // เปลี่ยนจาก twin_area
   });
+  
   const [image, setImage] = useState(null);
   const [homeTypes, setHomeTypes] = useState([]);
   const [townhomeRows, setTownhomeRows] = useState([]);
+  const [twinAreas, setTwinAreas] = useState([]);
   const navigate = useNavigate();
 
   // ฟังก์ชันโหลดข้อมูลเริ่มต้น
   const loadInitialData = async () => {
     try {
       const [homeTypesRes, townhomeRowsRes] = await Promise.all([
-        axios.get("http://localhost:3001/api/home_types"),
+        axios.get("http://localhost:3001/api/home-types"),
         axios.get("http://localhost:3001/api/townhome-rows")
       ]);
       
       setHomeTypes(homeTypesRes.data);
       setTownhomeRows(townhomeRowsRes.data);
+      
+      // โหลด twin areas
+      await loadTwinAreas();
+      
     } catch (error) {
       console.error("Error loading initial data:", error);
+    }
+  };
+
+  // โหลดข้อมูล twin areas
+  const loadTwinAreas = async () => {
+    try {
+      const response = await axios.get("http://localhost:3001/api/twin-areas");
+      setTwinAreas(response.data);
+    } catch (error) {
+      console.error("Error loading twin areas:", error);
     }
   };
 
@@ -47,7 +66,19 @@ export default function Addhome() {
   }, []);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // รีเซ็ตฟิลด์ที่เกี่ยวข้องเมื่อเปลี่ยนประเภทบ้าน
+    if (name === 'home_type_id') {
+      setForm({ 
+        ...form, 
+        [name]: value,
+        row_id: "",
+        twin_area_id: ""  // รีเซ็ต twin_area_id
+      });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
 
   const handleImageChange = (e) => {
@@ -64,11 +95,12 @@ export default function Addhome() {
     
     try {
       const formData = new FormData();
+      
       formData.append("home_type_id", form.home_type_id);
       formData.append("Address", form.Address);
       formData.append("status", status);
       
-      // ถ้าเป็นบ้านพักเรือนแถว ให้ส่ง row_id
+      // ส่ง row_id สำหรับบ้านพักเรือนแถว
       if (selectedHomeType && selectedHomeType.name === 'บ้านพักเรือนแถว') {
         if (!form.row_id) {
           toast.error("กรุณาเลือกแถวสำหรับบ้านพักเรือนแถว", {
@@ -79,6 +111,19 @@ export default function Addhome() {
           return;
         }
         formData.append("row_id", form.row_id);
+      }
+      
+      // ส่ง twin_area_id สำหรับบ้านพักแฝด
+      if (selectedHomeType && selectedHomeType.name === 'บ้านพักแฝด') {
+        if (!form.twin_area_id) {
+          toast.error("กรุณาเลือกพื้นที่สำหรับบ้านพักแฝด", {
+            position: "top-right",
+            autoClose: 5000,
+            style: { background: '#ef4444', color: 'white' }
+          });
+          return;
+        }
+        formData.append("twin_area_id", form.twin_area_id);
       }
       
       if (image) {
@@ -102,7 +147,8 @@ export default function Addhome() {
       setForm({ 
         home_type_id: "", 
         Address: "",
-        row_id: ""
+        row_id: "",
+        twin_area_id: ""
       });
       setImage(null);
 
@@ -127,97 +173,80 @@ export default function Addhome() {
     }
   };
 
+  // ฟังก์ชันตรวจสอบประเภทบ้านที่เลือก
+  const getSelectedHomeType = () => {
+    return homeTypes.find(ht => ht.id == form.home_type_id);
+  };
+
+  const selectedHomeType = getSelectedHomeType();
+
   return (
-    <div className="dashboard-container" style={{ minHeight: "100vh", background: "#fafbff", padding: "0 0 64px 0" }}>
+    <div className="dashboard-container">
       <Navbar />
       
-      <div className="content-container" style={{ flex: 1, padding: 32 }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            marginTop: 10,
-            marginBottom: 10,
-          }}
-        >
-          <div style={{
-            color: "#3b2566", 
-            fontWeight: "bold", 
-            fontSize: "30px",
-            padding: "18px 48px", 
-            borderRadius: "8px", 
-            border: "6px solid #31c3e7",
-            boxShadow: " 8px 8px 0 #2b2b3d",
-            fontFamily: "'Press Start 2P', 'Courier New', monospace",
-            letterSpacing: "2px", 
-            userSelect: "none",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            textAlign: "center",
-            maxWidth: "90%"
-          }}>
+      <div className="content-container">
+        <div className="title-container">
+          <div className="page-title">
             เพิ่มบ้านพัก
           </div>
         </div>
         
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            gap: 32,
-            marginTop: 64,
-            width: "96vw",
-            marginLeft: 0,
-            marginRight: 0,
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 18,
-              boxShadow: "0 4px 24px #e5e7eb",
-              width: 600,
-              padding: "36px 32px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center"
-            }}
-          >
-            <form onSubmit={handleSubmit} style={{ width: "100%" }}>
-              {/* ข้อมูลบ้าน */}
-              <div style={{ marginBottom: 24 }}>
-                <h3 style={{ margin: "0 0 16px 0", color: "#3b2566", fontSize: "18px" }}>ข้อมูลบ้านพัก</h3>
+        <div className="main-content">
+          <div className="form-card">
+            <form onSubmit={handleSubmit} className="form-full-width">
+              <div className="form-group-large">
+                <h3 className="form-section-title">ข้อมูลบ้านพัก</h3>
                 
-                <div style={{ marginBottom: 16 }}>
-                  <label>ประเภทบ้าน</label>
+                <div className="form-group">
+                  <label className="form-label">ประเภทบ้าน</label>
                   <select
                     name="home_type_id"
                     value={form.home_type_id}
                     onChange={handleChange}
                     required
-                    className="border px-2 py-1 rounded w-full"
-                    style={{ width: "100%" }}
+                    className="form-select"
                   >
                     <option value="">เลือกประเภทบ้าน</option>
-                    {homeTypes.map(ht => (
+                    {homeTypes
+                      .filter(ht => !ht.name.includes('พื้นที่')) // ซ่อน บ้านพักแฝดพื้นที่1 และ พื้นที่2
+                      .map(ht => (
                       <option key={ht.id} value={ht.id}>{ht.name}</option>
                     ))}
                   </select>
                 </div>
                 
-                {/* แสดงเลือกแถวสำหรับบ้านพักเรือนแถว */}
-                {homeTypes.find(ht => ht.id == form.home_type_id)?.name === 'บ้านพักเรือนแถว' && (
-                  <div style={{ marginBottom: 16 }}>
-                    <label>เลือกแถว</label>
+                {/* แสดง dropdown เลือกพื้นที่สำหรับบ้านพักแฝด */}
+                {selectedHomeType?.name === 'บ้านพักแฝด' && (
+                  <div className="form-group">
+                    <label className="form-label">เลือกพื้นที่</label>
+                    <select
+                      name="twin_area_id"
+                      value={form.twin_area_id}
+                      onChange={handleChange}
+                      required
+                      className="form-select"
+                    >
+                      <option value="">เลือกพื้นที่</option>
+                      {twinAreas.map(area => (
+                        <option key={area.id} value={area.id}>{area.name}</option>
+                      ))}
+                    </select>
+                    <small className="form-help-text">
+                      * เลือกพื้นที่ของบ้านพักแฝด
+                    </small>
+                  </div>
+                )}
+                
+                {/* แสดง dropdown เลือกแถวสำหรับบ้านพักเรือนแถว */}
+                {selectedHomeType?.name === 'บ้านพักเรือนแถว' && (
+                  <div className="form-group">
+                    <label className="form-label">เลือกแถว</label>
                     <select
                       name="row_id"
                       value={form.row_id}
                       onChange={handleChange}
                       required
-                      className="border px-2 py-1 rounded w-full"
-                      style={{ width: "100%" }}
+                      className="form-select"
                     >
                       <option value="">เลือกแถว</option>
                       {townhomeRows.map(row => (
@@ -231,73 +260,60 @@ export default function Addhome() {
                         </option>
                       ))}
                     </select>
-                    <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                    <small className="form-help-text">
                       * เลือกแถวที่ต้องการเพิ่มบ้าน
                     </small>
                   </div>
                 )}
                 
-                <div style={{ marginBottom: 16 }}>
-                  <label>หมายเลขบ้าน</label>
+                <div className="form-group">
+                  <label className="form-label">หมายเลขบ้าน</label>
                   <input
                     type="text"
                     name="Address"
                     value={form.Address}
                     onChange={handleChange}
-                    className="border px-2 py-1 rounded w-full"
+                    className="form-input"
                     required
-                    style={{ width: "100%" }}
                     placeholder={
-                      homeTypes.find(ht => ht.id == form.home_type_id)?.name === 'บ้านพักเรือนแถว' 
+                      selectedHomeType?.name === 'บ้านพักเรือนแถว' 
                         ? "กรอกหมายเลขบ้าน (เช่น 101, 201)"
+                        : selectedHomeType?.name === 'บ้านพักแฝด'
+                        ? `กรอกหมายเลขบ้าน ${form.twin_area_id ? `พื้นที่ ${twinAreas.find(a => a.id == form.twin_area_id)?.name || ''}` : ''} `
                         : "กรอกหมายเลขบ้าน (เช่น 101, 201)"
                     }
                   />
-                  <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                  <small className="form-help-text">
                     * หมายเลขบ้านที่แสดงในระบบ
+                    {selectedHomeType?.name === 'บ้านพักแฝด' && form.twin_area_id && (
+                      <></>
+                    )}
                   </small>
                 </div>
 
-                <div style={{ marginBottom: 16 }}>
-                  <label className="block mb-1">เพิ่มภาพ</label>
+                <div className="form-group">
+                  <label className="form-label">เพิ่มภาพ</label>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleImageChange}
-                    className="border px-2 py-1 rounded w-full"
-                    style={{ width: "100%" }}
+                    className="form-file"
                   />
                   {image && (
                     <img 
                       src={URL.createObjectURL(image)}
                       alt="preview"
-                      style={{
-                        marginTop: 8,
-                        maxWidth: "100%",
-                        maxHeight: 200,
-                        borderRadius: 10,
-                        objectFit: "contain",
-                        display: "block",
-                        marginLeft: "auto",
-                        marginRight: "auto"
-                      }}
+                      className="image-preview"
                     />
                   )}
                 </div>
               </div>
               
-              <div className="flex gap-2" style={{ marginTop: "24px", display: "flex", justifyContent: "center" }}>
-                <button
-                  type="submit"
-                  className="save-btn"
-                >
+              <div className={styles.buttonGroup}>
+                <button type="submit" className={styles.btnPrimary}>
                   ยืนยัน
                 </button>
-                <button
-                  type="button"
-                  onClick={() => navigate("/")}
-                  className="delete-btn"
-                >
+                <button type="button" onClick={() => navigate("/")} className={styles.btnSecondary}>
                   ยกเลิก
                 </button>
               </div>

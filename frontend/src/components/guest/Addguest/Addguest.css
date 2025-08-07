@@ -1,11 +1,11 @@
 body {
-  background: #f4f6fb;
+  background: #ffffff;
 }
 
 .main-layout {
   display: flex;
   min-height: 100vh;
-  background: #f4f6fb;
+  background: #ffffff;
 }
 
 .sidebar {
@@ -173,7 +173,7 @@ body {
 }
 
 .modal-content {
-  background: white;
+  background: rgb(255, 255, 255);
   border-radius: 8px;
   max-width: 600px;
   width: 90%;
@@ -411,6 +411,298 @@ body {
   box-shadow: none;
 }
 
+/* เพิ่ม CSS สำหรับ count step */
+.count-step-container {
+  padding: 24px;
+  text-align: center;
+}
+
+.count-step-content {
+  margin-bottom: 24px;
+}
+
+.count-step-label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.home-info {
+  margin-bottom: 16px;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.has-right-holder {
+  color: #059669;
+  font-weight: 500;
+}
+
+.count-input-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.count-input {
+  width: 120px;
+  padding: 12px;
+  font-size: 18px;
+  text-align: center;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.count-unit {
+  margin-left: 8px;
+  font-size: 16px;
+}
+
+.count-step-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-cancel-count, .btn-next-count {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel-count {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-cancel-count:hover {
+  background: #dc2626;
+}
+
+.btn-next-count {
+  background: #10b981;
+  color: white;
+}
+
+.btn-next-count:hover:not(:disabled) {
+  background: #059669;
+}
+
+.btn-next-count:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* เพิ่ม CSS สำหรับ progress bar */
+.progress-container {
+  margin-bottom: 20px;
+  padding: 0 24px;
+}
+
+.progress-bar {
+  background: #e5e7eb;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: #10b981;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* เพิ่ม CSS สำหรับ status radio */
+.status-radio-container {
+  display: flex;
+  gap: 20px;
+  margin-top: 8px;
+  padding: 10px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.status-radio-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: normal;
+}
+
+.status-radio-label.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.status-radio {
+  margin-right: 8px;
+  transform: scale(1.2);
+}
+
+.status-radio-text {
+  color: #374151;
+  font-weight: normal;
+  transition: all 0.2s;
+}
+
+.status-radio-text.selected {
+  color: #059669;
+  font-weight: 600;
+}
+
+.status-radio-text.disabled {
+  color: #9ca3af;
+}
+
+.status-warning {
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* ปรับแต่ง CSS เดิมที่มีอยู่แล้ว */
+.modal-content-horizontal {
+  background: white;
+  border-radius: 12px;
+  max-width: 900px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.form-row-horizontal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field label {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.form-field input,
+.form-field select {
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s;
+  background: white;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.home-display {
+  font-weight: 600;
+  background: #f8fafc;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #1e293b;
+  border: 2px solid #e2e8f0;
+  font-size: 14px;
+}
+
+.date-select-horizontal {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 8px;
+}
+
+.required {
+  color: #dc2626;
+}
+
+.info-message {
+  color: #3b82f6;
+  font-size: 12px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.modal-actions-horizontal {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 2px solid #f1f5f9;
+}
+
+.btn-cancel,
+.btn-save {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 100px;
+  transition: all 0.2s;
+}
+
+.btn-cancel {
+  background-color: #f8fafc;
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+}
+
+.btn-cancel:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.btn-save {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-save:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.btn-save:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .modal-content-horizontal {
@@ -426,4 +718,56 @@ body {
   .date-select-horizontal {
     grid-template-columns: 1fr 1fr 1fr;
   }
+  
+  .status-radio-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .count-step-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .btn-cancel-count, .btn-next-count {
+    width: 200px;
+  }
+}
+
+.home-input-disabled {
+  background-color: #F2F2F2;   /* สีเทาอ่อน */
+  color: #999;                 /* สีข้อความเทา */
+  border: 1px solid #ddd;      /* ขอบบางๆ */
+  cursor: not-allowed;         /* เปลี่ยนเมาส์เป็น not-allowed */
+}
+
+.home-input-disabled:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* เพิ่มในไฟล์ Addguest.css */
+
+.field-hint {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.form-field input[name="rank_id"] {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 8px 12px;
+}
+
+.form-field input[name="rank_id"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-field input[name="rank_id"]::placeholder {
+  color: #9ca3af;
+  font-style: italic;
 }

@@ -18,31 +18,51 @@ export default function Search() {
       .catch(() => setHouseTypes([]));
   }, []);
 
-  // โหลด guest ทั้งหมดเมื่อเปิดหน้า (หรือเมื่อ keyword ว่าง)
+  // โหลดผู้ถือสิทธิ์เมื่อเปิดหน้า
   useEffect(() => {
-    fetchGuests();
+    fetchRightHolders();
     // eslint-disable-next-line
-  }, [keyword, selectedType]);
+  }, []);
 
-  const fetchGuests = () => {
+  const fetchRightHolders = () => {
     setLoading(true);
+    
     let url = "http://localhost:3001/api/guests";
-    let params = [];
+    let params = new URLSearchParams();
+    
+    // เพิ่ม parameter สำหรับผู้ถือสิทธิ์เสมอ
+    params.append('right_holders_only', 'true');
+    
+    // ถ้ามีการค้นหา
     if (keyword.trim() !== "" || selectedType) {
-      url = "http://localhost:3001/api/guests/search?";
-      if (keyword.trim() !== "") params.push(`q=${encodeURIComponent(keyword)}`);
-      if (selectedType) params.push(`type=${encodeURIComponent(selectedType)}`);
-      url += params.join("&");
+      url = "http://localhost:3001/api/guests/search";
+      
+      if (keyword.trim() !== "") {
+        params.append('q', keyword.trim());
+      }
+      if (selectedType) {
+        params.append('type', selectedType);
+      }
     }
-    axios.get(url)
-      .then(res => setResults(res.data))
-      .catch(() => setResults([]))
+    
+    const fullUrl = `${url}?${params.toString()}`;
+    console.log("Fetching from:", fullUrl);
+    
+    axios.get(fullUrl)
+      .then(res => {
+        console.log("Results:", res.data);
+        setResults(res.data);
+      })
+      .catch(err => {
+        console.error("Error fetching data:", err);
+        setResults([]);
+      })
       .finally(() => setLoading(false));
   };
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchGuests();
+    fetchRightHolders();
   };
 
   // ฟังก์ชันลบ
@@ -61,11 +81,11 @@ export default function Search() {
     <div className="search-bg dashboard-container">
       <Navbar />
       <div className="search-container">
-        <h2 className="search-title">ค้นหาผู้พักอาศัย</h2>
+        <h2 className="search-title">ค้นหาผู้ถือสิทธิ์</h2>
         <form onSubmit={handleSearch} className="search-form" style={{ gap: 16 }}>
           <input
             type="text"
-            placeholder="ค้นหาด้วยชื่อหรือนามสกุล"
+            placeholder="ค้นหาด้วยชื่อหรือนามสกุลผู้ถือสิทธิ์"
             value={keyword}
             onChange={e => setKeyword(e.target.value)}
             className="search-input"
@@ -93,7 +113,7 @@ export default function Search() {
         </form>
         <div className="search-results">
           {results.length === 0 && !loading && (
-            <div className="search-no-data">ไม่มีข้อมูล</div>
+            <div className="search-no-data">ไม่มีข้อมูลผู้ถือสิทธิ์</div>
           )}
           {results.length > 0 && (
             <GuestTable

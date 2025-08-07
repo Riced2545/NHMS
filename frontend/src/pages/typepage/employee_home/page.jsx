@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import Sidebar from "./Sidebar";
+import Sidebar from "../Sidebars";
 import Navbar from "../../../components/Sidebar";
 import { useNavigate } from "react-router-dom";
 import EditHomeModal from "../../component/EditHome";

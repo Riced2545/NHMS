@@ -2,6 +2,7 @@ import { formatThaiDate } from "../../utils/dateUtils";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
+import './guest.css';
 
 export default function GuestTable({
   guests = [],
@@ -12,6 +13,31 @@ export default function GuestTable({
 }) {
   const navigate = useNavigate();
   const role_id = localStorage.getItem("role_id");
+
+  // เรียงลำดับให้ผู้ถือสิทธิ์ขึ้นก่อน
+  const sortedGuests = [...guests].sort((a, b) => {
+    // ถ้า a เป็นผู้ถือสิทธิ์ และ b ไม่ใช่ ให้ a อยู่ก่อน
+    if (a.is_right_holder && !b.is_right_holder) return -1;
+    // ถ้า b เป็นผู้ถือสิทธิ์ และ a ไม่ใช่ ให้ b อยู่ก่อน
+    if (b.is_right_holder && !a.is_right_holder) return 1;
+    // ถ้าทั้งคู่เป็นผู้ถือสิทธิ์ หรือทั้งคู่ไม่ใช่ ให้เรียงตาม id
+    return a.id - b.id;
+  });
+
+  // ฟังก์ชันสำหรับแสดงชื่อเต็ม
+  const formatGuestName = (guest) => {
+    const parts = [];
+    
+    // ตรวจสอบ rank - ถ้าเป็น string และไม่ใช่ตัวเลขเปล่าๆ ให้เพิ่มเข้าไป
+    if (guest.rank && typeof guest.rank === 'string' && guest.rank.trim() !== '' && guest.rank !== '0') {
+      parts.push(guest.rank);
+    }
+    
+    if (guest.name) parts.push(guest.name);
+    if (guest.lname) parts.push(guest.lname);
+    
+    return parts.join(' ').trim();
+  };
 
   return (
     <table className="search-table">
@@ -24,56 +50,50 @@ export default function GuestTable({
           <th>เบอร์โทรศัพท์</th>
           <th>เบอร์โทรที่ทำงาน</th>
           <th>เงินเดือน</th>
+          <th>สถานะ</th>
           {((role_id === "1" && (onEdit || onDelete)) || role_id !== "1") && <th>จัดการ</th>}
         </tr>
       </thead>
       <tbody>
-        {guests.length === 0 ? (
+        {sortedGuests.length === 0 ? (
           <tr>
-            <td colSpan={9} style={{ textAlign: "center", color: "#ef4444" }}>
+            <td colSpan={10} className="no-data-cell">
               ไม่มีข้อมูล
             </td>
           </tr>
         ) : (
-          guests.map(g => (
+          sortedGuests.map(g => (
             <tr
               key={g.id}
-              style={{ height: 56, cursor: "pointer", transition: "background 0.15s" }}
+              className={`guest-row ${g.is_right_holder ? 'right-holder-row' : ''}`}
               title="ดูรายละเอียดบ้าน"
-              // onClick={() => g.home_id && navigate(`/viewhome/${g.home_id}`)}
-              onMouseOver={e => (e.currentTarget.style.background = "#f0f7ff")}
-              onMouseOut={e => (e.currentTarget.style.background = "")}
             >
-              <td style={{ verticalAlign: "middle" }}>
-                <span style={{ fontWeight: 500 }}>{`${g.rank} ${g.name} ${g.lname}`}</span>
-
+              <td className="guest-name-cell">
+                <span className="guest-name">
+                  {g.is_right_holder && <span className="right-holder-badge">🗝️</span>}
+                  {formatGuestName(g)}
+                </span>
               </td>
               
-              {showAddress && <td style={{ verticalAlign: "middle" }}>{g.Address}</td>}
-              {showType && <td style={{ verticalAlign: "middle" }}>{g.hType}</td>}
-              <td style={{ verticalAlign: "middle" }}>{g.dob ? formatThaiDate(g.dob) : ""}</td>
-              <td style={{ verticalAlign: "middle" }}>{g.phone || "-"}</td>
-              <td style={{ verticalAlign: "middle" }}>{g.job_phone || "-"}</td>
-              <td style={{ verticalAlign: "middle" }}>{g.income || "-"}</td>
+              {showAddress && <td className="guest-data-cell">{g.Address}</td>}
+              {showType && <td className="guest-data-cell">{g.hType}</td>}
+              <td className="guest-data-cell">{g.dob ? formatThaiDate(g.dob) : ""}</td>
+              <td className="guest-data-cell">{g.phone || "-"}</td>
+              <td className="guest-data-cell">{g.job_phone || "-"}</td>
+              <td className="guest-data-cell">{g.income || "-"}</td>
+              <td className="status-cell">
+                <span className={`status-badge ${g.is_right_holder ? 'right-holder' : 'family-member'}`}>
+                  {g.is_right_holder ? 'ผู้ถือสิทธิ์' : 'สมาชิกครอบครัว'}
+                </span>
+              </td>
+              
               {((role_id === "1" && (onEdit || onDelete)) || role_id !== "1") && (
-                <td
-                  style={{ verticalAlign: "middle" }}
-                  onClick={e => e.stopPropagation()} // ป้องกันคลิกปุ่มแล้วไปหน้า viewhome
-                >
-                  <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                <td className="action-cell" onClick={e => e.stopPropagation()}>
+                  <div className="action-buttons">
                     {/* สำหรับ Admin (role_id = 1) - แสดงปุ่มแก้ไขและลบ */}
                     {role_id === "1" && onEdit && (
                       <button
-                        style={{
-                          background: "#fcd84aff",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          padding: "6px 18px",
-                          fontWeight: "bold",
-                          fontSize: 15,
-                          cursor: "pointer"
-                        }}
+                        className="btn-edit"
                         onClick={() => onEdit(g)}
                       >
                         ✏️แก้ไข
@@ -81,19 +101,10 @@ export default function GuestTable({
                     )}
                     {role_id === "1" && onDelete && (
                       <button
-                        style={{
-                          background: "#ff6767ff",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          padding: "15px 18px",
-                          fontWeight: "bold",
-                          fontSize: 15,
-                          cursor: "pointer"
-                        }}
+                        className="btn-delete"
                         onClick={() => onDelete(g)}
                       >
-                         <FontAwesomeIcon icon={faTimes} style={{ color: "#fff", marginRight: 6 }} />
+                        <FontAwesomeIcon icon={faTimes} className="btn-icon" />
                         ลบ
                       </button>
                     )}
@@ -101,16 +112,7 @@ export default function GuestTable({
                     {/* สำหรับผู้ใช้ทั่วไป (role_id ≠ 1) - แสดงปุ่มรายละเอียดอย่างเดียว */}
                     {role_id !== "1" && (
                       <button
-                        style={{
-                          background: "#3b82f6",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          padding: "6px 18px",
-                          fontWeight: "bold",
-                          fontSize: 15,
-                          cursor: "pointer"
-                        }}
+                        className="btn-detail"
                         onClick={() => g.home_id && navigate(`/viewhome/${g.home_id}`)}
                       >
                         📋 รายละเอียด
