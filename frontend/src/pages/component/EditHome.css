@@ -9,14 +9,16 @@
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 20px;
 }
 
 .modal-content {
   background: white;
   border-radius: 12px;
   padding: 0;
-  max-width: 500px;
+  max-width: 1000px;
   width: 90%;
+  min-width: 700px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
@@ -26,23 +28,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
+  padding: 2rem;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .modal-header h2 {
   margin: 0;
   color: #1f2937;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
 }
 
 .close-btn {
   background: none;
   border: none;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   cursor: pointer;
   color: #6b7280;
-  padding: 4px;
+  padding: 8px;
   border-radius: 4px;
   transition: color 0.2s;
 }
@@ -52,11 +54,30 @@
 }
 
 .modal-form {
-  padding: 1.5rem;
+  padding: 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
 }
 
 .form-group {
   margin-bottom: 1.5rem;
+}
+
+/* ให้ form-group ที่มีรูปภาพ (ลำดับที่ 5) ขยายเต็มแถว */
+.form-group:nth-child(5) {
+  grid-column: 1 / -1;
+}
+
+/* ให้ modal-actions ขยายเต็มแถว */
+.modal-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 1rem;
 }
 
 .form-group label {
@@ -64,15 +85,16 @@
   margin-bottom: 0.5rem;
   font-weight: 600;
   color: #374151;
+  font-size: 1rem;
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.875rem;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 1rem;
   transition: border-color 0.2s;
 }
 
@@ -84,34 +106,28 @@
 }
 
 .image-preview {
-  margin-top: 0.75rem;
+  margin-top: 1rem;
   text-align: center;
 }
 
 .image-preview img {
-  max-width: 200px;
-  max-height: 150px;
+  max-width: 250px;
+  max-height: 200px;
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
 }
 
-.modal-actions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
-}
-
 .btn-cancel,
-.btn-save {
-  padding: 0.75rem 1.5rem;
+.btn-save,
+.btn-rank-management {
+  padding: 0.875rem 1.75rem;
   border: none;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  font-size: 1rem;
 }
 
 .btn-cancel {
@@ -138,4 +154,190 @@
   background: #9ca3af;
   cursor: not-allowed;
   transform: none;
+}
+
+.btn-rank-management {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+}
+
+.btn-rank-management:hover {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  transform: translateY(-1px);
+}
+
+/* สำหรับ Rank Management Form */
+.rank-management-form {
+  padding: 2rem;
+}
+
+.ranks-checkbox-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Checkbox Style - ใช้ดีไซน์ใหม่ */
+@supports (-webkit-appearance: none) or (-moz-appearance: none) {
+  .checkbox-wrapper-13 input[type=checkbox] {
+    --active: #275EFE;
+    --active-inner: #fff;
+    --focus: 2px rgba(39, 94, 254, .3);
+    --border: #BBC1E1;
+    --border-hover: #275EFE;
+    --background: #fff;
+    --disabled: #F6F8FF;
+    --disabled-inner: #E1E6F9;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    height: 21px;
+    width: 21px;
+    outline: none;
+    display: inline-block;
+    vertical-align: top;
+    position: relative;
+    margin: 0;
+    cursor: pointer;
+    border: 1px solid var(--bc, var(--border));
+    background: var(--b, var(--background));
+    transition: background 0.3s, border-color 0.3s, box-shadow 0.2s;
+    border-radius: 7px;
+  }
+  
+  .checkbox-wrapper-13 input[type=checkbox]:after {
+    content: "";
+    display: block;
+    left: 0;
+    top: 0;
+    position: absolute;
+    transition: transform var(--d-t, 0.3s) var(--d-t-e, ease), opacity var(--d-o, 0.2s);
+    width: 5px;
+    height: 9px;
+    border: 2px solid var(--active-inner);
+    border-top: 0;
+    border-left: 0;
+    left: 7px;
+    top: 4px;
+    transform: rotate(var(--r, 20deg));
+    opacity: var(--o, 0);
+  }
+  
+  .checkbox-wrapper-13 input[type=checkbox]:checked {
+    --b: var(--active);
+    --bc: var(--active);
+    --d-o: .3s;
+    --d-t: .6s;
+    --d-t-e: cubic-bezier(.2, .85, .32, 1.2);
+    --o: 1;
+    --r: 43deg;
+  }
+  
+  .checkbox-wrapper-13 input[type=checkbox]:disabled {
+    --b: var(--disabled);
+    cursor: not-allowed;
+    opacity: 0.9;
+  }
+  
+  .checkbox-wrapper-13 input[type=checkbox]:disabled:checked {
+    --b: var(--disabled-inner);
+    --bc: var(--border);
+  }
+  
+  .checkbox-wrapper-13 input[type=checkbox]:disabled + label {
+    cursor: not-allowed;
+  }
+  
+  .checkbox-wrapper-13 input[type=checkbox]:hover:not(:checked):not(:disabled) {
+    --bc: var(--border-hover);
+  }
+  
+  .checkbox-wrapper-13 input[type=checkbox]:focus {
+    box-shadow: 0 0 0 var(--focus);
+  }
+  
+  .checkbox-wrapper-13 input[type=checkbox] + label {
+    display: inline-block;
+    vertical-align: middle;
+    cursor: pointer;
+    margin-left: 8px;
+    font-size: 15px;
+    color: #374151;
+    font-weight: 500;
+  }
+  
+  .checkbox-wrapper-13 * {
+    box-sizing: inherit;
+  }
+  
+  .checkbox-wrapper-13 *:before,
+  .checkbox-wrapper-13 *:after {
+    box-sizing: inherit;
+  }
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: white;
+  border: 1px solid #e5e7eb;
+}
+
+.checkbox-label:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .modal-content {
+    min-width: auto;
+    width: 95%;
+  }
+  
+  .modal-form {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-header {
+    padding: 1.5rem;
+  }
+  
+  .modal-header h2 {
+    font-size: 1.25rem;
+  }
+  
+  .modal-form,
+  .rank-management-form {
+    padding: 1.5rem;
+  }
+  
+  .ranks-checkbox-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .btn-cancel,
+  .btn-save,
+  .btn-rank-management {
+    width: 100%;
+  }
 }

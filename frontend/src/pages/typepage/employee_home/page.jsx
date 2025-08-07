@@ -122,12 +122,12 @@ export default function EmployeeHomeListPage() {
                             <strong>หมายเลขบ้าน:</strong> {home.Address}
                           </div>
                           <div className="detail-item">
-                            <strong>จำนวนผู้พัก:</strong> {home.guest_count || 0}/4 คน
+                            <strong>จำนวนผู้พัก:</strong> {home.guest_count || 0}/6 คน
                           </div>
                           <div className="detail-item">
                             <strong>สถานะ:</strong> 
-                            <span className={`status ${home.guest_count >= 4 ? 'full' : 'available'}`}>
-                              {home.guest_count >= 4 ? 'เต็ม' : home.status}
+                            <span className={`status ${home.guest_count >= 6 ? 'full' : 'available'}`}>
+                              {home.guest_count >= 6 ? 'เต็ม' : home.status}
                             </span>
                           </div>
                         </div>

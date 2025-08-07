@@ -1,17 +1,24 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "./Addguest.css";
 
 export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
   // State สำหรับขั้นตอนต่างๆ
-  const [step, setStep] = useState("right_holder"); // "right_holder" | "family_count" | "family_forms"
+  const [step, setStep] = useState("right_holder");
   const [familyCount, setFamilyCount] = useState(0);
   const [currentFamilyIndex, setCurrentFamilyIndex] = useState(0);
   const [rightHolderData, setRightHolderData] = useState(null);
   const [familyForms, setFamilyForms] = useState([]);
   
+  // เพิ่ม state สำหรับตรวจสอบผู้ถือสิทธิ
+  const [hasRightHolder, setHasRightHolder] = useState(false);
+  const [currentRightHolder, setCurrentRightHolder] = useState(null);
+  
+  // เพิ่ม state สำหรับ preview รูปภาพ
+  const [previewImage, setPreviewImage] = useState(null);
+
   // State เดิม
   const [form, setForm] = useState({
     home_id: homeId || "",
@@ -23,7 +30,8 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
     income: "",
     phone: "",
     job_phone: "",
-    is_right_holder: false
+    is_right_holder: false,
+    image: null
   });
   const [home, setHome] = useState(null);
   const [ranks, setRanks] = useState([]);
@@ -31,34 +39,113 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
   const [loading, setLoading] = useState(false);
   const [existingGuests, setExistingGuests] = useState([]);
 
-  // สำหรับวัน เดือน ปี
+  // สำหรับวัน เดือน ปี ของผู้ถือสิทธิ
   const [day, setDay] = useState("");
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
 
+  // สำหรับวัน เดือน ปี ของสมาชิกครอบครัว
+  const [familyDays, setFamilyDays] = useState([]);
+  const [familyMonths, setFamilyMonths] = useState([]);
+  const [familyYears, setFamilyYears] = useState([]);
+
   // สร้าง options สำหรับปี พ.ศ.
   const buddhistYearNow = new Date().getFullYear() + 543;
-  const years = [];
+  const years_options = [];
   for (let y = buddhistYearNow - 80; y <= buddhistYearNow; y++) {
-    years.push(y);
+    years_options.push(y);
   }
   const months = [
     "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
     "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
   ];
 
+  // แก้ไขฟังก์ชัน getStepTitle
+  const getStepTitle = () => {
+    if (hasRightHolder) {
+      switch (step) {
+        case "family_count": 
+          return "👨‍👩‍👧‍👦 เพิ่มสมาชิกครอบครัว";
+        case "family_forms": 
+          return `👤 ข้อมูลสมาชิกครอบครัวคนที่ ${currentFamilyIndex + 1}`;
+        default: 
+          return "เพิ่มสมาชิกครอบครัว";
+      }
+    } else {
+      switch (step) {
+        case "right_holder": 
+          return "🏠 เพิ่มผู้ถือสิทธิเข้าพัก";
+        case "family_count": 
+          return "👨‍👩‍👧‍👦 จำนวนสมาชิกครอบครัว";
+        case "family_forms": 
+          return `👤 ข้อมูลสมาชิกครอบครัวคนที่ ${currentFamilyIndex + 1}`;
+        default: 
+          return "เพิ่มผู้พัก";
+      }
+    }
+  };
+
+  // เพิ่มฟังก์ชันจัดการรูปภาพ
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("ไฟล์รูปภาพต้องมีขนาดไม่เกิน 5MB");
+        return;
+      }
+
+      setForm(prev => ({ ...prev, image: file }));
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // โหลดข้อมูลเมื่อ modal เปิด
   useEffect(() => {
     if (isOpen && homeId) {
+      console.log("Modal opened, fetching data...");
       fetchHomeData();
       fetchRanks();
       fetchExistingGuests();
+      checkRightHolder(); // เพิ่มการตรวจสอบผู้ถือสิทธิ
       resetModal();
     }
   }, [isOpen, homeId]);
 
+  // เพิ่มฟังก์ชันตรวจสอบผู้ถือสิทธิ
+  const checkRightHolder = async () => {
+    try {
+      const response = await axios.get(`http://localhost:3001/api/guests/home/${homeId}`);
+      const guests = response.data || [];
+      const rightHolder = guests.find(guest => guest.is_right_holder === 1);
+      
+      if (rightHolder) {
+        setHasRightHolder(true);
+        setCurrentRightHolder(rightHolder);
+        setStep("family_count"); // ไปขั้นตอนเพิ่มสมาชิกครอบครัวเลย
+      } else {
+        setHasRightHolder(false);
+        setCurrentRightHolder(null);
+        setStep("right_holder"); // ไปขั้นตอนเพิ่มผู้ถือสิทธิ
+      }
+    } catch (error) {
+      console.error("Error checking right holder:", error);
+      setHasRightHolder(false);
+      setCurrentRightHolder(null);
+      setStep("right_holder");
+    }
+  };
+
   const resetModal = () => {
-    setStep("right_holder");
     setFamilyCount(0);
     setCurrentFamilyIndex(0);
     setRightHolderData(null);
@@ -73,18 +160,23 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
       income: "",
       phone: "",
       job_phone: "",
-      is_right_holder: true // เริ่มต้นเป็น true สำหรับผู้ถือสิทธิ
+      is_right_holder: true,
+      image: null
     });
     setDay("");
     setMonth("");
     setYear("");
+    setPreviewImage(null);
+    setFamilyDays([]);
+    setFamilyMonths([]);
+    setFamilyYears([]);
   };
 
+  // ฟังก์ชันอื่นๆ เหมือนเดิม...
   const fetchHomeData = async () => {
     try {
-      const response = await axios.get(`http://localhost:3001/api/homes`);
-      const found = response.data.find(h => String(h.home_id) === String(homeId));
-      setHome(found);
+      const response = await axios.get(`http://localhost:3001/api/homes/${homeId}`);
+      setHome(response.data);
     } catch (error) {
       console.error("Error fetching home data:", error);
       toast.error("ไม่สามารถโหลดข้อมูลบ้านได้");
@@ -94,161 +186,73 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
   const fetchRanks = async () => {
     try {
       const response = await axios.get("http://localhost:3001/api/ranks");
-      setRanks(response.data);
+      const allRanks = response.data || [];
+      setRanks(allRanks);
+      setEligibleRanks(allRanks);
     } catch (error) {
       console.error("Error fetching ranks:", error);
-      toast.error("ไม่สามารถโหลดข้อมูลยศได้");
+      setRanks([]);
+      setEligibleRanks([]);
     }
   };
 
   const fetchExistingGuests = async () => {
     try {
       const response = await axios.get(`http://localhost:3001/api/guests/home/${homeId}`);
-      setExistingGuests(response.data);
-      
-      // ถ้ามีผู้ถือสิทธิแล้ว ให้ข้ามไปหน้าเพิ่มสมาชิกครอบครัวเลย
-      const hasRightHolder = response.data.some(guest => guest.is_right_holder);
-      if (hasRightHolder) {
-        setStep("family_count");
-        setForm(prev => ({ ...prev, is_right_holder: false }));
-      }
+      setExistingGuests(response.data || []);
     } catch (error) {
       console.error("Error fetching existing guests:", error);
+      setExistingGuests([]);
     }
   };
-
-  const hasExistingRightHolder = () => {
-    return existingGuests.some(guest => guest.is_right_holder);
-  };
-
-  // ตรวจสอบและกรองยศที่มีสิทธิ์
-  useEffect(() => {
-    const checkEligibleRanks = async () => {
-      if (home && ranks.length > 0) {
-        try {
-          const eligibilityChecks = await Promise.all(
-            ranks.map(async (rank) => {
-              try {
-                const response = await axios.get("http://localhost:3001/api/eligibility", {
-                  params: {
-                    home_type_id: home.home_type_id,
-                    rank_id: rank.id
-                  }
-                });
-                return {
-                  ...rank,
-                  eligible: response.data.eligible
-                };
-              } catch (error) {
-                console.error(`Error checking eligibility for rank ${rank.id}:`, error);
-                return {
-                  ...rank,
-                  eligible: false
-                };
-              }
-            })
-          );
-          
-          const eligible = eligibilityChecks.filter(rank => rank.eligible);
-          const sortedEligible = eligible.sort((a, b) => a.id - b.id);
-          setEligibleRanks(sortedEligible);
-          
-          if (form.rank_id && !sortedEligible.find(r => r.id === parseInt(form.rank_id))) {
-            setForm(prev => ({ ...prev, rank_id: "" }));
-          }
-          
-        } catch (error) {
-          console.error("Error checking eligibility:", error);
-          setEligibleRanks([]);
-        }
-      }
-    };
-
-    checkEligibleRanks();
-  }, [home, ranks]);
-
-  // จัดการวันที่
-  useEffect(() => {
-    if (day && month && year) {
-      const christianYear = Number(year) - 543;
-      const mm = String(Number(month) + 1).padStart(2, "0");
-      const dd = String(day).padStart(2, "0");
-      setForm(f => ({ ...f, dob: `${christianYear}-${mm}-${dd}` }));
-    }
-  }, [day, month, year]);
-
-  useEffect(() => {
-    if (form.dob) {
-      const [y, m, d] = form.dob.split("-");
-      setYear((Number(y) + 543).toString());
-      setMonth((Number(m) - 1).toString());
-      setDay(String(Number(d)));
-    }
-  }, [form.dob]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm({ 
-      ...form, 
-      [name]: type === 'checkbox' ? checked : value 
-    });
+    setForm(prev => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value
+    }));
   };
 
-  const getMaxGuestsForHome = () => {
-    if (!home) return 0;
-    
-    // ตรวจสอบตามประเภทบ้าน (ไม่ต้องแยกพื้นที่แล้ว)
-    switch(home.hType) {
-      case 'บ้านพักแฝด':  // รวมทั้งสองพื้นที่
-        return 4;
-      case 'บ้านพักเรือนแถว':
-        return 6;
-      default:
-        return 4;
-    }
-  };
-
-  // บันทึกข้อมูลผู้ถือสิทธิ
-  const handleRightHolderSubmit = async (e) => {
+  const handleRightHolderSubmit = (e) => {
     e.preventDefault();
     
-    if (!form.home_id) {
-      toast.error("ไม่พบข้อมูลบ้านพัก");
-      return;
+    // รวม วัน เดือน ปี เป็น dob
+    if (day && month !== "" && year) {
+      const dobString = `${year}-${String(parseInt(month) + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      setForm(prev => ({ ...prev, dob: dobString }));
     }
-
-    const selectedRank = eligibleRanks.find(r => r.id === parseInt(form.rank_id));
-    if (!selectedRank) {
-      toast.error("ยศที่เลือกไม่มีสิทธิ์เข้าพักในประเภทบ้านนี้");
-      return;
-    }
-
-    // บันทึกข้อมูลผู้ถือสิทธิ
-    setRightHolderData({ ...form });
-    setStep("family_count");
     
+    setRightHolderData({ ...form, dob: form.dob || `${year}-${String(parseInt(month) + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` });
+    setStep("family_count");
     toast.success("บันทึกข้อมูลผู้ถือสิทธิแล้ว");
   };
 
-  // เมื่อเลือกจำนวนสมาชิกครอบครัว
+  // แก้ไขฟังก์ชัน handleFamilyCountSubmit
   const handleFamilyCountSubmit = () => {
-    const maxGuests = getMaxGuestsForHome();
-    const currentGuests = home?.guest_count || 0;
-    const totalGuests = currentGuests + (rightHolderData ? 1 : 0) + familyCount;
-    
-    if (totalGuests > maxGuests) {
-      const available = maxGuests - currentGuests - (rightHolderData ? 1 : 0);
-      toast.error(`ไม่สามารถเพิ่มได้ เหลือที่ว่างอีก ${available} คน`);
+    if (familyCount === 0) {
+      if (!hasRightHolder) {
+        // ไม่มีสมาชิกครอบครัว - บันทึกเฉพาะผู้ถือสิทธิ
+        saveRightHolderOnly();
+      } else {
+        toast.warning("กรุณาระบุจำนวนสมาชิกครอบครัวที่ต้องการเพิ่ม");
+      }
       return;
     }
-
-    if (familyCount === 0) {
-      // ถ้าไม่มีสมาชิกครอบครัว บันทึกเฉพาะผู้ถือสิทธิ
-      saveRightHolderOnly();
-    } else {
-      // สร้างฟอร์มสำหรับสมาชิกครอบครัว
-      const forms = Array(familyCount).fill(null).map(() => ({
-        home_id: homeId || "",
+    
+    // มีสมาชิกครอบครัว - ไปขั้นตอนกรอกข้อมูลครอบครัว
+    setStep("family_forms");
+    setCurrentFamilyIndex(0);
+    
+    // สร้างฟอร์มสำหรับสมาชิกครอบครัว
+    const forms = [];
+    const days = [];
+    const months_arr = [];
+    const years_arr = [];
+    
+    for (let i = 0; i < familyCount; i++) {
+      forms.push({
+        home_id: homeId,
         rank_id: "",
         name: "",
         lname: "",
@@ -258,42 +262,46 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
         phone: "",
         job_phone: "",
         is_right_holder: false
-      }));
-      
-      setFamilyForms(forms);
-      setStep("family_forms");
-      setCurrentFamilyIndex(0);
-      
-      // ตั้งค่าฟอร์มแรก
-      setForm(forms[0]);
-      setDay("");
-      setMonth("");
-      setYear("");
+      });
+      days.push("");
+      months_arr.push("");
+      years_arr.push("");
     }
+    
+    setFamilyForms(forms);
+    setFamilyDays(days);
+    setFamilyMonths(months_arr);
+    setFamilyYears(years_arr);
   };
 
-  // บันทึกเฉพาะผู้ถือสิทธิ
   const saveRightHolderOnly = async () => {
     if (!rightHolderData) return;
     
     setLoading(true);
     try {
+      let guestData = { ...rightHolderData };
+      
+      if (rightHolderData.image) {
+        const formData = new FormData();
+        formData.append('image', rightHolderData.image);
+        
+        const imageResponse = await axios.post("http://localhost:3001/api/upload", formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        
+        guestData.image_url = imageResponse.data.imageUrl;
+      }
+      
+      delete guestData.image;
+      
       await axios.post("http://localhost:3001/api/guests", {
-        ...rightHolderData,
-        home_id: Number(rightHolderData.home_id)
+        ...guestData,
+        home_id: Number(guestData.home_id)
       });
       
-      toast.success("บันทึกข้อมูลผู้ถือสิทธิสำเร็จ!", {
-        position: "top-right",
-        autoClose: 3000,
-        style: {
-          background: '#10b981',
-          color: 'white',
-          fontWeight: 'bold',
-          fontSize: '16px'
-        }
-      });
-
+      toast.success("บันทึกข้อมูลผู้ถือสิทธิสำเร็จ!");
       onUpdate();
       setTimeout(() => {
         onClose();
@@ -301,88 +309,112 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
 
     } catch (err) {
       console.error("Error adding right holder:", err);
-      const errorMessage = err?.response?.data?.error || err.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล";
-      
-      toast.error(`เกิดข้อผิดพลาด: ${errorMessage}`, {
-        position: "top-right",
-        autoClose: 5000,
-        style: {
-          background: '#ef4444',
-          color: 'white',
-          fontWeight: 'bold',
-          fontSize: '16px'
-        }
-      });
+      toast.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
     } finally {
       setLoading(false);
     }
   };
 
-  // จัดการฟอร์มสมาชิกครอบครัว
-  const handleFamilyFormSubmit = async (e) => {
-    e.preventDefault();
-    
-    // สำหรับสมาชิกครอบครัวไม่ต้องตรวจสอบสิทธิ์
-    // เพราะเป็นการเพิ่มสมาชิกครอบครัวของผู้ที่มีสิทธิ์แล้ว
-
-    // บันทึกฟอร์มปัจจุบัน
+  // แก้ไขฟังก์ชันจัดการฟอร์มสมาชิกครอบครัว
+  const handleFamilyFormChange = (index, field, value) => {
     const updatedForms = [...familyForms];
-    updatedForms[currentFamilyIndex] = { ...form };
+    updatedForms[index] = {
+      ...updatedForms[index],
+      [field]: value
+    };
     setFamilyForms(updatedForms);
+  };
 
-    // ถ้าเป็นคนสุดท้าย ให้บันทึกทั้งหมด
-    if (currentFamilyIndex === familyCount - 1) {
-      await saveAllData(updatedForms);
-    } else {
-      // ไปฟอร์มคนถัดไป
-      const nextIndex = currentFamilyIndex + 1;
-      setCurrentFamilyIndex(nextIndex);
-      setForm(updatedForms[nextIndex]);
-      
-      setDay("");
-      setMonth("");
-      setYear("");
-      
-      toast.success(`บันทึกข้อมูลสมาชิกคนที่ ${currentFamilyIndex + 1} แล้ว`);
+  // เพิ่มฟังก์ชันจัดการวันเกิดสมาชิกครอบครัว
+  const handleFamilyDateChange = (index, type, value) => {
+    if (type === 'day') {
+      const newDays = [...familyDays];
+      newDays[index] = value;
+      setFamilyDays(newDays);
+    } else if (type === 'month') {
+      const newMonths = [...familyMonths];
+      newMonths[index] = value;
+      setFamilyMonths(newMonths);
+    } else if (type === 'year') {
+      const newYears = [...familyYears];
+      newYears[index] = value;
+      setFamilyYears(newYears);
     }
   };
 
-  // บันทึกข้อมูลทั้งหมด (ผู้ถือสิทธิ + สมาชิกครอบครัว)
-  const saveAllData = async (familyData) => {
-    setLoading(true);
+  const handleFamilyFormSubmit = (e) => {
+    e.preventDefault();
+    
+    // รวม วัน เดือน ปี ของสมาชิกปัจจุบัน
+    const currentDay = familyDays[currentFamilyIndex];
+    const currentMonth = familyMonths[currentFamilyIndex];
+    const currentYear = familyYears[currentFamilyIndex];
+    
+    if (currentDay && currentMonth !== "" && currentYear) {
+      const dobString = `${currentYear}-${String(parseInt(currentMonth) + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
+      handleFamilyFormChange(currentFamilyIndex, 'dob', dobString);
+    }
+    
+    if (currentFamilyIndex < familyCount - 1) {
+      setCurrentFamilyIndex(currentFamilyIndex + 1);
+      toast.success(`บันทึกข้อมูลสมาชิกคนที่ ${currentFamilyIndex + 1} แล้ว`);
+    } else {
+      saveAllData();
+    }
+  };
 
+  // แก้ไขฟังก์ชัน saveAllData
+  const saveAllData = async () => {
+    setLoading(true);
     try {
-      const allData = [];
-      
-      // เพิ่มผู้ถือสิทธิ (ถ้ามี)
-      if (rightHolderData) {
-        allData.push(rightHolderData);
+      if (hasRightHolder) {
+        // มีผู้ถือสิทธิแล้ว - บันทึกเฉพาะสมาชิกครอบครัว
+        const promises = familyForms.map(guestData => 
+          axios.post("http://localhost:3001/api/guests", {
+            ...guestData,
+            home_id: Number(guestData.home_id)
+          })
+        );
+
+        await Promise.all(promises);
+        toast.success(`เพิ่มสมาชิกครอบครัว ${familyForms.length} คน สำเร็จ!`);
+      } else {
+        // ไม่มีผู้ถือสิทธิ - บันทึกทั้งผู้ถือสิทธิและสมาชิกครอบครัว
+        const allData = [];
+        
+        if (rightHolderData) {
+          let processedRightHolder = { ...rightHolderData };
+          
+          if (rightHolderData.image) {
+            const formData = new FormData();
+            formData.append('image', rightHolderData.image);
+            
+            const imageResponse = await axios.post("http://localhost:3001/api/upload", formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            });
+            
+            processedRightHolder.image_url = imageResponse.data.imageUrl;
+          }
+          
+          delete processedRightHolder.image;
+          allData.push(processedRightHolder);
+        }
+        
+        allData.push(...familyForms);
+
+        const promises = allData.map(guestData => 
+          axios.post("http://localhost:3001/api/guests", {
+            ...guestData,
+            home_id: Number(guestData.home_id)
+          })
+        );
+
+        await Promise.all(promises);
+        toast.success(`บันทึกข้อมูลผู้พักอาศัย ${allData.length} คน สำเร็จ!`);
       }
       
-      // เพิ่มสมาชิกครอบครัว
-      allData.push(...familyData);
-
-      const promises = allData.map(guestData => 
-        axios.post("http://localhost:3001/api/guests", {
-          ...guestData,
-          home_id: Number(guestData.home_id)
-        })
-      );
-
-      await Promise.all(promises);
-      
-      const totalAdded = allData.length;
-      toast.success(`บันทึกข้อมูลผู้พักอาศัย ${totalAdded} คน สำเร็จ!`, {
-        position: "top-right",
-        autoClose: 3000,
-        style: {
-          background: '#10b981',
-          color: 'white',
-          fontWeight: 'bold',
-          fontSize: '16px'
-        }
-      });
-
       onUpdate();
       setTimeout(() => {
         onClose();
@@ -390,64 +422,16 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
 
     } catch (err) {
       console.error("Error adding guests:", err);
-      const errorMessage = err?.response?.data?.error || err.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล";
-      
-      toast.error(`เกิดข้อผิดพลาด: ${errorMessage}`, {
-        position: "top-right",
-        autoClose: 5000,
-        style: {
-          background: '#ef4444',
-          color: 'white',
-          fontWeight: 'bold',
-          fontSize: '16px'
-        }
-      });
+      toast.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
     } finally {
       setLoading(false);
     }
   };
 
-  // กลับขั้นตอนก่อนหน้า
-  const handleBack = () => {
-    if (step === "family_count") {
-      if (hasExistingRightHolder()) {
-        onClose(); // ถ้ามีผู้ถือสิทธิแล้ว ให้ปิด modal
-      } else {
-        setStep("right_holder");
-      }
-    } else if (step === "family_forms") {
-      if (currentFamilyIndex > 0) {
-        // บันทึกฟอร์มปัจจุบันก่อน
-        const updatedForms = [...familyForms];
-        updatedForms[currentFamilyIndex] = { ...form };
-        setFamilyForms(updatedForms);
-        
-        // ไปฟอร์มก่อนหน้า
-        const prevIndex = currentFamilyIndex - 1;
-        setCurrentFamilyIndex(prevIndex);
-        setForm(updatedForms[prevIndex]);
-        
-        setDay("");
-        setMonth("");
-        setYear("");
-      } else {
-        setStep("family_count");
-      }
-    }
-  };
-
-  if (!isOpen) return null;
-
-  const getStepTitle = () => {
-    if (step === "right_holder") {
-      return "เพิ่มข้อมูลผู้ถือสิทธิ";
-    } else if (step === "family_count") {
-      return hasExistingRightHolder() ? "เพิ่มสมาชิกครอบครัว" : "เพิ่มสมาชิกครอบครัว";
-    } else if (step === "family_forms") {
-      return `เพิ่มข้อมูลสมาชิกครอบครัว (คนที่ ${currentFamilyIndex + 1}/${familyCount})`;
-    }
-    return "เพิ่มข้อมูลผู้พักอาศัย";
-  };
+  // ตรวจสอบว่าไม่ปิด modal
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <>
@@ -458,11 +442,83 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
             <button className="close-btn" onClick={onClose}>✕</button>
           </div>
 
-          {step === "right_holder" && (
-            // ฟอร์มผู้ถือสิทธิ
+          {/* แสดงข้อมูลผู้ถือสิทธิปัจจุบัน (ถ้ามี) */}
+          {hasRightHolder && currentRightHolder && (
+            <div className="current-right-holder-info">
+              <div className="info-header">
+                <h4>👤 ผู้ถือสิทธิปัจจุบัน</h4>
+              </div>
+              <div className="info-content">
+                <div className="right-holder-details">
+                  {currentRightHolder.image_url && (
+                    <img 
+                      src={`http://localhost:3001${currentRightHolder.image_url}`}
+                      alt="ผู้ถือสิทธิ"
+                      className="right-holder-avatar"
+                    />
+                  )}
+                  <div className="right-holder-text">
+                    <strong>{currentRightHolder.name} {currentRightHolder.lname}</strong>
+                    <span>ตำแหน่ง: {currentRightHolder.pos}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ขั้นตอนผู้ถือสิทธิ - แสดงเฉพาะเมื่อยังไม่มีผู้ถือสิทธิ */}
+          {!hasRightHolder && step === "right_holder" && (
             <form onSubmit={handleRightHolderSubmit} className="modal-form-horizontal">
               <div className="step-info">
                 <p>กรุณากรอกข้อมูลผู้ถือสิทธิในการเข้าพักบ้านหลังนี้</p>
+              </div>
+
+              {/* ส่วนรูปภาพ */}
+              <div className="form-row-horizontal image-section">
+                <div className="form-field image-upload-field">
+                  <label>รูปภาพผู้ถือสิทธิ</label>
+                  <div className="image-upload-container">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      id="right-holder-image"
+                      className="image-input"
+                    />
+                    <label htmlFor="right-holder-image" className="image-upload-label">
+                      📷 เลือกรูปภาพ
+                    </label>
+                    <div className="image-upload-hint">
+                      รองรับไฟล์ JPG, PNG, GIF (สูงสุด 5MB)
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="form-field image-preview-field">
+                  <label>ตัวอย่างรูปภาพ</label>
+                  <div className="image-preview-container">
+                    {previewImage ? (
+                      <div className="image-preview-wrapper">
+                        <img src={previewImage} alt="Preview" className="image-preview" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm(prev => ({ ...prev, image: null }));
+                            setPreviewImage(null);
+                          }}
+                          className="remove-image-btn"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="no-image-placeholder">
+                        <span>👤</span>
+                        <p>ไม่มีรูปภาพ</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* ฟอร์มข้อมูลผู้ถือสิทธิ */}
@@ -486,8 +542,10 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
                     required
                   >
                     <option value="">เลือกยศ</option>
-                    {eligibleRanks.map(r => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
+                    {eligibleRanks.map(rank => (
+                      <option key={rank.id} value={rank.id}>
+                        {rank.name}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -495,7 +553,7 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
 
               <div className="form-row-horizontal">
                 <div className="form-field">
-                  <label>ชื่อ <span className="required">*</span></label>
+                 <label>ชื่อ <span className="required">*</span></label>
                   <input 
                     type="text" 
                     name="name" 
@@ -519,14 +577,14 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
 
               <div className="form-row-horizontal">
                 <div className="form-field">
-                   <label>ตำแหน่งงาน <span className="required">*</span></label>
-                  <input 
-                    type="text" 
-                    name="pos" 
-                    value={form.pos} 
-                    onChange={handleChange} 
-                    required 
-                  />
+                 <label>ตำแหน่งงาน <span className="required">*</span></label>
+                <input 
+                  type="text" 
+                  name="pos" 
+                  value={form.pos} 
+                  onChange={handleChange} 
+                  required 
+                />
                 </div>
                 
                 <div className="form-field">
@@ -547,7 +605,7 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
                     </select>
                     <select name="year" value={year} onChange={e => setYear(e.target.value)}>
                       <option value="">ปี</option>
-                      {years.map((y) => {
+                      {years_options.map((y) => {
                         return <option key={y} value={y}>{y}</option>;
                       })}
                     </select>
@@ -592,7 +650,7 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
                 </div>
                 
                 <div className="form-field">
-                  {/* สำหรับ balance layout */}
+                {/* สำหรับ balance layout */}
                 </div>
               </div>
 
@@ -600,128 +658,102 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
                 <button type="button" className="btn-cancel" onClick={onClose}>
                   ยกเลิก
                 </button>
-                <button type="submit" className="btn-save" disabled={eligibleRanks.length === 0}>
-                  ถัดไป
+                <button type="submit" className="btn-save" disabled={loading}>
+                  {loading ? "กำลังบันทึก..." : "ถัดไป"}
                 </button>
               </div>
             </form>
           )}
 
+          {/* ขั้นตอนจำนวนสมาชิก */}
           {step === "family_count" && (
-            // หน้าเลือกจำนวนสมาชิกครอบครัว
-            <div className="count-step-container">
-              <div className="count-step-content">
-                {hasExistingRightHolder() ? (
-                  <div>
-                    <label className="count-step-label">
-                      ต้องการเพิ่มสมาชิกครอบครัวกี่คน?
-                    </label>
-                    <div className="existing-right-holder-info">
-                      <span className="has-right-holder">
-                        ✓ บ้านนี้มีผู้ถือสิทธิแล้ว
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="right-holder-saved">
-                      <span className="success-check">✓</span>
-                      <span>บันทึกข้อมูลผู้ถือสิทธิแล้ว: {rightHolderData?.name} {rightHolderData?.lname}</span>
-                    </div>
-                    <label className="count-step-label">
-                      มีสมาชิกครอบครัวอื่นที่ต้องการเพิ่มมั้ย? ถ้ามีกี่คน?
-                    </label>
-                  </div>
-                )}
-                
-                <div className="home-info">
-                  บ้าน: {home ? `${home.hType} หมายเลข ${home.Address}` : "กำลังโหลด..."}
-                  <br />
-                  ผู้พักปัจจุบัน: {home?.guest_count || 0}/{getMaxGuestsForHome()} คน
-                  <br />
-                  จะเพิ่ม: {rightHolderData ? 1 : 0} + {familyCount} = {(rightHolderData ? 1 : 0) + familyCount} คน
-                  <br />
-                  เหลือที่ว่าง: {getMaxGuestsForHome() - (home?.guest_count || 0) - (rightHolderData ? 1 : 0)} คน
-                </div>
-                
-                <div className="count-input-container">
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max={getMaxGuestsForHome() - (home?.guest_count || 0) - (rightHolderData ? 1 : 0)}
-                    value={familyCount}
-                    onChange={(e) => setFamilyCount(parseInt(e.target.value) || 0)}
-                    className="count-input"
-                  />
-                  <span className="count-unit">คน</span>
-                </div>
-                
-                <div className="family-count-note">
-                  * ใส่ 0 ถ้าไม่มีสมาชิกครอบครัวเพิ่มเติม
-                </div>
+            <div className="modal-form-horizontal">
+              <div className="step-info">
+                <h3>เพิ่มสมาชิกครอบครัว</h3>
+                <p>
+                  {hasRightHolder 
+                    ? "ต้องการเพิ่มสมาชิกครอบครัวกี่คน?" 
+                    : "มีสมาชิกครอบครัวเพิ่มเติมกี่คน? (ไม่รวมผู้ถือสิทธิ)"
+                  }
+                </p>
               </div>
               
-              <div className="count-step-actions">
+              <div className="form-field">
+                <label>จำนวนสมาชิก</label>
+                <input 
+                  type="number" 
+                  value={familyCount}
+                  onChange={(e) => setFamilyCount(parseInt(e.target.value) || 0)}
+                  min={hasRightHolder ? "1" : "0"}
+                  max="5"
+                />
+              </div>
+
+              <div className="modal-actions-horizontal">
                 <button 
                   type="button" 
-                  onClick={handleBack}
-                  className="btn-cancel-count"
+                  className="btn-cancel" 
+                  onClick={hasRightHolder ? onClose : () => setStep("right_holder")}
                 >
-                  กลับ
+                  {hasRightHolder ? "ยกเลิก" : "← กลับ"}
                 </button>
                 <button 
                   type="button" 
+                  className="btn-save" 
                   onClick={handleFamilyCountSubmit}
-                  className="btn-next-count"
+                  disabled={hasRightHolder && familyCount === 0}
                 >
-                  {familyCount === 0 ? "บันทึกเสร็จสิ้น" : "ถัดไป"}
+                  {familyCount === 0 && !hasRightHolder ? "บันทึก" : "ถัดไป"}
                 </button>
               </div>
             </div>
           )}
-
+          
+          {/* ขั้นตอนฟอร์มสมาชิกครอบครัว */}
           {step === "family_forms" && (
-            // ฟอร์มสมาชิกครอบครัว
             <form onSubmit={handleFamilyFormSubmit} className="modal-form-horizontal">
-              {/* Progress bar */}
-              <div className="progress-container">
-                <div className="progress-bar">
-                  <div 
-                    className="progress-fill"
-                    style={{ width: `${((currentFamilyIndex + 1) / familyCount) * 100}%` }}
-                  />
-                </div>
-                <div className="progress-text">
-                  สมาชิกครอบครัวคนที่ {currentFamilyIndex + 1} จาก {familyCount}
+              <div className="step-info">
+                <h3>ข้อมูลสมาชิกครอบครัวคนที่ {currentFamilyIndex + 1}</h3>
+                <p>กรุณากรอกข้อมูลสมาชิกครอบครัว ({currentFamilyIndex + 1} จาก {familyCount} คน)</p>
+                
+                {/* Progress bar */}
+                <div className="progress-container">
+                  <div className="progress-bar">
+                    <div 
+                      className="progress-fill" 
+                      style={{ width: `${((currentFamilyIndex + 1) / familyCount) * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className="progress-text">{currentFamilyIndex + 1}/{familyCount}</span>
                 </div>
               </div>
 
-              {/* ฟอร์มข้อมูลสมาชิกครอบครัว */}
+              {/* ฟอร์มข้อมูลสมาชิก */}
               <div className="form-row-horizontal">
                 <div className="form-field">
-                  <label>คำนำหน้า/ยศ <span className="required">*</span></label>
-                  <input
-                    type="text"
-                    name="rank_id"
-                    value={form.rank_id}
-                    onChange={handleChange}
-                    placeholder="เช่น นาย, นาง, นางสาว, เด็กชาย, เด็กหญิง"
-                    required
+                  <label>บ้านพัก</label>
+                  <input 
+                    type="text" 
+                    value={home ? `${home.hType} หมายเลข ${home.Address}` : "กำลังโหลด..."}
+                    disabled
+                    className="home-input-disabled"
                   />
-                  <div className="field-hint">
-                    * สำหรับสมาชิกครอบครัว สามารถพิมพ์คำนำหน้าได้เลย
-                  </div>
                 </div>
                 
                 <div className="form-field">
-                  <label>ตำแหน่งงาน</label>
-                  <input 
-                    type="text" 
-                    name="pos" 
-                    value={form.pos} 
-                    onChange={handleChange} 
-                    placeholder="ไม่มีก็ได้"
-                  />
+                  <label>ยศ/ตำแหน่ง <span className="required">*</span></label>
+                  <select
+                    value={familyForms[currentFamilyIndex]?.rank_id || ""}
+                    onChange={(e) => handleFamilyFormChange(currentFamilyIndex, 'rank_id', e.target.value)}
+                    required
+                  >
+                    <option value="">เลือกยศ</option>
+                    {eligibleRanks.map(rank => (
+                      <option key={rank.id} value={rank.id}>
+                        {rank.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -730,9 +762,8 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
                   <label>ชื่อ <span className="required">*</span></label>
                   <input 
                     type="text" 
-                    name="name" 
-                    value={form.name} 
-                    onChange={handleChange} 
+                    value={familyForms[currentFamilyIndex]?.name || ""}
+                    onChange={(e) => handleFamilyFormChange(currentFamilyIndex, 'name', e.target.value)}
                     required 
                   />
                 </div>
@@ -741,9 +772,8 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
                   <label>นามสกุล <span className="required">*</span></label>
                   <input 
                     type="text" 
-                    name="lname" 
-                    value={form.lname} 
-                    onChange={handleChange} 
+                    value={familyForms[currentFamilyIndex]?.lname || ""}
+                    onChange={(e) => handleFamilyFormChange(currentFamilyIndex, 'lname', e.target.value)}
                     required 
                   />
                 </div>
@@ -751,81 +781,114 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
 
               <div className="form-row-horizontal">
                 <div className="form-field">
+                  <label>ตำแหน่งงาน <span className="required">*</span></label>
+                  <input 
+                    type="text" 
+                    value={familyForms[currentFamilyIndex]?.pos || ""}
+                    onChange={(e) => handleFamilyFormChange(currentFamilyIndex, 'pos', e.target.value)}
+                    required 
+                  />
+                </div>
+                
+                <div className="form-field">
                   <label>วันเกิด</label>
                   <div className="date-select-horizontal">
-                    <select name="day" value={day} onChange={e => setDay(e.target.value)}>
+                    <select 
+                      value={familyDays[currentFamilyIndex] || ""} 
+                      onChange={e => handleFamilyDateChange(currentFamilyIndex, 'day', e.target.value)}
+                    >
                       <option value="">วัน</option>
                       {[...Array(31)].map((_, i) => {
                         const d = i + 1;
                         return <option key={d} value={d}>{d}</option>;
                       })}
                     </select>
-                    <select name="month" value={month} onChange={e => setMonth(e.target.value)}>
+                    <select 
+                      value={familyMonths[currentFamilyIndex] || ""} 
+                      onChange={e => handleFamilyDateChange(currentFamilyIndex, 'month', e.target.value)}
+                    >
                       <option value="">เดือน</option>
                       {months.map((m, i) => {
                         return <option key={i} value={i}>{m}</option>;
                       })}
                     </select>
-                    <select name="year" value={year} onChange={e => setYear(e.target.value)}>
+                    <select 
+                      value={familyYears[currentFamilyIndex] || ""} 
+                      onChange={e => handleFamilyDateChange(currentFamilyIndex, 'year', e.target.value)}
+                    >
                       <option value="">ปี</option>
-                      {years.map((y) => {
+                      {years_options.map((y) => {
                         return <option key={y} value={y}>{y}</option>;
                       })}
                     </select>
                   </div>
                 </div>
-                
+              </div>
+
+              <div className="form-row-horizontal">
                 <div className="form-field">
-                  <label>รายได้</label>
+                  <label>รายได้ <span className="required">*</span></label>
                   <input 
                     type="number" 
-                    name="income" 
-                    value={form.income} 
-                    onChange={handleChange} 
-                    placeholder="0"
+                    value={familyForms[currentFamilyIndex]?.income || ""}
+                    onChange={(e) => handleFamilyFormChange(currentFamilyIndex, 'income', e.target.value)}
+                    required 
+                  />
+                </div>
+                
+                <div className="form-field">
+                  <label>เบอร์โทรศัพท์ <span className="required">*</span></label>
+                  <input 
+                    type="text" 
+                    value={familyForms[currentFamilyIndex]?.phone || ""}
+                    onChange={(e) => handleFamilyFormChange(currentFamilyIndex, 'phone', e.target.value)}
+                    required 
                   />
                 </div>
               </div>
 
               <div className="form-row-horizontal">
                 <div className="form-field">
-                  <label>เบอร์โทรศัพท์</label>
+                  <label>เบอร์โทรที่ทำงาน <span className="required">*</span></label>
                   <input 
                     type="text" 
-                    name="phone" 
-                    value={form.phone} 
-                    onChange={handleChange} 
-                    placeholder="ไม่มีก็ได้"
+                    value={familyForms[currentFamilyIndex]?.job_phone || ""}
+                    onChange={(e) => handleFamilyFormChange(currentFamilyIndex, 'job_phone', e.target.value)}
+                    required 
                   />
                 </div>
-                
                 <div className="form-field">
-                  <label>เบอร์โทรที่ทำงาน</label>
-                  <input 
-                    type="text" 
-                    name="job_phone" 
-                    value={form.job_phone} 
-                    onChange={handleChange} 
-                    placeholder="ไม่มีก็ได้"
-                  />
+                  {/* สำหรับ balance layout */}
                 </div>
               </div>
 
               <div className="modal-actions-horizontal">
-                <button type="button" className="btn-cancel" onClick={handleBack}>
-                  {currentFamilyIndex === 0 ? "กลับ" : "ก่อนหน้า"}
+                <button 
+                  type="button" 
+                  className="btn-cancel" 
+                  onClick={() => {
+                    if (currentFamilyIndex > 0) {
+                      setCurrentFamilyIndex(currentFamilyIndex - 1);
+                    } else {
+                      setStep("family_count");
+                    }
+                  }}
+                >
+                  ← {currentFamilyIndex > 0 ? 'คนก่อนหน้า' : 'กลับ'}
                 </button>
+                
                 <button type="submit" className="btn-save" disabled={loading}>
                   {loading 
                     ? "กำลังบันทึก..." 
-                    : currentFamilyIndex === familyCount - 1 
-                      ? "บันทึกทั้งหมด" 
-                      : "ถัดไป"
+                    : currentFamilyIndex < familyCount - 1 
+                      ? "คนถัดไป →" 
+                      : "บันทึกทั้งหมด"
                   }
                 </button>
               </div>
             </form>
           )}
+          
         </div>
       </div>
       

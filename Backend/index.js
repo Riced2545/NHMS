@@ -16,6 +16,9 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+const apiRoutes = require("./API/api");
+app.use("/api", apiRoutes);
+
 // *** multer config ***
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -1177,8 +1180,13 @@ app.get("/api/home_types", (req, res) => {
 });
 
 app.get("/api/ranks", (req, res) => {
-  db.query("SELECT * FROM ranks", (err, results) => {
-    if (err) return res.status(500).json({ error: "Database error" });
+  // เรียงตาม ID จากมากไปน้อย
+  const sql = "SELECT * FROM ranks ORDER BY id ASC";
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
     res.json(results);
   });
 });
@@ -1584,4 +1592,23 @@ app.delete("/api/home_types/:id", (req, res) => {
       });
     });
   });
+});
+
+// เพิ่ม API endpoint สำหรับอัปโหลดรูปภาพ
+app.post("/api/upload", upload.single('image'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "ไม่พบไฟล์รูปภาพ" });
+    }
+
+    const imageUrl = `/uploads/${req.file.filename}`;
+    res.json({ 
+      success: true, 
+      imageUrl: imageUrl,
+      message: "อัปโหลดรูปภาพสำเร็จ" 
+    });
+  } catch (error) {
+    console.error("Upload error:", error);
+    res.status(500).json({ error: "เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ" });
+  }
 });

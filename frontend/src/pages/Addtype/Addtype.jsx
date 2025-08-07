@@ -248,9 +248,6 @@ export default function Addtype() {
                     <div className="list-item-content">
                       <div className="list-item-title">
                         {type.name}
-                        {type.is_row_type && (
-                          <span className="badge badge-row">แถว</span>
-                        )}
                       </div>
                       {type.description && (
                         <div className="list-item-description">

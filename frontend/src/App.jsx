@@ -27,8 +27,8 @@ import Home from "./pages/Home.jsx";
 import RetirementPage from "./components/retirement/retirement.jsx";
 import Dashboard from "./pages/dashboard/Dashboard.jsx";
 import Addtype from "./pages/Addtype/Addtype";
-// เพิ่ม import
 import TwinHomeAllPage from "./pages/typepage/twinhome/all";
+import GenericHomePage from './pages/GenericHomePage';
 
 
 function App() {
@@ -77,6 +77,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/addtype" element={<Addtype />} />
         <Route path="/twinhome" element={<TwinHomeAllPage />} />
+        <Route path="/homes" element={<GenericHomePage />} />
       </Routes>
     </BrowserRouter>
   );
