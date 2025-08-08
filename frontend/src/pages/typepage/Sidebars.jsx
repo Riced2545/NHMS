@@ -171,7 +171,7 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
 
   return (
     <div style={{
-      width: '280px',
+      width: '260px', // เปลี่ยนจาก 280px
       background: 'white',
       borderRight: '1px solid #e5e7eb',
       padding: '24px 0',

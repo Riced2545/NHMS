@@ -256,10 +256,10 @@ export default function AuditLog() {
         );
       }
     }
-    
-    return detailText;
-  })()}
-</td>
+
+                                                    return detailText;
+                                                })()}
+                                            </td>
                                         </tr>
                                     ))
                                 )}

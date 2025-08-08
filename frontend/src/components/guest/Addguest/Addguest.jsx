@@ -185,10 +185,23 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
 
   const fetchRanks = async () => {
     try {
-      const response = await axios.get("http://localhost:3001/api/ranks");
-      const allRanks = response.data || [];
+      // ดึงยศที่สามารถเข้าพักได้ตามบ้านที่เลือก
+      const eligibleResponse = await axios.get(`http://localhost:3001/api/eligible-ranks/${homeId}`);
+      const eligibleRanks = eligibleResponse.data || [];
+      
+      // ดึงยศทั้งหมดสำหรับ reference
+      const allRanksResponse = await axios.get("http://localhost:3001/api/ranks");
+      const allRanks = allRanksResponse.data || [];
+      
       setRanks(allRanks);
-      setEligibleRanks(allRanks);
+      setEligibleRanks(eligibleRanks);
+      
+      console.log("📋 All ranks:", allRanks.length);
+      console.log("✅ Eligible ranks for this home:", eligibleRanks.length);
+      
+      // แสดงรายชื่อยศที่สามารถเข้าได้
+      console.log("Eligible ranks:", eligibleRanks.map(r => r.name));
+      
     } catch (error) {
       console.error("Error fetching ranks:", error);
       setRanks([]);
@@ -754,6 +767,10 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
                       </option>
                     ))}
                   </select>
+                  
+                  <div className="field-hint">
+                    สมาชิกครอบครัวต้องมียศที่สามารถเข้าพักได้เช่นเดียวกัน
+                  </div>
                 </div>
               </div>
 
