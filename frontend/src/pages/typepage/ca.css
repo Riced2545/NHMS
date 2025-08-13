@@ -1,38 +1,11 @@
 .movie-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* ปรับอัตโนมัติตามขนาดหน้าจอ */
-  gap: 20px;
-  padding: 0 16px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* เพิ่มจาก 280px */
+  gap: 20px; /* เพิ่มจาก 16px */
+  padding: 0 32px;
   max-width: 100%;
-  max-height: 100%;
   margin: 0 auto;
-}
-
-/* สำหรับหน้าจอใหญ่ - บังคับให้แสดง 3 คอลัมน์ */
-@media (min-width: 1200px)  {
-  .movie-container {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 15px;
-    width: 100%;
-    height: 100%;
-  }
-}
-
-/* สำหรับหน้าจอกลาง */
-@media (max-width: 1199px) and (min-width: 900px) {
-  .movie-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
-}
-
-/* สำหรับหน้าจอเล็ก */
-@media (max-width: 899px) {
-  .movie-container {
-    grid-template-columns: 1fr;
-    gap: 16px;
-    padding: 0 12px;
-  }
+  width: 100%;
 }
 
 .movie-card {
@@ -42,22 +15,19 @@
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   width: 100%;
-  min-width: 350px; /* กำหนดความกว้างขั้นต่ำ */
-  min-height: 450px; /* กำหนดความสูงขั้นต่ำ */
+  max-width: 100%;
+  min-width: 320px; /* เพิ่มจาก 280px */
+  height: 600px; /* เพิ่มจาก 550px */
   display: flex;
   flex-direction: column;
-}
-
-.movie-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  margin: 0;
 }
 
 .movie-poster {
   position: relative;
-  height: 200px;
+  height: 220px; /* เพิ่มจาก 180px */
   overflow: hidden;
-  flex-shrink: 0; /* ไม่ให้ส่วนรูปภาพหดเล็กลง */
+  flex-shrink: 0;
 }
 
 .movie-poster img {
@@ -84,9 +54,9 @@
 }
 
 .movie-info {
-  padding: 1.5rem;
+  padding: 2rem; /* เพิ่มจาก 1.5rem */
   color: white;
-  flex: 1; /* ให้ส่วนนี้ขยายเต็มพื้นที่ที่เหลือ */
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
@@ -98,9 +68,9 @@
 }
 
 .movie-title {
-  font-size: 1.25rem;
+  font-size: 1.4rem; /* เพิ่มจาก 1.25rem */
   font-weight: bold;
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem; /* เพิ่มจาก 1rem */
   color: #f1f5f9;
 }
 
@@ -110,8 +80,8 @@
 }
 
 .detail-item {
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
+  margin-bottom: 0.7rem; /* เพิ่มจาก 0.5rem */
+  font-size: 1rem; /* เพิ่มจาก 0.9rem */
   color: #cbd5e1;
 }
 
@@ -211,13 +181,135 @@
 }
 
 .no-data {
+  grid-column: 1 / -1; /* ให้ขยายเต็มความกว้างของ grid */
   text-align: center;
   color: #ef4444;
   font-weight: bold;
   font-size: 1.2rem;
-  padding: 2rem;
+  padding: 3rem 2rem;
   background: rgba(239, 68, 68, 0.1);
-  border-radius: 8px;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  border: 2px dashed rgba(239, 68, 68, 0.3);
+  margin: 2rem auto;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.no-data::before {
+  content: "🏠";
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.no-data-subtitle {
+  font-size: 1rem;
+  color: #6b7280;
+  font-weight: normal;
+  margin-top: 0.5rem;
+}
+
+/* เพิ่ม CSS สำหรับ empty state ที่สวยงามขึ้น */
+.empty-state-container {
   grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  padding: 2rem;
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.5;
+}
+
+.empty-state-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state-subtitle {
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 2rem;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+.empty-state-action {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.empty-state-action:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* เพิ่ม CSS ใหม่ - วางไว้ด้านล่าง */
+.house-image-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.house-image {
+  width: 100% ;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  display: block;
+}
+
+.right-holder-image-container {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 8px;
+  padding: 6px;
+  backdrop-filter: blur(4px);
+}
+
+.right-holder-image {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 8px;
+  border: 2px solid #fff;
+}
+
+.right-holder-info {
+  color: white;
+  font-size: 0.7rem;
+}
+
+.right-holder-name {
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.right-holder-label {
+  font-size: 0.6rem;
+  color: #cbd5e1;
 }

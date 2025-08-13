@@ -1,4 +1,3 @@
-// สร้างไฟล์ frontend/src/pages/GenericHomePage.jsx
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -6,7 +5,11 @@ import Navbar from "../components/Sidebar";
 import Sidebar from "./typepage/Sidebars";
 import EditHomeModal from "../pages/component/EditHome";
 import AddGuestModal from "../components/guest/Addguest/Addguest";
+import AddHomeModal from "../components/Addhome";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import "../styles/home.css";
+import "./typepage/ca.css";
 
 export default function GenericHomePage() {
   const location = useLocation();
@@ -25,6 +28,7 @@ export default function GenericHomePage() {
   // State สำหรับ Modal
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
+  const [isAddHomeModalOpen, setIsAddHomeModalOpen] = useState(false);
   const [selectedHomeId, setSelectedHomeId] = useState(null);
 
   useEffect(() => {
@@ -128,6 +132,10 @@ export default function GenericHomePage() {
     setIsEditModalOpen(true);
   };
 
+  const handleAddHome = () => {
+    setIsAddHomeModalOpen(true);
+  };
+
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
     setSelectedHomeId(null);
@@ -138,8 +146,16 @@ export default function GenericHomePage() {
     setSelectedHomeId(null);
   };
 
+  const handleCloseAddHomeModal = () => {
+    setIsAddHomeModalOpen(false);
+  };
+
   const handleUpdateSuccess = () => {
     fetchHomes();
+  };
+
+  const handleAddHomeSuccess = () => {
+    fetchHomes(); // รีเฟรชข้อมูล
   };
 
   // ฟังก์ชันตรวจสอบความจุสูงสุด
@@ -180,35 +196,76 @@ export default function GenericHomePage() {
           twinAreas={twinAreas}
         />
         
-        <div style={{ flex: 1 }}>
-          <h2 style={{ 
-            textAlign: "center", 
-            marginTop: 32, 
-            marginBottom: 24,
-            color: "#3b2566",
-            fontSize: "28px",
-            fontWeight: "bold"
+        <div style={{ flex: 1, position: "relative" }}>
+          {/* หัวข้ออยู่ตรงกลาง */}
+          <div style={{ 
+            textAlign: "center",
+            padding: "32px 32px 24px 32px",
+            marginBottom: 0
           }}>
-            บ้านประเภท: {homeTypeName}
-            {homeTypeName === 'บ้านพักแฝด' && selectedArea !== "all" && 
-              ` (${twinAreas.find(a => a.id == selectedArea)?.name || `พื้นที่ ${selectedArea}`})`
-            }
-            {homeTypeName === 'บ้านพักเรือนแถว' && selectedRow !== "all" && 
-              ` (${townhomeRows.find(r => r.id == selectedRow)?.name || `แถว ${selectedRow}`})`
-            }
-          </h2>
+            <h2 style={{ 
+              color: "#3b2566",
+              fontSize: "28px",
+              fontWeight: "bold",
+              margin: 0
+            }}>
+              {homeTypeName}
+              {homeTypeName === 'บ้านพักแฝด' && selectedArea !== "all" && 
+                ` (${twinAreas.find(a => a.id == selectedArea)?.name || `พื้นที่ ${selectedArea}`})`
+              }
+              {homeTypeName === 'บ้านพักเรือนแถว' && selectedRow !== "all" && 
+                ` (${townhomeRows.find(r => r.id == selectedRow)?.name || `แถว ${selectedRow}`})`
+              }
+            </h2>
+          </div>
           
-          <div style={{ padding: 32 }}>
+          {/* ปุ่มเพิ่มบ้านอยู่มุมขวาบน */}
+          <button
+            onClick={handleAddHome}
+            style={{
+              position: "absolute",
+              top: "32px",
+              right: "32px",
+              background: "linear-gradient(135deg, #10b981, #059669)",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              padding: "15  px 40px",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: "pointer",
+              boxShadow: "0 2px 4px rgba(16, 185, 129, 0.2)",
+              transition: "all 0.3s ease",
+              zIndex: 10
+            }}
+          >
+            + เพิ่มบ้าน
+          </button>
+          
+          {/* เนื้อหาที่เหลือ... */}
+          <div style={{ 
+            padding: "0 20px 32px 32px",
+            width: "100%",
+            boxSizing: "border-box"
+          }}>
             <div className="movie-container">
               {homes.length === 0 ? (
-                <div className="no-data">
-                  ไม่มีบ้านประเภท {homeTypeName} ในระบบ
+                <div className="empty-state-container">
+                  <div className="empty-state-icon">🏠</div>
+                  <h3 className="empty-state-title">
+                    ไม่มีบ้านประเภท {homeTypeName} ในระบบ
+                  </h3>
+                  <button
+                    className="empty-state-action"
+                    onClick={handleAddHome}
+                  >
+                    + เพิ่มบ้านแรก
+                  </button>
                 </div>
               ) : (
                 homes.map((home) => (
                   <div key={home.home_id} className="movie-card">
                     <div className="movie-poster">
-                      {/* รูปบ้าน */}
                       <div className="house-image-container">
                         <img
                           src={
@@ -249,7 +306,7 @@ export default function GenericHomePage() {
 
                     <div className="movie-info">
                       <h3 className="movie-title">
-                        <strong>บ้านเลขที่:</strong> {home.Address}
+                        <strong>เลขที่:</strong> {home.Address}
                       </h3>
                       <div className="movie-details">
                         <div className="detail-item">
@@ -343,6 +400,27 @@ export default function GenericHomePage() {
         onClose={handleCloseAddGuestModal}
         homeId={selectedHomeId}
         onUpdate={handleUpdateSuccess}
+      />
+
+      <AddHomeModal
+        isOpen={isAddHomeModalOpen}
+        onClose={handleCloseAddHomeModal}
+        onSuccess={handleAddHomeSuccess}
+        homeTypeName={homeTypeName}
+      />
+
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        style={{ zIndex: 9999 }}
       />
     </div>
   );

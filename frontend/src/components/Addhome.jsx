@@ -1,80 +1,74 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import Navbar from "./Sidebar";
 import "../styles/home.css";
-import "../styles/Sharestyles.css"; // ต้องโหลดหลัง home.css
-import { toast, ToastContainer } from 'react-toastify';
+import "../styles/Sharestyles.css";
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import styles from '../styles/Addhome.module.css';
 
-export default function Addhome() {
+export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName }) {
   const [form, setForm] = useState({ 
     home_type_id: "", 
     Address: "",
     row_id: "",
-    twin_area_id: ""  // เปลี่ยนจาก twin_area
+    twin_area_id: ""
   });
   
   const [image, setImage] = useState(null);
   const [homeTypes, setHomeTypes] = useState([]);
   const [townhomeRows, setTownhomeRows] = useState([]);
   const [twinAreas, setTwinAreas] = useState([]);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
-  // ฟังก์ชันโหลดข้อมูลเริ่มต้น
+  // โหลดข้อมูลเริ่มต้น
+  useEffect(() => {
+    if (isOpen) {
+      loadInitialData();
+    }
+  }, [isOpen]);
+
+  // ตั้งค่า home_type_id ตาม homeTypeName
+  useEffect(() => {
+    if (homeTypeName && homeTypes.length > 0) {
+      const selectedType = homeTypes.find(ht => ht.name === homeTypeName);
+      if (selectedType) {
+        setForm(prev => ({ 
+          ...prev, 
+          home_type_id: selectedType.id,
+          row_id: "",
+          twin_area_id: ""
+        }));
+      }
+    }
+  }, [homeTypeName, homeTypes]);
+
   const loadInitialData = async () => {
     try {
-      const [homeTypesRes, townhomeRowsRes] = await Promise.all([
+      const [homeTypesRes, townhomeRowsRes, twinAreasRes] = await Promise.all([
         axios.get("http://localhost:3001/api/home-types"),
-        axios.get("http://localhost:3001/api/townhome-rows")
+        axios.get("http://localhost:3001/api/townhome-rows"),
+        axios.get("http://localhost:3001/api/twin-areas")
       ]);
       
       setHomeTypes(homeTypesRes.data);
       setTownhomeRows(townhomeRowsRes.data);
-      
-      // โหลด twin areas
-      await loadTwinAreas();
+      setTwinAreas(twinAreasRes.data);
       
     } catch (error) {
       console.error("Error loading initial data:", error);
+      toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
     }
   };
-
-  // โหลดข้อมูล twin areas
-  const loadTwinAreas = async () => {
-    try {
-      const response = await axios.get("http://localhost:3001/api/twin-areas");
-      setTwinAreas(response.data);
-    } catch (error) {
-      console.error("Error loading twin areas:", error);
-    }
-  };
-
-  // ฟังก์ชันรีเฟรชข้อมูลแถว
-  const refreshTownhomeRows = async () => {
-    try {
-      const response = await axios.get("http://localhost:3001/api/townhome-rows");
-      setTownhomeRows(response.data);
-    } catch (error) {
-      console.error("Error refreshing townhome rows:", error);
-    }
-  };
-
-  useEffect(() => {
-    loadInitialData();
-  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // รีเซ็ตฟิลด์ที่เกี่ยวข้องเมื่อเปลี่ยนประเภทบ้าน
     if (name === 'home_type_id') {
       setForm({ 
         ...form, 
         [name]: value,
         row_id: "",
-        twin_area_id: ""  // รีเซ็ต twin_area_id
+        twin_area_id: ""
       });
     } else {
       setForm({ ...form, [name]: value });
@@ -85,42 +79,123 @@ export default function Addhome() {
     setImage(e.target.files[0]);
   };
 
+  // แก้ไขใน Addhome.jsx - เพิ่มฟังก์ชันตรวจสอบเลขบ้านซ้ำ
+  const checkDuplicateAddress = async (address, homeTypeId) => {
+    try {
+      const response = await axios.get(`http://localhost:3001/api/homes/check-address`, {
+        params: { 
+          address: address, 
+          home_type_id: homeTypeId 
+        }
+      });
+      return response.data.exists;
+    } catch (error) {
+      console.error("Error checking duplicate address:", error);
+      return false;
+    }
+  };
+
+  // แก้ไขใน Addhome.jsx - เพิ่มฟังก์ชันตรวจสอบเลขบ้านซ้ำขณะพิมพ์
+  const handleAddressChange = async (e) => {
+    const { value } = e.target;
+    setForm({ ...form, Address: value });
+    
+    // ตรวจสอบเลขบ้านซ้ำขณะพิมพ์ (หลังจากพิมพ์เสร็จ 1 วินาที)
+    if (value && form.home_type_id) {
+      clearTimeout(window.addressCheckTimeout);
+      window.addressCheckTimeout = setTimeout(async () => {
+        const isDuplicate = await checkDuplicateAddress(value, form.home_type_id);
+        if (isDuplicate) {
+          toast.warn(`⚠️ เลขบ้าน "${value}" มีอยู่แล้ว`, {
+            position: "top-right",
+            autoClose: 2000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            style: { 
+              background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
+              color: 'white',
+              fontWeight: 'bold'
+            }
+          });
+        }
+      }, 1000);
+    }
+  };
+
+  // แก้ไขฟังก์ชัน handleSubmit
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     
     const selectedHomeType = homeTypes.find(ht => ht.id == form.home_type_id);
     
-    // ตั้งสถานะเป็น "ไม่มีผู้พักอาศัย" (status = 2)
-    const status = "2";
-    
     try {
+      // ตรวจสอบเลขบ้านซ้ำก่อน
+      const isDuplicate = await checkDuplicateAddress(form.Address, form.home_type_id);
+      if (isDuplicate) {
+        toast.error(`❌ เลขบ้าน "${form.Address}" มีอยู่แล้วในประเภท ${selectedHomeType?.name}`, {
+          position: "top-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          style: { 
+            background: 'linear-gradient(135deg, #ef4444, #dc2626)', 
+            color: 'white',
+            fontWeight: 'bold'
+          }
+        });
+        setLoading(false);
+        return;
+      }
+
       const formData = new FormData();
       
       formData.append("home_type_id", form.home_type_id);
       formData.append("Address", form.Address);
-      formData.append("status", status);
+      formData.append("status", "2"); // ไม่มีผู้พักอาศัย
       
-      // ส่ง row_id สำหรับบ้านพักเรือนแถว
-      if (selectedHomeType && selectedHomeType.name === 'บ้านพักเรือนแถว') {
+      // ตรวจสอบประเภทบ้านและข้อมูลที่จำเป็น
+      if (selectedHomeType?.name === 'บ้านพักเรือนแถว') {
         if (!form.row_id) {
-          toast.error("กรุณาเลือกแถวสำหรับบ้านพักเรือนแถว", {
+          toast.error("⚠️ กรุณาเลือกแถวสำหรับบ้านพักเรือนแถว", {
             position: "top-right",
-            autoClose: 5000,
-            style: { background: '#ef4444', color: 'white' }
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            style: { 
+              background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
+              color: 'white',
+              fontWeight: 'bold'
+            }
           });
+          setLoading(false);
           return;
         }
         formData.append("row_id", form.row_id);
       }
       
-      // ส่ง twin_area_id สำหรับบ้านพักแฝด
-      if (selectedHomeType && selectedHomeType.name === 'บ้านพักแฝด') {
+      if (selectedHomeType?.name === 'บ้านพักแฝด') {
         if (!form.twin_area_id) {
-          toast.error("กรุณาเลือกพื้นที่สำหรับบ้านพักแฝด", {
+          toast.error("⚠️ กรุณาเลือกพื้นที่สำหรับบ้านพักแฝด", {
             position: "top-right",
-            autoClose: 5000,
-            style: { background: '#ef4444', color: 'white' }
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            style: { 
+              background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
+              color: 'white',
+              fontWeight: 'bold'
+            }
           });
+          setLoading(false);
           return;
         }
         formData.append("twin_area_id", form.twin_area_id);
@@ -130,210 +205,219 @@ export default function Addhome() {
         formData.append("image", image);
       }
 
-      const homeResponse = await axios.post("http://localhost:3001/api/homes", formData, {
+      await axios.post("http://localhost:3001/api/homes", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
-      // รีเฟรชข้อมูลแถวหลังบันทึกสำเร็จ
-      await refreshTownhomeRows();
-
-      toast.success("บันทึกข้อมูลสำเร็จ!", {
+      // Toast สำเร็จ
+      toast.success("เพิ่มบ้านสำเร็จ", {
         position: "top-right",
         autoClose: 3000,
-        style: { background: '#43ec81ff', color: 'white' }
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        style: { 
+          background: 'linear-gradient(135deg, #ffffffff, #ffffffff)', 
+          fontWeight: 'bold'
+        }
       });
       
       // รีเซ็ตฟอร์ม
       setForm({ 
-        home_type_id: "", 
+        home_type_id: homeTypeName ? homeTypes.find(ht => ht.name === homeTypeName)?.id || "" : "", 
         Address: "",
         row_id: "",
         twin_area_id: ""
       });
       setImage(null);
+      
+      onSuccess(); // เรียก callback เพื่อรีเฟรชข้อมูล
+      onClose(); // ปิด modal
 
     } catch (error) {
       console.error("Error:", error);
       
-      let errorMessage = "เกิดข้อผิดพลาดในการบันทึกข้อมูล";
+      let errorMessage = "เกิดข้อผิดพลาดในการเพิ่มบ้าน";
+      let errorIcon = "❌";
       
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.response?.status === 400) {
         errorMessage = "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง";
-      } else if (error.response?.status === 500) {
-        errorMessage = "เกิดข้อผิดพลาดของเซิร์ฟเวอร์";
+        errorIcon = "⚠️";
+      } else if (error.response?.status === 409) {
+        errorMessage = "เลขบ้านนี้มีอยู่แล้ว กรุณาใช้เลขบ้านอื่น";
+        errorIcon = "🔄";
       }
       
-      toast.error(errorMessage, {
+      toast.error(`${errorIcon} ${errorMessage}`, {
         position: "top-right",
         autoClose: 5000,
-        style: { background: '#ef4444', color: 'white' }
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        style: { 
+          background: 'linear-gradient(135deg, #ef4444, #dc2626)', 
+          color: 'white',
+          fontWeight: 'bold'
+        }
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  // ฟังก์ชันตรวจสอบประเภทบ้านที่เลือก
+  const handleClose = () => {
+    setForm({ 
+      home_type_id: "", 
+      Address: "",
+      row_id: "",
+      twin_area_id: ""
+    });
+    setImage(null);
+    onClose();
+  };
+
   const getSelectedHomeType = () => {
     return homeTypes.find(ht => ht.id == form.home_type_id);
   };
 
   const selectedHomeType = getSelectedHomeType();
 
+  if (!isOpen) return null;
+
   return (
-    <div className="dashboard-container">
-      <Navbar />
-      
-      <div className="content-container">
-        <div className="title-container">
-          <div className="page-title">
-            เพิ่มบ้านพัก
-          </div>
+    <div className="modal-overlay" onClick={handleClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">เพิ่มบ้านพัก</h3>
+          <button className="modal-close" onClick={handleClose}>×</button>
         </div>
         
-        <div className="main-content">
-          <div className="form-card">
-            <form onSubmit={handleSubmit} className="form-full-width">
-              <div className="form-group-large">
-                <h3 className="form-section-title">ข้อมูลบ้านพัก</h3>
-                
-                <div className="form-group">
-                  <label className="form-label">ประเภทบ้าน</label>
-                  <select
-                    name="home_type_id"
-                    value={form.home_type_id}
-                    onChange={handleChange}
-                    required
-                    className="form-select"
-                  >
-                    <option value="">เลือกประเภทบ้าน</option>
-                    {homeTypes
-                      .filter(ht => !ht.name.includes('พื้นที่')) // ซ่อน บ้านพักแฝดพื้นที่1 และ พื้นที่2
-                      .map(ht => (
-                      <option key={ht.id} value={ht.id}>{ht.name}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                {/* แสดง dropdown เลือกพื้นที่สำหรับบ้านพักแฝด */}
-                {selectedHomeType?.name === 'บ้านพักแฝด' && (
-                  <div className="form-group">
-                    <label className="form-label">เลือกพื้นที่</label>
-                    <select
-                      name="twin_area_id"
-                      value={form.twin_area_id}
-                      onChange={handleChange}
-                      required
-                      className="form-select"
+        <div className="modal-body">
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label">ประเภทบ้าน</label>
+              <select
+                name="home_type_id"
+                value={form.home_type_id}
+                onChange={handleChange}
+                required
+                className="form-select"
+                disabled={!!homeTypeName} // ปิดการแก้ไขถ้ามีการระบุประเภทมาแล้ว
+              >
+                <option value="">เลือกประเภทบ้าน</option>
+                {homeTypes
+                  .filter(ht => !ht.name.includes('พื้นที่'))
+                  .map(ht => (
+                    <option key={ht.id} value={ht.id}>{ht.name}</option>
+                  ))}
+              </select>
+            </div>
+            
+            {/* Dropdown เลือกพื้นที่สำหรับบ้านพักแฝด */}
+            {selectedHomeType?.name === 'บ้านพักแฝด' && (
+              <div className="form-group">
+                <label className="form-label">เลือกพื้นที่</label>
+                <select
+                  name="twin_area_id"
+                  value={form.twin_area_id}
+                  onChange={handleChange}
+                  required
+                  className="form-select"
+                >
+                  <option value="">เลือกพื้นที่</option>
+                  {twinAreas.map(area => (
+                    <option key={area.id} value={area.id}>{area.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            {/* Dropdown เลือกแถวสำหรับบ้านพักเรือนแถว */}
+            {selectedHomeType?.name === 'บ้านพักเรือนแถว' && (
+              <div className="form-group">
+                <label className="form-label">เลือกแถว</label>
+                <select
+                  name="row_id"
+                  value={form.row_id}
+                  onChange={handleChange}
+                  required
+                  className="form-select"
+                >
+                  <option value="">เลือกแถว</option>
+                  {townhomeRows.map(row => (
+                    <option 
+                      key={row.id} 
+                      value={row.id}
+                      disabled={row.home_count >= row.max_capacity}
                     >
-                      <option value="">เลือกพื้นที่</option>
-                      {twinAreas.map(area => (
-                        <option key={area.id} value={area.id}>{area.name}</option>
-                      ))}
-                    </select>
-                    <small className="form-help-text">
-                      * เลือกพื้นที่ของบ้านพักแฝด
-                    </small>
-                  </div>
-                )}
-                
-                {/* แสดง dropdown เลือกแถวสำหรับบ้านพักเรือนแถว */}
-                {selectedHomeType?.name === 'บ้านพักเรือนแถว' && (
-                  <div className="form-group">
-                    <label className="form-label">เลือกแถว</label>
-                    <select
-                      name="row_id"
-                      value={form.row_id}
-                      onChange={handleChange}
-                      required
-                      className="form-select"
-                    >
-                      <option value="">เลือกแถว</option>
-                      {townhomeRows.map(row => (
-                        <option 
-                          key={row.id} 
-                          value={row.id}
-                          disabled={row.home_count >= row.max_capacity}
-                        >
-                          {row.name} ({row.home_count}/{row.max_capacity})
-                          {row.home_count >= row.max_capacity ? ' - เต็ม' : ''}
-                        </option>
-                      ))}
-                    </select>
-                    <small className="form-help-text">
-                      * เลือกแถวที่ต้องการเพิ่มบ้าน
-                    </small>
-                  </div>
-                )}
-                
-                <div className="form-group">
-                  <label className="form-label">หมายเลขบ้าน</label>
-                  <input
-                    type="text"
-                    name="Address"
-                    value={form.Address}
-                    onChange={handleChange}
-                    className="form-input"
-                    required
-                    placeholder={
-                      selectedHomeType?.name === 'บ้านพักเรือนแถว' 
-                        ? "กรอกหมายเลขบ้าน (เช่น 101, 201)"
-                        : selectedHomeType?.name === 'บ้านพักแฝด'
-                        ? `กรอกหมายเลขบ้าน ${form.twin_area_id ? `พื้นที่ ${twinAreas.find(a => a.id == form.twin_area_id)?.name || ''}` : ''} `
-                        : "กรอกหมายเลขบ้าน (เช่น 101, 201)"
-                    }
-                  />
-                  <small className="form-help-text">
-                    * หมายเลขบ้านที่แสดงในระบบ
-                    {selectedHomeType?.name === 'บ้านพักแฝด' && form.twin_area_id && (
-                      <></>
-                    )}
-                  </small>
-                </div>
+                      {row.name} ({row.home_count}/{row.max_capacity})
+                      {row.home_count >= row.max_capacity ? ' - เต็ม' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            <div className="form-group">
+              <label className="form-label">หมายเลขบ้าน</label>
+              <input
+                type="text"
+                name="Address"
+                value={form.Address}
+                onChange={handleAddressChange} // เปลี่ยนจาก handleChange
+                className="form-input"
+                required
+                placeholder="กรอกหมายเลขบ้าน (เช่น 101, 201)"
+              />
+              {form.Address && (
+                <small style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>
+                  ✓ ระบบจะตรวจสอบเลขบ้านซ้ำอัตโนมัติ
+                </small>
+              )}
+            </div>
 
-                <div className="form-group">
-                  <label className="form-label">เพิ่มภาพ</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="form-file"
-                  />
-                  {image && (
-                    <img 
-                      src={URL.createObjectURL(image)}
-                      alt="preview"
-                      className="image-preview"
-                    />
-                  )}
-                </div>
-              </div>
-              
-              <div className={styles.buttonGroup}>
-                <button type="submit" className={styles.btnPrimary}>
-                  ยืนยัน
-                </button>
-                <button type="button" onClick={() => navigate("/")} className={styles.btnSecondary}>
-                  ยกเลิก
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="form-group">
+              <label className="form-label">เพิ่มภาพ</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="form-file"
+              />
+              {image && (
+                <img 
+                  src={URL.createObjectURL(image)}
+                  alt="preview"
+                  className="image-preview"
+                  style={{ maxWidth: '200px', maxHeight: '200px', marginTop: '10px' }}
+                />
+              )}
+            </div>
+            
+            <div className="modal-actions">
+              <button 
+                type="button" 
+                onClick={handleClose} 
+                className="btn-secondary"
+                disabled={loading}
+              >
+                ยกเลิก
+              </button>
+              <button 
+                type="submit" 
+                className="btn-primary"
+                disabled={loading}
+              >
+                {loading ? 'กำลังบันทึก...' : 'บันทึก'}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
-      
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        style={{ zIndex: 9999 }}
-      />
     </div>
   );
 }

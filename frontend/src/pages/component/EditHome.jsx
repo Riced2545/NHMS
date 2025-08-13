@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify'; // ลบ ToastContainer ออก
 import 'react-toastify/dist/ReactToastify.css';
 import "./EditHome.css";
 
@@ -314,31 +314,7 @@ export default function EditHomeModal({ isOpen, onClose, homeId, onUpdate }) {
               คุณต้องการลบบ้านเลขที่ <strong>{formData.Address}</strong> หรือไม่?<br />
             </div>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '8px' }}>
-              <button
-                onClick={() => {
-                  toast.dismiss();
-                  resolve(false);
-                }}
-                style={{
-                  background: '#6b7280',
-                  color: 'white',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = '#4b5563';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = '#6b7280';
-                }}
-              >
-                ❌ ยกเลิก
-              </button>
-              <button
+               <button
                 onClick={() => {
                   toast.dismiss();
                   resolve(true);
@@ -363,6 +339,30 @@ export default function EditHomeModal({ isOpen, onClose, homeId, onUpdate }) {
               >
                 🗑️ ลบบ้าน
               </button>
+              <button
+                onClick={() => {
+                  toast.dismiss();
+                  resolve(false);
+                }}
+                style={{
+                  background: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = '#4b5563';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = '#6b7280';
+                }}
+              >
+                ❌ ยกเลิก
+              </button>
             </div>
           </div>,
           {
@@ -376,7 +376,7 @@ export default function EditHomeModal({ isOpen, onClose, homeId, onUpdate }) {
             style: {
               background: '#fff',
               color: '#000',
-              border: '2px solid #dc2626',
+              border: '2px solid #ff0000ff',
               borderRadius: '12px',
               minWidth: '350px', // ลดขนาดเล็กน้อย
               maxWidth: '400px', // ลดขนาดเล็กน้อย
@@ -713,25 +713,6 @@ export default function EditHomeModal({ isOpen, onClose, homeId, onUpdate }) {
           )}
         </div>
       </div>
-      
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        style={{ zIndex: 10000 }}
-        toastStyle={{
-          borderRadius: '12px',
-          fontSize: '14px',
-          padding: '16px',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-        }}
-      />
     </>
   );
 }
