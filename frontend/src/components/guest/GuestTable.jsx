@@ -28,13 +28,32 @@ export default function GuestTable({
   const formatGuestName = (guest) => {
     const parts = [];
     
-    // ตรวจสอบ rank - ถ้าเป็น string และไม่ใช่ตัวเลขเปล่าๆ ให้เพิ่มเข้าไป
-    if (guest.rank && typeof guest.rank === 'string' && guest.rank.trim() !== '' && guest.rank !== '0') {
-      parts.push(guest.rank);
+    // ฟังก์ชันตรวจสอบว่าค่าเป็น "ค่าว่าง" หรือไม่
+    const isEmptyValue = (value) => {
+      return value === null || 
+             value === undefined || 
+             value === '' || 
+             value === '0' || 
+             value === 0 || 
+             value === 'null' || 
+             value === 'undefined' ||
+             (typeof value === 'string' && value.trim() === '');
+    };
+    
+    if (guest.is_right_holder) {
+      // ผู้ถือสิทธิ - ใช้ rank (ยศทหาร)
+      if (!isEmptyValue(guest.rank)) {
+        parts.push(guest.rank);
+      }
+    } else {
+      // สมาชิกครอบครัว - ใช้ title (คำนำหน้า)
+      if (!isEmptyValue(guest.title)) {
+        parts.push(guest.title);
+      }
     }
     
-    if (guest.name) parts.push(guest.name);
-    if (guest.lname) parts.push(guest.lname);
+    if (!isEmptyValue(guest.name)) parts.push(guest.name);
+    if (!isEmptyValue(guest.lname)) parts.push(guest.lname);
     
     return parts.join(' ').trim();
   };

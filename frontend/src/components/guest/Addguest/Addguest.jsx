@@ -287,6 +287,7 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
     setFamilyYears(years_arr);
   };
 
+  // แก้ไขฟังก์ชัน saveRightHolderOnly
   const saveRightHolderOnly = async () => {
     if (!rightHolderData) return;
     
@@ -295,6 +296,8 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
       let guestData = { ...rightHolderData };
       
       if (rightHolderData.image) {
+        console.log("📷 Uploading image:", rightHolderData.image.name);
+        
         const formData = new FormData();
         formData.append('image', rightHolderData.image);
         
@@ -304,10 +307,13 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
           }
         });
         
+        console.log("✅ Image upload response:", imageResponse.data);
         guestData.image_url = imageResponse.data.imageUrl;
       }
       
       delete guestData.image;
+      
+      console.log("📤 Sending guest data:", guestData);
       
       await axios.post("http://localhost:3001/api/guests", {
         ...guestData,
@@ -399,6 +405,8 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
           let processedRightHolder = { ...rightHolderData };
           
           if (rightHolderData.image) {
+            console.log("📷 Uploading right holder image:", rightHolderData.image.name);
+            
             const formData = new FormData();
             formData.append('image', rightHolderData.image);
             
@@ -408,6 +416,7 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
               }
             });
             
+            console.log("✅ Right holder image upload response:", imageResponse.data);
             processedRightHolder.image_url = imageResponse.data.imageUrl;
           }
           
@@ -417,12 +426,13 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
         
         allData.push(...familyForms);
 
-        const promises = allData.map(guestData => 
-          axios.post("http://localhost:3001/api/guests", {
+        const promises = allData.map(guestData => {
+          console.log("📤 Sending guest data:", guestData);
+          return axios.post("http://localhost:3001/api/guests", {
             ...guestData,
             home_id: Number(guestData.home_id)
-          })
-        );
+          });
+        });
 
         await Promise.all(promises);
         toast.success(`บันทึกข้อมูลผู้พักอาศัย ${allData.length} คน สำเร็จ!`);
@@ -754,22 +764,17 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
                 </div>
                 
                 <div className="form-field">
-                  <label>ยศ/ตำแหน่ง <span className="required">*</span></label>
-                  <select
+                  <label>คำนำหน้า/ยศ <span className="required">*</span></label>
+                  <input
+                    type="text"
                     value={familyForms[currentFamilyIndex]?.rank_id || ""}
                     onChange={(e) => handleFamilyFormChange(currentFamilyIndex, 'rank_id', e.target.value)}
+                    placeholder="เช่น นาย, นาง, นางสาว, เด็กชาย, เด็กหญิง"
                     required
-                  >
-                    <option value="">เลือกยศ</option>
-                    {eligibleRanks.map(rank => (
-                      <option key={rank.id} value={rank.id}>
-                        {rank.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
                   
                   <div className="field-hint">
-                    สมาชิกครอบครัวต้องมียศที่สามารถเข้าพักได้เช่นเดียวกัน
+                    กรุณากรอกคำนำหน้าหรือยศ เช่น นาย, นาง, นางสาว, เด็กชาย, เด็กหญิง
                   </div>
                 </div>
               </div>

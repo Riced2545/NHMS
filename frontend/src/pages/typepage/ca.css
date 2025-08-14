@@ -278,38 +278,47 @@
   display: block;
 }
 
+/* แก้ไขส่วนของรูปผู้ถือสิทธิ */
 .right-holder-image-container {
   position: absolute;
-  bottom: 8px;
-  left: 8px;
+  bottom: 12px; /* เพิ่มจาก 8px */
+  left: 12px; /* เพิ่มจาก 8px */
   display: flex;
   align-items: center;
   background: rgba(0, 0, 0, 0.8);
-  border-radius: 8px;
-  padding: 6px;
+  border-radius: 12px; /* เพิ่มจาก 8px */
+  padding: 10px; /* เพิ่มจาก 6px */
   backdrop-filter: blur(4px);
+  min-width: 200px; /* เพิ่มขนาดขั้นต่ำ */
 }
 
 .right-holder-image {
-  width: 32px !important;
-  height: 32px !important;
+  width: 70px !important; /* เพิ่มจาก 32px */
+  height: 70px !important; /* เพิ่มจาก 32px */
   border-radius: 50%;
   object-fit: cover;
-  margin-right: 8px;
-  border: 2px solid #fff;
+  margin-right: 12px; /* เพิ่มจาก 8px */
+  border: 3px solid #fff; /* เพิ่มจาก 2px */
+  flex-shrink: 0; /* ป้องกันการย่อ */
 }
 
 .right-holder-info {
   color: white;
-  font-size: 0.7rem;
+  font-size: 0.8rem; /* เพิ่มจาก 0.7rem */
+  line-height: 1.3;
+  flex: 1;
 }
 
 .right-holder-name {
   font-weight: bold;
-  margin-bottom: 2px;
+  margin-bottom: 4px; /* เพิ่มจาก 2px */
+  display: block;
+  font-size: 0.85rem; /* เพิ่มขนาดชื่อ */
+  color: #cbd5e1;
 }
 
 .right-holder-label {
-  font-size: 0.6rem;
+  font-size: 0.7rem; /* เพิ่มจาก 0.6rem */
   color: #cbd5e1;
+  display: block;
 }

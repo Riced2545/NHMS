@@ -285,10 +285,14 @@ export default function GenericHomePage() {
                             src={
                               home.right_holder.image_url
                                 ? `http://localhost:3001${home.right_holder.image_url}`
-                                : "/img/default-person.png"
+                                : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='%2310b981'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M12 14c-6 0-8 3-8 6h16c0-3-2-6-8-6z'/%3E%3C/svg%3E"
                             }
                             alt="ผู้ถือสิทธิ"
                             className="right-holder-image"
+                            onError={(e) => {
+                              console.log("Image load error for:", home.right_holder.image_url);
+                              e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='%2310b981'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M12 14c-6 0-8 3-8 6h16c0-3-2-6-8-6z'/%3E%3C/svg%3E";
+                            }}
                           />
                           <div className="right-holder-info">
                             <span className="right-holder-name">

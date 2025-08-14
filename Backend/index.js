@@ -275,6 +275,15 @@ db.connect((err) => {
   // เพิ่มคอลัมน์ twin_area_id ในตาราง home
   db.query(`ALTER TABLE home ADD COLUMN IF NOT EXISTS twin_area_id INT`);
   db.query(`ALTER TABLE home ADD FOREIGN KEY IF NOT EXISTS (twin_area_id) REFERENCES twin_areas(id)`);
+
+  // เพิ่มคอลัมน์ image_url ในตาราง guest (หลังบรรทัด ~180)
+  db.query(`ALTER TABLE guest ADD COLUMN IF NOT EXISTS image_url VARCHAR(255)`, (err) => {
+    if (err && !err.message.includes('Duplicate column')) {
+      console.error("Error adding image_url column:", err);
+    } else {
+      console.log("✅ image_url column ready");
+    }
+  });
 });
 
 // Register (แก้ไขให้รับข้อมูล profile)
@@ -1170,10 +1179,27 @@ app.get("/api/hometypes", (req, res) => {
 
 // API อัปโหลดไฟล์รูปบ้าน
 app.post("/api/upload", upload.single("image"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded" });
+  try {
+    console.log("📤 Upload request received");
+    console.log("File:", req.file);
+    
+    if (!req.file) {
+      return res.status(400).json({ error: "ไม่พบไฟล์รูปภาพ" });
+    }
+
+    const imageUrl = `/uploads/${req.file.filename}`;
+    console.log("✅ Image saved:", imageUrl);
+    
+    res.json({ 
+      success: true, 
+      imageUrl: imageUrl,
+      filename: req.file.filename,
+      message: "อัปโหลดรูปภาพสำเร็จ" 
+    });
+  } catch (error) {
+    console.error("Upload error:", error);
+    res.status(500).json({ error: "เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ" });
   }
-  res.json({ filename: req.file.filename });
 });
 
 app.get("/api/home_types", (req, res) => {
@@ -1294,7 +1320,7 @@ app.get("/api/retirement", (req, res) => {
 
 // เพิ่ม API สำหรับเพิ่มผู้พักอาศัย
 app.post("/api/guests", (req, res) => {
-  const { home_id, rank_id, name, lname, dob, pos, income, phone, job_phone, is_right_holder } = req.body;
+  const { home_id, rank_id, name, lname, dob, pos, income, phone, job_phone, is_right_holder, image_url } = req.body;
   
   console.log("Adding guest:", req.body);
   
@@ -1351,8 +1377,8 @@ app.post("/api/guests", (req, res) => {
       }
       
       const sql = `
-        INSERT INTO guest (home_id, rank_id, title, name, lname, dob, pos, income, phone, job_phone, is_right_holder) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO guest (home_id, rank_id, title, name, lname, dob, pos, income, phone, job_phone, is_right_holder, image_url) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
       db.query(sql, [
@@ -1366,7 +1392,8 @@ app.post("/api/guests", (req, res) => {
         income || 0, 
         phone, 
         job_phone, 
-        is_right_holder || false
+        is_right_holder || false,
+        image_url || null  // เพิ่มบรรทัดนี้
       ], (err, result) => {
         if (err) {
           console.error("Database error:", err);
@@ -1614,14 +1641,20 @@ app.delete("/api/home_types/:id", (req, res) => {
 // เพิ่ม API endpoint สำหรับอัปโหลดรูปภาพ
 app.post("/api/upload", upload.single('image'), (req, res) => {
   try {
+    console.log("📤 Upload request received");
+    console.log("File:", req.file);
+    
     if (!req.file) {
       return res.status(400).json({ error: "ไม่พบไฟล์รูปภาพ" });
     }
 
     const imageUrl = `/uploads/${req.file.filename}`;
+    console.log("✅ Image saved:", imageUrl);
+    
     res.json({ 
       success: true, 
       imageUrl: imageUrl,
+      filename: req.file.filename,
       message: "อัปโหลดรูปภาพสำเร็จ" 
     });
   } catch (error) {
