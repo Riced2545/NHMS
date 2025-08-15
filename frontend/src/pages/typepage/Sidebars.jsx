@@ -15,15 +15,99 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
   const location = useLocation();
   const [isRowDropdownOpen, setIsRowDropdownOpen] = useState(false);
   const [isTwinDropdownOpen, setIsTwinDropdownOpen] = useState(false);
-  
-  // เพิ่ม state สำหรับ home types
+  const [hoverTimeout, setHoverTimeout] = useState(null);
   const [homeTypes, setHomeTypes] = useState([]);
+  
+  // ✅ เพิ่ม state สำหรับข้อมูล dropdown ใน Sidebar
+  const [sidebarTwinAreas, setSidebarTwinAreas] = useState([]);
+  const [sidebarTownhomeRows, setSidebarTownhomeRows] = useState([]);
+  const [sidebarAreaCounts, setSidebarAreaCounts] = useState({});
+  const [sidebarRowCounts, setSidebarRowCounts] = useState({});
 
   // ตรวจสอบหน้าปัจจุบัน
   const currentPage = location.pathname.split('/').pop();
   const searchParams = new URLSearchParams(location.search);
   const currentHomeType = searchParams.get('type');
-  
+
+  // ✅ โหลดข้อมูลสำหรับ Sidebar เสมอ
+  useEffect(() => {
+    loadSidebarData();
+  }, []);
+
+  const loadSidebarData = async () => {
+    try {
+      // โหลดข้อมูล twin areas
+      const twinAreasRes = await axios.get("http://localhost:3001/api/twin-areas");
+      setSidebarTwinAreas(twinAreasRes.data);
+      
+      // โหลดข้อมูล townhome rows
+      const townhomeRowsRes = await axios.get("http://localhost:3001/api/townhome-rows");
+      setSidebarTownhomeRows(townhomeRowsRes.data);
+      
+      // โหลดข้อมูล homes เพื่อคำนวณ counts
+      const homesRes = await axios.get("http://localhost:3001/api/homes");
+      
+      // คำนวณ area counts
+      const twinHomes = homesRes.data.filter(h => h.hType === 'บ้านพักแฝด');
+      const areaCounts = { total: twinHomes.length };
+      twinAreasRes.data.forEach(area => {
+        areaCounts[area.id] = twinHomes.filter(h => h.twin_area_id == area.id).length;
+      });
+      setSidebarAreaCounts(areaCounts);
+      
+      // คำนวณ row counts
+      const townhomeHomes = homesRes.data.filter(h => h.hType === 'บ้านพักเรือนแถว');
+      const rowCounts = { total: townhomeHomes.length };
+      townhomeRowsRes.data.forEach(row => {
+        rowCounts[row.id] = townhomeHomes.filter(h => h.row_id == row.id).length;
+      });
+      setSidebarRowCounts(rowCounts);
+      
+      console.log("Sidebar data loaded:", {
+        twinAreas: twinAreasRes.data.length,
+        townhomeRows: townhomeRowsRes.data.length,
+        areaCounts,
+        rowCounts
+      });
+      
+    } catch (error) {
+      console.error("Error loading sidebar data:", error);
+    }
+  };
+
+  // ✅ ใช้ข้อมูลจาก Sidebar หรือ props (ใช้ที่มีข้อมูลครบกว่า)
+  const availableTwinAreas = sidebarTwinAreas.length > 0 ? sidebarTwinAreas : twinAreas;
+  const availableTownhomeRows = sidebarTownhomeRows.length > 0 ? sidebarTownhomeRows : townhomeRows;
+  const availableAreaCounts = Object.keys(sidebarAreaCounts).length > 0 ? sidebarAreaCounts : areaCounts;
+  const availableRowCounts = Object.keys(sidebarRowCounts).length > 0 ? sidebarRowCounts : rowCounts;
+
+  // ✅ แก้ไขฟังก์ชัน getAreaCount และ getRowCount
+  const getAreaCount = (areaId) => {
+    if (areaId === "total") {
+      return availableAreaCounts.total || 0;
+    }
+    return availableAreaCounts[areaId] || 0;
+  };
+
+  const getRowCount = (rowId) => {
+    if (rowId === "total") {
+      return availableRowCounts.total || 0;
+    }
+    return availableRowCounts[rowId] || 0;
+  };
+
+  // ✅ สร้าง handleHomeTypeClickWithFilter
+  const handleHomeTypeClickWithFilter = (homeTypeName, filterType = null, filterValue = null) => {
+    let url = `/homes?type=${encodeURIComponent(homeTypeName)}`;
+    
+    if (filterType && filterValue) {
+      url += `&${filterType}=${filterValue}`;
+    }
+    
+    console.log("Navigating to:", url);
+    navigate(url);
+  };
+
   // โหลดข้อมูล home types
   useEffect(() => {
     loadHomeTypes();
@@ -102,16 +186,6 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
     setIsTwinDropdownOpen(false);
   };
 
-  const getRowCount = (rowKey) => {
-    if (!rowCounts) return 0;
-    return rowCounts[rowKey] || 0;
-  };
-
-  const getAreaCount = (areaKey) => {
-    if (!areaCounts) return 0;
-    return areaCounts[areaKey] || 0;
-  };
-
   // ฟังก์ชันสำหรับข้อมูลสำรอง
   const getAvailableRows = () => {
     if (townhomeRows && townhomeRows.length > 0) {
@@ -169,6 +243,52 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
 
   const allMenuItems = [...staticMenuItems, ...dynamicMenuItems];
 
+  // เพิ่มฟังก์ชันจัดการ hover
+  const handleMouseEnter = (type) => {
+    // ยกเลิก timeout ก่อนหน้า
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout);
+    }
+    
+    // เปิด dropdown ทันที
+    if (type === 'twin') {
+      setIsTwinDropdownOpen(true);
+      setIsRowDropdownOpen(false);
+    } else if (type === 'row') {
+      setIsRowDropdownOpen(true);
+      setIsTwinDropdownOpen(false);
+    }
+  };
+
+  const handleMouseLeave = (type) => {
+    // ตั้ง timeout เพื่อปิด dropdown หลังจาก 300ms
+    const timeout = setTimeout(() => {
+      if (type === 'twin') {
+        setIsTwinDropdownOpen(false);
+      } else if (type === 'row') {
+        setIsRowDropdownOpen(false);
+      }
+    }, 300);
+    
+    setHoverTimeout(timeout);
+  };
+
+  const handleDropdownMouseEnter = () => {
+    // ยกเลิก timeout เมื่อเมาส์เข้า dropdown
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout);
+    }
+  };
+
+  const handleDropdownMouseLeave = (type) => {
+    // ปิด dropdown เมื่อเมาส์ออกจาก dropdown
+    if (type === 'twin') {
+      setIsTwinDropdownOpen(false);
+    } else if (type === 'row') {
+      setIsRowDropdownOpen(false);
+    }
+  };
+
   return (
     <div style={{
       width: '280px',
@@ -199,7 +319,6 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
 
       <nav>
         {allMenuItems.map(item => {
-          // ตรวจสอบว่าเป็นประเภทบ้านพิเศษที่ต้องมี dropdown หรือไม่
           const isTwinType = item.label === 'บ้านพักแฝด';
           const isTownhomeType = item.label === 'บ้านพักเรือนแถว';
           const hasDropdown = isTwinType || isTownhomeType;
@@ -207,19 +326,30 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
 
           if (hasDropdown && isHomeTypeItem) {
             return (
-              <div key={item.id} style={{ position: 'relative', marginTop: '8px' }}>
+              <div 
+                key={item.id} 
+                style={{ position: 'relative', marginTop: '8px' }}
+                onMouseEnter={() => {
+                  if (isTwinType) {
+                    handleMouseEnter('twin');
+                  } else if (isTownhomeType) {
+                    handleMouseEnter('row');
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (isTwinType) {
+                    handleMouseLeave('twin');
+                  } else if (isTownhomeType) {
+                    handleMouseLeave('row');
+                  }
+                }}
+              >
                 <button
                   onClick={() => {
                     if (isTwinType) {
                       handleHomeTypeClick(item.homeTypeName);
-                      if (item.active) {
-                        toggleTwinDropdown();
-                      }
                     } else if (isTownhomeType) {
                       handleHomeTypeClick(item.homeTypeName);
-                      if (item.active) {
-                        toggleRowDropdown();
-                      }
                     }
                   }}
                   style={{
@@ -275,29 +405,35 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
                   />
                 </button>
                 
-                {/* Dropdown สำหรับบ้านพักแฝด */}
-                {isTwinType && isTwinDropdownOpen && item.active && (
-                  <div style={{
-                    marginTop: '8px',
-                    marginLeft: '20px',
-                    marginRight: '20px',
-                    background: '#f8f9fa',
-                    borderRadius: '8px',
-                    border: '1px solid #e9ecef',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    overflow: 'hidden'
-                  }}>
+                {/* ✅ Dropdown สำหรับบ้านพักแฝด - ใช้ availableTwinAreas */}
+                {isTwinType && isTwinDropdownOpen && (
+                  <div 
+                    style={{
+                      marginTop: '8px',
+                      marginLeft: '20px',
+                      marginRight: '20px',
+                      background: '#f8f9fa',
+                      borderRadius: '8px',
+                      border: '1px solid #e9ecef',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      overflow: 'hidden',
+                      animation: 'fadeIn 0.2s ease-in-out',
+                      zIndex: 1000
+                    }}
+                    onMouseEnter={handleDropdownMouseEnter}
+                    onMouseLeave={() => handleDropdownMouseLeave('twin')}
+                  >
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        selectArea("all");
+                        handleHomeTypeClickWithFilter(item.homeTypeName, 'area', 'all');
                       }}
                       style={{
                         width: '100%',
                         padding: '8px 12px',
                         border: 'none',
-                        background: selectedArea === "all" ? '#2563eb' : 'transparent',
-                        color: selectedArea === "all" ? 'white' : '#6b7280',
+                        background: selectedArea === "all" && item.active ? '#2563eb' : 'transparent',
+                        color: selectedArea === "all" && item.active ? 'white' : '#6b7280',
                         textAlign: 'left',
                         cursor: 'pointer',
                         fontSize: '13px',
@@ -305,12 +441,12 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
                         transition: 'all 0.2s ease'
                       }}
                       onMouseEnter={(e) => {
-                        if (selectedArea !== "all") {
+                        if (!(selectedArea === "all" && item.active)) {
                           e.target.style.background = '#e5e7eb';
                         }
                       }}
                       onMouseLeave={(e) => {
-                        if (selectedArea !== "all") {
+                        if (!(selectedArea === "all" && item.active)) {
                           e.target.style.background = 'transparent';
                         }
                       }}
@@ -318,32 +454,32 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
                       ทั้งหมด ({getAreaCount("total")})
                     </button>
                     
-                    {availableAreas.map(area => (
+                    {availableTwinAreas.map(area => (
                       <button
                         key={area.id}
                         onClick={(e) => {
                           e.stopPropagation();
-                          selectArea(area.id.toString());
+                          handleHomeTypeClickWithFilter(item.homeTypeName, 'area', area.id.toString());
                         }}
                         style={{
                           width: '100%',
                           padding: '8px 12px',
                           border: 'none',
-                          background: selectedArea === area.id.toString() ? '#2563eb' : 'transparent',
-                          color: selectedArea === area.id.toString() ? 'white' : '#6b7280',
+                          background: selectedArea === area.id.toString() && item.active ? '#2563eb' : 'transparent',
+                          color: selectedArea === area.id.toString() && item.active ? 'white' : '#6b7280',
                           textAlign: 'left',
                           cursor: 'pointer',
                           fontSize: '13px',
-                          borderBottom: area.id === availableAreas.length ? 'none' : '1px solid #e9ecef',
+                          borderBottom: area.id === availableTwinAreas[availableTwinAreas.length - 1].id ? 'none' : '1px solid #e9ecef',
                           transition: 'all 0.2s ease'
                         }}
                         onMouseEnter={(e) => {
-                          if (selectedArea !== area.id.toString()) {
+                          if (!(selectedArea === area.id.toString() && item.active)) {
                             e.target.style.background = '#e5e7eb';
                           }
                         }}
                         onMouseLeave={(e) => {
-                          if (selectedArea !== area.id.toString()) {
+                          if (!(selectedArea === area.id.toString() && item.active)) {
                             e.target.style.background = 'transparent';
                           }
                         }}
@@ -354,65 +490,81 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
                   </div>
                 )}
 
-                {/* Dropdown สำหรับบ้านพักเรือนแถว */}
-                {isTownhomeType && isRowDropdownOpen && item.active && (
-                  <div style={{
-                    marginTop: '8px',
-                    marginLeft: '20px',
-                    marginRight: '20px',
-                    background: '#f8f9fa',
-                    borderRadius: '8px',
-                    border: '1px solid #e9ecef',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    overflow: 'hidden'
-                  }}>
+                {/* ✅ Dropdown สำหรับบ้านพักเรือนแถว - ใช้ availableTownhomeRows */}
+                {isTownhomeType && isRowDropdownOpen && (
+                  <div 
+                    style={{
+                      marginTop: '8px',
+                      marginLeft: '20px',
+                      marginRight: '20px',
+                      background: '#f8f9fa',
+                      borderRadius: '8px',
+                      border: '1px solid #e9ecef',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      overflow: 'hidden',
+                      animation: 'fadeIn 0.2s ease-in-out',
+                      zIndex: 1000
+                    }}
+                    onMouseEnter={handleDropdownMouseEnter}
+                    onMouseLeave={() => handleDropdownMouseLeave('row')}
+                  >
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        selectRow("all");
+                        handleHomeTypeClickWithFilter(item.homeTypeName, 'row', 'all');
                       }}
                       style={{
                         width: '100%',
                         padding: '8px 12px',
                         border: 'none',
-                        background: selectedRow === "all" ? '#2563eb' : 'transparent',
-                        color: selectedRow === "all" ? 'white' : '#6b7280',
+                        background: selectedRow === "all" && item.active ? '#2563eb' : 'transparent',
+                        color: selectedRow === "all" && item.active ? 'white' : '#6b7280',
                         textAlign: 'left',
                         cursor: 'pointer',
                         fontSize: '13px',
                         borderBottom: '1px solid #e9ecef',
                         transition: 'all 0.2s ease'
                       }}
+                      onMouseEnter={(e) => {
+                        if (!(selectedRow === "all" && item.active)) {
+                          e.target.style.background = '#e5e7eb';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!(selectedRow === "all" && item.active)) {
+                          e.target.style.background = 'transparent';
+                        }
+                      }}
                     >
                       ทั้งหมด ({getRowCount("total")})
                     </button>
                     
-                    {availableRows.map(row => (
+                    {availableTownhomeRows.map(row => (
                       <button
                         key={row.id}
                         onClick={(e) => {
                           e.stopPropagation();
-                          selectRow(row.id.toString());
+                          handleHomeTypeClickWithFilter(item.homeTypeName, 'row', row.id.toString());
                         }}
                         style={{
                           width: '100%',
                           padding: '8px 12px',
                           border: 'none',
-                          background: selectedRow === row.id.toString() ? '#2563eb' : 'transparent',
-                          color: selectedRow === row.id.toString() ? 'white' : '#6b7280',
+                          background: selectedRow === row.id.toString() && item.active ? '#2563eb' : 'transparent',
+                          color: selectedRow === row.id.toString() && item.active ? 'white' : '#6b7280',
                           textAlign: 'left',
                           cursor: 'pointer',
                           fontSize: '13px',
-                          borderBottom: row.id === availableRows.length ? 'none' : '1px solid #e9ecef',
+                          borderBottom: row.id === availableTownhomeRows[availableTownhomeRows.length - 1].id ? 'none' : '1px solid #e9ecef',
                           transition: 'all 0.2s ease'
                         }}
                         onMouseEnter={(e) => {
-                          if (selectedRow !== row.id.toString()) {
+                          if (!(selectedRow === row.id.toString() && item.active)) {
                             e.target.style.background = '#e5e7eb';
                           }
                         }}
                         onMouseLeave={(e) => {
-                          if (selectedRow !== row.id.toString()) {
+                          if (!(selectedRow === row.id.toString() && item.active)) {
                             e.target.style.background = 'transparent';
                           }
                         }}

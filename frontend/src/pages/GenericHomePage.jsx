@@ -31,86 +31,154 @@ export default function GenericHomePage() {
   const [isAddHomeModalOpen, setIsAddHomeModalOpen] = useState(false);
   const [selectedHomeId, setSelectedHomeId] = useState(null);
 
+  // เพิ่ม state สำหรับเก็บ all homes
+  const [allFilteredHomes, setAllFilteredHomes] = useState([]);
+
   useEffect(() => {
     if (homeTypeName) {
-      fetchHomes();
-      // โหลดข้อมูลเพิ่มเติมถ้าจำเป็น
-      if (homeTypeName === 'บ้านพักแฝด') {
-        loadTwinAreas();
+      // ✅ อ่าน query parameters และ set state
+      const searchParams = new URLSearchParams(location.search);
+      const areaParam = searchParams.get('area');
+      const rowParam = searchParams.get('row');
+      
+      // ตั้งค่า filter ตาม query parameters
+      if (areaParam && homeTypeName === 'บ้านพักแฝด') {
+        setSelectedArea(areaParam);
+      } else if (homeTypeName === 'บ้านพักแฝด') {
+        setSelectedArea("all");
+      }
+      
+      if (rowParam && homeTypeName === 'บ้านพักเรือนแถว') {
+        setSelectedRow(rowParam);
       } else if (homeTypeName === 'บ้านพักเรือนแถว') {
-        loadTownhomeRows();
+        setSelectedRow("all");
+      }
+      
+      const loadData = async () => {
+        try {
+          console.log("Loading data for:", homeTypeName);
+          
+          // โหลดข้อมูลเสริมก่อน
+          if (homeTypeName === 'บ้านพักแฝด') {
+            await loadTwinAreas();
+          } else if (homeTypeName === 'บ้านพักเรือนแถว') {
+            await loadTownhomeRows();
+          }
+          
+          // จากนั้นค่อยโหลด homes
+          fetchHomes();
+        } catch (error) {
+          console.error("Error loading data:", error);
+        }
+      };
+      
+      loadData();
+    }
+  }, [homeTypeName, location.search]); // เพิ่ม location.search เป็น dependency
+
+  const fetchHomes = async () => {
+    try {
+      console.log("Fetching homes for:", homeTypeName);
+      
+      const res = await axios.get("http://localhost:3001/api/homes");
+      const filteredHomes = res.data.filter(h => h.hType === homeTypeName);
+      
+      console.log("Filtered homes:", filteredHomes.length);
+      
+      // เก็บ filteredHomes ใน state
+      setAllFilteredHomes(filteredHomes);
+      
+      // โหลดข้อมูลผู้ถือสิทธิ
+      const homesWithRightHolders = await Promise.all(
+        filteredHomes.map(async (home) => {
+          try {
+            const guestsResponse = await axios.get(`http://localhost:3001/api/guests/home/${home.home_id}`);
+            const rightHolder = guestsResponse.data.find(guest => guest.is_right_holder === 1);
+            return {
+              ...home,
+              right_holder: rightHolder || null
+            };
+          } catch (error) {
+            console.error(`Error fetching guests for home ${home.home_id}:`, error);
+            return {
+              ...home,
+              right_holder: null
+            };
+          }
+        })
+      );
+
+      // กรองเพิ่มเติมตาม dropdown
+      let finalHomes = homesWithRightHolders;
+      if (homeTypeName === 'บ้านพักแฝด' && selectedArea !== "all") {
+        finalHomes = homesWithRightHolders.filter(h => h.twin_area_id == selectedArea);
+      } else if (homeTypeName === 'บ้านพักเรือนแถว' && selectedRow !== "all") {
+        finalHomes = homesWithRightHolders.filter(h => h.row_id == selectedRow);
+      }
+      
+      setHomes(finalHomes);
+      
+    } catch (err) {
+      console.error("Error fetching homes:", err);
+    }
+  };
+
+  // เพิ่ม useEffect สำหรับคำนวณ counts เมื่อข้อมูลครบ
+  useEffect(() => {
+    if (allFilteredHomes.length > 0) {
+      console.log("Calculating counts with all filtered homes...");
+      
+      if (homeTypeName === 'บ้านพักแฝด' && twinAreas.length > 0) {
+        const counts = { total: allFilteredHomes.length };
+        
+        twinAreas.forEach(area => {
+          const count = allFilteredHomes.filter(h => h.twin_area_id == area.id).length;
+          counts[area.id] = count;
+          console.log(`Area ${area.name} (${area.id}): ${count} homes`);
+        });
+        
+        console.log("Final area counts:", counts);
+        setAreaCounts(counts);
+        
+      } else if (homeTypeName === 'บ้านพักเรือนแถว' && townhomeRows.length > 0) {
+        const counts = { total: allFilteredHomes.length };
+        
+        townhomeRows.forEach(row => {
+          const count = allFilteredHomes.filter(h => h.row_id == row.id).length;
+          counts[row.id] = count;
+          console.log(`Row ${row.name} (${row.id}): ${count} homes`);
+        });
+        
+        console.log("Final row counts:", counts);
+        setRowCounts(counts);
       }
     }
-  }, [homeTypeName, selectedRow, selectedArea]);
-
-  const fetchHomes = () => {
-    axios.get("http://localhost:3001/api/homes")
-      .then(async (res) => {
-        // กรองตามประเภทบ้าน
-        const filteredHomes = res.data.filter(h => h.hType === homeTypeName);
-        
-        // โหลดข้อมูลผู้ถือสิทธิสำหรับแต่ละบ้าน
-        const homesWithRightHolders = await Promise.all(
-          filteredHomes.map(async (home) => {
-            try {
-              const guestsResponse = await axios.get(`http://localhost:3001/api/guests/home/${home.home_id}`);
-              const rightHolder = guestsResponse.data.find(guest => guest.is_right_holder === 1);
-              return {
-                ...home,
-                right_holder: rightHolder || null
-              };
-            } catch (error) {
-              console.error(`Error fetching guests for home ${home.home_id}:`, error);
-              return {
-                ...home,
-                right_holder: null
-              };
-            }
-          })
-        );
-
-        // กรองเพิ่มเติมตาม dropdown
-        let finalHomes = homesWithRightHolders;
-        if (homeTypeName === 'บ้านพักแฝด' && selectedArea !== "all") {
-          finalHomes = homesWithRightHolders.filter(h => h.twin_area_id == selectedArea);
-        } else if (homeTypeName === 'บ้านพักเรือนแถว' && selectedRow !== "all") {
-          finalHomes = homesWithRightHolders.filter(h => h.row_id == selectedRow);
-        }
-        
-        setHomes(finalHomes);
-        calculateCounts(filteredHomes);
-      })
-      .catch(err => {
-        console.error("Error fetching homes:", err);
-      });
-  };
-
-  const calculateCounts = (allHomes) => {
-    if (homeTypeName === 'บ้านพักแฝด') {
-      const counts = { total: allHomes.length };
-      twinAreas.forEach(area => {
-        counts[area.id] = allHomes.filter(h => h.twin_area_id == area.id).length;
-      });
-      setAreaCounts(counts);
-    } else if (homeTypeName === 'บ้านพักเรือนแถว') {
-      const counts = { total: allHomes.length };
-      townhomeRows.forEach(row => {
-        counts[row.id] = allHomes.filter(h => h.row_id == row.id).length;
-      });
-      setRowCounts(counts);
-    }
-  };
+  }, [allFilteredHomes, twinAreas, townhomeRows, homeTypeName]);
 
   const loadTwinAreas = () => {
-    axios.get("http://localhost:3001/api/twin-areas")
-      .then(res => setTwinAreas(res.data))
-      .catch(err => console.error("Error loading twin areas:", err));
+    return axios.get("http://localhost:3001/api/twin-areas")
+      .then(res => {
+        console.log("Twin areas loaded:", res.data);
+        setTwinAreas(res.data);
+        return res.data; // ส่งข้อมูลกลับ
+      })
+      .catch(err => {
+        console.error("Error loading twin areas:", err);
+        return [];
+      });
   };
 
   const loadTownhomeRows = () => {
-    axios.get("http://localhost:3001/api/townhome-rows")
-      .then(res => setTownhomeRows(res.data))
-      .catch(err => console.error("Error loading townhome rows:", err));
+    return axios.get("http://localhost:3001/api/townhome-rows")
+      .then(res => {
+        console.log("Townhome rows loaded:", res.data);
+        setTownhomeRows(res.data);
+        return res.data; // ส่งข้อมูลกลับ
+      })
+      .catch(err => {
+        console.error("Error loading townhome rows:", err);
+        return [];
+      });
   };
 
   const handleRowChange = (rowId) => {
@@ -220,6 +288,7 @@ export default function GenericHomePage() {
           </div>
           
           {/* ปุ่มเพิ่มบ้านอยู่มุมขวาบน */}
+          {homes.length > 0 && (
           <button
             onClick={handleAddHome}
             style={{
@@ -241,7 +310,7 @@ export default function GenericHomePage() {
           >
             + เพิ่มบ้าน
           </button>
-          
+          )}
           {/* เนื้อหาที่เหลือ... */}
           <div style={{ 
             padding: "0 20px 32px 32px",
@@ -313,9 +382,7 @@ export default function GenericHomePage() {
                         <strong>เลขที่:</strong> {home.Address}
                       </h3>
                       <div className="movie-details">
-                        <div className="detail-item">
-                          <strong>ประเภท:</strong> {home.hType}
-                        </div>
+                     
                         
                         {/* แสดงพื้นที่สำหรับบ้านพักแฝด */}
                         {homeTypeName === 'บ้านพักแฝด' && (

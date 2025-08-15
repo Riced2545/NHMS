@@ -90,7 +90,7 @@ export default function TypePage() {
         const occupied = homes.filter(h => h.status_id === 1).length;
         setHouseStatus({ vacant, occupied });
 
-        // รวมข้อมูลบ้านกับผู้อยู่อาศัย
+        // รวมข้อมูลบ้านกับผู้อู่อาศัย
         const processedDetailData = homes.map(house => {
           const houseGuests = guests.filter(guest => guest.home_id === house.home_id);
           

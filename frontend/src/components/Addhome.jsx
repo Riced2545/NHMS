@@ -373,11 +373,6 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
                 required
                 placeholder="กรอกหมายเลขบ้าน (เช่น 101, 201)"
               />
-              {form.Address && (
-                <small style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>
-                  ✓ ระบบจะตรวจสอบเลขบ้านซ้ำอัตโนมัติ
-                </small>
-              )}
             </div>
 
             <div className="form-group">
@@ -404,6 +399,9 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
                 onClick={handleClose} 
                 className="btn-secondary"
                 disabled={loading}
+                // style={{
+                //   color: '#2d3138ff',
+                // }}
               >
                 ยกเลิก
               </button>

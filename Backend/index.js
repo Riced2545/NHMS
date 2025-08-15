@@ -831,7 +831,7 @@ app.get("/api/homes", (req, res) => {
       return res.status(500).json({ error: "Database error" });
     }
     
-    console.log("📊 Homes data with areas:", results);
+    
     res.json(results);
   });
 });
