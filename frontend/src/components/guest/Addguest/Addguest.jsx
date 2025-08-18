@@ -230,13 +230,16 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
   const handleRightHolderSubmit = (e) => {
     e.preventDefault();
     
-    // รวม วัน เดือน ปี เป็น dob
+    // ✅ รวม วัน เดือน ปี เป็น dob และแปลงปี พ.ศ. เป็น ค.ศ.
     if (day && month !== "" && year) {
-      const dobString = `${year}-${String(parseInt(month) + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const christianYear = parseInt(year) - 543; // แปลง พ.ศ. เป็น ค.ศ.
+      const dobString = `${christianYear}-${String(parseInt(month) + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       setForm(prev => ({ ...prev, dob: dobString }));
+      setRightHolderData({ ...form, dob: dobString });
+    } else {
+      setRightHolderData({ ...form });
     }
     
-    setRightHolderData({ ...form, dob: form.dob || `${year}-${String(parseInt(month) + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` });
     setStep("family_count");
     toast.success("บันทึกข้อมูลผู้ถือสิทธิแล้ว");
   };
@@ -364,13 +367,14 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
   const handleFamilyFormSubmit = (e) => {
     e.preventDefault();
     
-    // รวม วัน เดือน ปี ของสมาชิกปัจจุบัน
+    // ✅ รวม วัน เดือน ปี ของสมาชิกปัจจุบันและแปลงปี พ.ศ. เป็น ค.ศ.
     const currentDay = familyDays[currentFamilyIndex];
     const currentMonth = familyMonths[currentFamilyIndex];
     const currentYear = familyYears[currentFamilyIndex];
     
     if (currentDay && currentMonth !== "" && currentYear) {
-      const dobString = `${currentYear}-${String(parseInt(currentMonth) + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
+      const christianYear = parseInt(currentYear) - 543; // แปลง พ.ศ. เป็น ค.ศ.
+      const dobString = `${christianYear}-${String(parseInt(currentMonth) + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
       handleFamilyFormChange(currentFamilyIndex, 'dob', dobString);
     }
     

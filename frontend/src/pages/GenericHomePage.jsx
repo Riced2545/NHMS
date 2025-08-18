@@ -74,7 +74,37 @@ export default function GenericHomePage() {
       
       loadData();
     }
-  }, [homeTypeName, location.search]); // เพิ่ม location.search เป็น dependency
+  }, [homeTypeName, location.search]);
+
+  // ✅ เพิ่ม useEffect สำหรับกรองข้อมูลใหม่เมื่อ filter เปลี่ยน
+  useEffect(() => {
+    if (allFilteredHomes.length > 0) {
+      console.log("🔄 Re-filtering homes due to filter change");
+      console.log("Selected Area:", selectedArea, "Selected Row:", selectedRow);
+      console.log("Home Type:", homeTypeName);
+      
+      let finalHomes = allFilteredHomes;
+      
+      if (homeTypeName === 'บ้านพักแฝด' && selectedArea !== "all") {
+        console.log("Filtering by area:", selectedArea);
+        finalHomes = allFilteredHomes.filter(h => h.twin_area_id == selectedArea);
+        console.log("Filtered homes by area:", finalHomes.length);
+      } else if (homeTypeName === 'บ้านพักเรือนแถว' && selectedRow !== "all") {
+        console.log("Filtering by row:", selectedRow);
+        finalHomes = allFilteredHomes.filter(h => h.row_id == selectedRow);
+        console.log("Filtered homes by row:", finalHomes.length);
+      }
+      
+      console.log("Final homes to display:", finalHomes.length);
+      setHomes(finalHomes);
+      
+      // ✅ แจ้ง Sidebar ให้อัปเดต
+      if (window.refreshSidebar) {
+        window.refreshSidebar();
+      }
+      window.dispatchEvent(new Event('homeDataUpdated'));
+    }
+  }, [selectedArea, selectedRow, allFilteredHomes, homeTypeName]);
 
   const fetchHomes = async () => {
     try {
@@ -84,6 +114,7 @@ export default function GenericHomePage() {
       const filteredHomes = res.data.filter(h => h.hType === homeTypeName);
       
       console.log("Filtered homes:", filteredHomes.length);
+      console.log("Homes data:", filteredHomes.map(h => ({ id: h.home_id, address: h.Address, area: h.twin_area_id, row: h.row_id })));
       
       // เก็บ filteredHomes ใน state
       setAllFilteredHomes(filteredHomes);
@@ -108,15 +139,10 @@ export default function GenericHomePage() {
         })
       );
 
-      // กรองเพิ่มเติมตาม dropdown
-      let finalHomes = homesWithRightHolders;
-      if (homeTypeName === 'บ้านพักแฝด' && selectedArea !== "all") {
-        finalHomes = homesWithRightHolders.filter(h => h.twin_area_id == selectedArea);
-      } else if (homeTypeName === 'บ้านพักเรือนแถว' && selectedRow !== "all") {
-        finalHomes = homesWithRightHolders.filter(h => h.row_id == selectedRow);
-      }
+      // ✅ อัปเดต allFilteredHomes ด้วยข้อมูล right holders
+      setAllFilteredHomes(homesWithRightHolders);
       
-      setHomes(finalHomes);
+      // ✅ ไม่ต้องกรองที่นี่แล้ว เพราะจะกรองใน useEffect ข้างบน
       
     } catch (err) {
       console.error("Error fetching homes:", err);

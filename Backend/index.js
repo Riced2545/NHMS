@@ -1249,33 +1249,94 @@ app.get("/api/eligibility", (req, res) => {
 
 // แก้ไข API สำหรับดึง guest logs
 app.get("/api/guest_logs", (req, res) => {
-  const query = `
-    SELECT 
-      gl.*,
-      COALESCE(gl.rank_name, r.name) as rank_name,
-      COALESCE(gl.name, g.name) as name,
-      COALESCE(gl.lname, g.lname) as lname,
-      COALESCE(gl.home_address, h.Address) as home_address,
-      COALESCE(gl.home_type_name, ht.name) as home_type_name,
-      tr.name as row_name,
-      tr.row_number
-    FROM guest_logs gl
-    LEFT JOIN guest g ON gl.guest_id = g.id
-    LEFT JOIN ranks r ON g.rank_id = r.id
-    LEFT JOIN home h ON gl.home_id = h.home_id
-    LEFT JOIN home_types ht ON h.home_type_id = ht.id
-    LEFT JOIN townhome_rows tr ON h.row_id = tr.id  -- เพิ่มบรรทัดนี้
-    ORDER BY gl.created_at DESC
-    LIMIT 50
-  `;
-  
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error("Error fetching guest logs:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.json(results);
+  // เพิ่มคอลัมน์ที่จำเป็นในตาราง guest_logs ก่อน
+  const alterQueries = [
+    "ALTER TABLE guest_logs ADD COLUMN IF NOT EXISTS rank_name VARCHAR(50)",
+    "ALTER TABLE guest_logs ADD COLUMN IF NOT EXISTS name VARCHAR(255)", 
+    "ALTER TABLE guest_logs ADD COLUMN IF NOT EXISTS lname VARCHAR(255)",
+    "ALTER TABLE guest_logs ADD COLUMN IF NOT EXISTS home_address VARCHAR(255)",
+    "ALTER TABLE guest_logs ADD COLUMN IF NOT EXISTS home_type_name VARCHAR(255)"
+  ];
+
+  // รันคำสั่ง ALTER TABLE ทั้งหมด
+  let completedAlters = 0;
+  alterQueries.forEach((alterQuery, index) => {
+    db.query(alterQuery, (alterErr) => {
+      if (alterErr && !alterErr.message.includes('Duplicate column')) {
+        console.log(`Warning: ${alterErr.message}`);
+      }
+      
+      completedAlters++;
+      if (completedAlters === alterQueries.length) {
+        // หลังจาก ALTER เสร็จแล้ว ค่อย SELECT ข้อมูล
+        fetchGuestLogs();
+      }
+    });
   });
+
+  function fetchGuestLogs() {
+    // ใช้ query ที่ง่ายขึ้น และปลอดภัยกว่า
+    const query = `
+      SELECT 
+        gl.*,
+        COALESCE(gl.rank_name, r.name, 'ไม่ระบุ') as rank_name,
+        COALESCE(gl.name, g.name, 'ไม่ระบุ') as name,
+        COALESCE(gl.lname, g.lname, 'ไม่ระบุ') as lname,
+        COALESCE(gl.home_address, h.Address, 'ไม่ระบุ') as home_address,
+        COALESCE(gl.home_type_name, ht.name, 'ไม่ระบุ') as home_type_name,
+        COALESCE(tr.name, CONCAT('แถว ', tr.row_number), '') as row_name,
+        COALESCE(tr.row_number, 0) as row_number
+      FROM guest_logs gl
+      LEFT JOIN guest g ON gl.guest_id = g.id
+      LEFT JOIN ranks r ON g.rank_id = r.id  
+      LEFT JOIN home h ON gl.home_id = h.home_id
+      LEFT JOIN home_types ht ON h.home_type_id = ht.id
+      LEFT JOIN townhome_rows tr ON h.row_id = tr.id
+      ORDER BY gl.created_at DESC
+      LIMIT 100
+    `;
+    
+    console.log("🔍 Executing guest logs query...");
+    
+    db.query(query, (err, results) => {
+      if (err) {
+        console.error("❌ Error fetching guest logs:", err);
+        
+        // ถ้า error ให้ลองดึงข้อมูลแบบง่ายๆ
+        const simpleQuery = "SELECT * FROM guest_logs ORDER BY created_at DESC LIMIT 100";
+        
+        db.query(simpleQuery, (simpleErr, simpleResults) => {
+          if (simpleErr) {
+            console.error("❌ Simple query also failed:", simpleErr);
+            return res.status(500).json({ 
+              error: "Database error", 
+              details: simpleErr.message 
+            });
+          }
+          
+          console.log("✅ Simple query successful, returning basic data");
+          
+          // เติมข้อมูลเริ่มต้น
+          const processedResults = simpleResults.map(log => ({
+            ...log,
+            rank_name: log.rank_name || 'ไม่ระบุ',
+            name: log.name || 'ไม่ระบุ',
+            lname: log.lname || 'ไม่ระบุ',
+            home_address: log.home_address || 'ไม่ระบุ',
+            home_type_name: log.home_type_name || 'ไม่ระบุ',
+            row_name: '',
+            row_number: 0
+          }));
+          
+          res.json(processedResults);
+        });
+        return;
+      }
+      
+      console.log(`✅ Fetched ${results.length} guest logs successfully`);
+      res.json(results);
+    });
+  }
 });
 
 app.delete("/api/guest_logs", (req, res) => {
@@ -1289,31 +1350,47 @@ app.listen(3001, () => {
   console.log("🚀 Server running on http://localhost:3001");
 });
 
-// เพิ่ม API สำหรับดูคนใกล้เกษียณ
+// เพิ่ม API สำหรับดูคนใกล้เกษียณ - แก้ไข
 app.get("/api/retirement", (req, res) => {
+  console.log("🔍 Fetching retirement data...");
+  
+  // Query แบบง่าย - ดึงทุกคนที่มี DOB
   const sql = `
     SELECT 
       guest.*,
-      ranks.name as rank_name,
-      home.Address,
-      home_types.name as home_type_name,
-      DATEDIFF(DATE_ADD(dob, INTERVAL 60 YEAR), CURDATE()) as days_to_retirement,
-      DATE_ADD(dob, INTERVAL 60 YEAR) as retirement_date,
-      TIMESTAMPDIFF(YEAR, dob, CURDATE()) as current_age
+      COALESCE(ranks.name, guest.title, 'ไม่ระบุยศ') as rank_name,
+      COALESCE(home.Address, 'ไม่ระบุที่อยู่') as Address,
+      COALESCE(home_types.name, 'ไม่ระบุประเภท') as home_type_name,
+      DATE_ADD(guest.dob, INTERVAL 60 YEAR) as retirement_date,
+      TIMESTAMPDIFF(YEAR, guest.dob, CURDATE()) as current_age,
+      DATEDIFF(DATE_ADD(guest.dob, INTERVAL 60 YEAR), CURDATE()) as days_to_retirement
     FROM guest 
     LEFT JOIN ranks ON guest.rank_id = ranks.id
     LEFT JOIN home ON guest.home_id = home.home_id
     LEFT JOIN home_types ON home.home_type_id = home_types.id
     WHERE guest.dob IS NOT NULL
-    AND DATEDIFF(DATE_ADD(dob, INTERVAL 60 YEAR), CURDATE()) BETWEEN 0 AND 60
     ORDER BY days_to_retirement ASC
   `;
   
+  console.log("🔍 Executing simple retirement query...");
+  
   db.query(sql, (err, results) => {
     if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Database error" });
+      console.error("❌ Database error:", err);
+      return res.status(500).json({ error: "Database error", details: err.message });
     }
+    
+    console.log(`✅ Found ${results.length} people with DOB`);
+    
+    if (results.length > 0) {
+      console.log("📋 First record:", {
+        name: results[0].name,
+        dob: results[0].dob,
+        age: results[0].current_age,
+        days_to_retirement: results[0].days_to_retirement
+      });
+    }
+    
     res.json(results);
   });
 });
@@ -1436,70 +1513,240 @@ app.post("/api/guests", (req, res) => {
 app.delete("/api/guests/:id", (req, res) => {
   const guestId = req.params.id;
   
-  // ดึงข้อมูลผู้พักก่อนลบ
-  db.query(
-    `SELECT guest.*, home.Address, home.home_id
-     FROM guest 
-     LEFT JOIN home ON guest.home_id = home.home_id
-     WHERE guest.id = ?`,
-    [guestId],
-    (err, guestResults) => {
+  console.log("🗑️ Attempting to delete guest ID:", guestId);
+  
+  if (!guestId || isNaN(guestId)) {
+    console.error("❌ Invalid guest ID:", guestId);
+    return res.status(400).json({ message: "ID ของผู้พักอาศัยไม่ถูกต้อง" });
+  }
+  
+  // 🔄 เริ่ม Transaction เพื่อลบข้อมูลที่เกี่ยวข้องทั้งหมด
+  db.beginTransaction((transErr) => {
+    if (transErr) {
+      console.error("❌ Transaction error:", transErr);
+      return res.status(500).json({ 
+        error: "เกิดข้อผิดพลาดในการเริ่ม transaction",
+        details: transErr.message 
+      });
+    }
+    
+    // ขั้นตอนที่ 1: ดึงข้อมูลผู้พักก่อนลบ
+    const getGuestSql = `
+      SELECT guest.*, 
+             COALESCE(ranks.name, guest.title) as rank_display,
+             home.Address, 
+             home.home_id,
+             home_types.name as home_type
+      FROM guest 
+      LEFT JOIN ranks ON guest.rank_id = ranks.id
+      LEFT JOIN home ON guest.home_id = home.home_id
+      LEFT JOIN home_types ON home.home_type_id = home_types.id
+      WHERE guest.id = ?
+    `;
+    
+    db.query(getGuestSql, [guestId], (err, guestResults) => {
       if (err) {
-        console.error("Database error:", err);
-        return res.status(500).json({ error: "Database error" });
+        console.error("❌ Database error fetching guest:", err);
+        return db.rollback(() => {
+          res.status(500).json({ 
+            error: "เกิดข้อผิดพลาดในการดึงข้อมูลผู้พักอาศัย",
+            details: err.message 
+          });
+        });
       }
       
       if (guestResults.length === 0) {
-        return res.status(404).json({ message: "ไม่พบผู้พักอาศัย" });
+        console.log("⚠️ Guest not found:", guestId);
+        return db.rollback(() => {
+          res.status(404).json({ message: "ไม่พบผู้พักอาศัย" });
+        });
       }
       
       const guest = guestResults[0];
       const homeId = guest.home_id;
       
-      // ลบผู้พักอาศัย
-      db.query("DELETE FROM guest WHERE id = ?", [guestId], (deleteErr) => {
-        if (deleteErr) {
-          console.error("Database error:", deleteErr);
-          return res.status(500).json({ error: "Database error" });
+      console.log("👤 Found guest:", guest.name, guest.lname, "in home:", guest.Address);
+      
+      // ขั้นตอนที่ 2: ลบข้อมูลจาก guest_logs ที่เกี่ยวข้องก่อน (ถ้ามี)
+      const deleteLogsSql = "DELETE FROM guest_logs WHERE guest_id = ?";
+      
+      db.query(deleteLogsSql, [guestId], (logDeleteErr, logDeleteResult) => {
+        if (logDeleteErr) {
+          console.error("❌ Error deleting guest logs:", logDeleteErr);
+          return db.rollback(() => {
+            res.status(500).json({ 
+              error: "เกิดข้อผิดพลาดในการลบ log ของผู้พักอาศัย",
+              details: logDeleteErr.message 
+            });
+          });
         }
         
-        // ตรวจสอบว่ายังมีผู้พักอาศัยในบ้านหลังหรือไม่
-        db.query("SELECT COUNT(*) as count FROM guest WHERE home_id = ?", [homeId], (countErr, countResults) => {
-          if (countErr) {
-            console.error("Error counting guests:", countErr);
-          } else {
-            const guestCount = countResults[0].count;
-            
-            // ถ้าไม่มีผู้พักแล้ว ให้เปลี่ยนสถานะเป็น "ไม่มีผู้พักอาศัย" (status_id = 2)
-            if (guestCount === 0) {
-              db.query("UPDATE home SET status_id = 2 WHERE home_id = ?", [homeId], (updateErr) => {
-                if (updateErr) {
-                  console.error("Error updating home status:", updateErr);
-                }
+        console.log("✅ Deleted guest logs:", logDeleteResult.affectedRows, "rows");
+        
+        // ขั้นตอนที่ 3: ลบผู้พักอาศัย
+        const deleteGuestSql = "DELETE FROM guest WHERE id = ?";
+        
+        db.query(deleteGuestSql, [guestId], (deleteErr, deleteResult) => {
+          if (deleteErr) {
+            console.error("❌ Database error deleting guest:", deleteErr);
+            return db.rollback(() => {
+              res.status(500).json({ 
+                error: "เกิดข้อผิดพลาดในการลบผู้พักอาศัย",
+                details: deleteErr.message 
               });
-            }
+            });
           }
           
-          // บันทึก log
-          const logDetail = `ลบผู้พักอาศัย: ${guest.name} ${guest.lname} จากบ้านเลขที่ ${guest.Address}`;
-          db.query(
-            "INSERT INTO guest_logs (guest_id, home_id, action, detail) VALUES (?, ?, ?, ?)",
-            [guestId, homeId, "delete", logDetail],
-            (logErr) => {
-              if (logErr) {
-                console.error("Error logging guest deletion:", logErr);
-              }
-              
-              res.json({ 
-                success: true, 
-                message: "ลบผู้พักอาศัยสำเร็จ" 
+          if (deleteResult.affectedRows === 0) {
+            console.log("⚠️ No rows affected - guest might not exist:", guestId);
+            return db.rollback(() => {
+              res.status(404).json({ message: "ไม่พบผู้พักอาศัยที่ต้องการลบ" });
+            });
+          }
+          
+          console.log("✅ Guest deleted successfully:", deleteResult.affectedRows, "row(s) affected");
+          
+          // ขั้นตอนที่ 4: เพิ่ม log การลบ (log ใหม่)
+          const logDetail = `ลบผู้พักอาศัย: ${guest.rank_display || ''} ${guest.name} ${guest.lname} จากบ้านเลขที่ ${guest.Address} (${guest.home_type || ''})`;
+          
+          const insertNewLogSql = `
+            INSERT INTO guest_logs (
+              guest_id, 
+              home_id, 
+              action, 
+              detail,
+              rank_name,
+              name,
+              lname,
+              home_address,
+              home_type_name,
+              created_at
+            ) VALUES (NULL, ?, 'delete', ?, ?, ?, ?, ?, ?, NOW())
+          `;
+          
+          db.query(insertNewLogSql, [
+            homeId,
+            logDetail,
+            guest.rank_display || null,
+            guest.name,
+            guest.lname,
+            guest.Address,
+            guest.home_type
+          ], (newLogErr) => {
+            if (newLogErr) {
+              console.error("⚠️ Error creating new log (continuing anyway):", newLogErr);
+            } else {
+              console.log("✅ New deletion log created successfully");
+            }
+            
+            // ขั้นตอนที่ 5: ตรวจสอบจำนวนผู้พักที่เหลือในบ้าน
+            if (homeId) {
+              db.query("SELECT COUNT(*) as count FROM guest WHERE home_id = ?", [homeId], (countErr, countResults) => {
+                if (countErr) {
+                  console.error("⚠️ Error counting remaining guests (continuing anyway):", countErr);
+                } else {
+                  const guestCount = countResults[0].count;
+                  console.log(`📊 Remaining guests in home ${homeId}:`, guestCount);
+                  
+                  // ถ้าไม่มีผู้พักแล้ว ให้เปลี่ยนสถานะเป็น "ไม่มีผู้พักอาศัย" (status_id = 2)
+                  if (guestCount === 0) {
+                    db.query("UPDATE home SET status_id = 2 WHERE home_id = ?", [homeId], (updateErr) => {
+                      if (updateErr) {
+                        console.error("⚠️ Error updating home status (continuing anyway):", updateErr);
+                      } else {
+                        console.log("✅ Home status updated to 'vacant'");
+                      }
+                      
+                      // ขั้นตอนสุดท้าย: Commit transaction
+                      db.commit((commitErr) => {
+                        if (commitErr) {
+                          console.error("❌ Commit error:", commitErr);
+                          return db.rollback(() => {
+                            res.status(500).json({ 
+                              error: "เกิดข้อผิดพลาดในการ commit transaction",
+                              details: commitErr.message 
+                            });
+                          });
+                        }
+                        
+                        console.log("✅ Transaction committed successfully");
+                        
+                        // ส่งผลลัพธ์สำเร็จ
+                        res.json({ 
+                          success: true, 
+                          message: "ลบผู้พักอาศัยสำเร็จ",
+                          deletedGuest: {
+                            id: guestId,
+                            name: guest.name,
+                            lname: guest.lname
+                          },
+                          logsDeleted: logDeleteResult.affectedRows
+                        });
+                      });
+                    });
+                  } else {
+                    // ขั้นตอนสุดท้าย: Commit transaction (กรณียังมีผู้พักอยู่)
+                    db.commit((commitErr) => {
+                      if (commitErr) {
+                        console.error("❌ Commit error:", commitErr);
+                        return db.rollback(() => {
+                          res.status(500).json({ 
+                            error: "เกิดข้อผิดพลาดในการ commit transaction",
+                            details: commitErr.message 
+                          });
+                        });
+                      }
+                      
+                      console.log("✅ Transaction committed successfully");
+                      
+                      // ส่งผลลัพธ์สำเร็จ
+                      res.json({ 
+                        success: true, 
+                        message: "ลบผู้พักอาศัยสำเร็จ",
+                        deletedGuest: {
+                          id: guestId,
+                          name: guest.name,
+                          lname: guest.lname
+                        },
+                        logsDeleted: logDeleteResult.affectedRows
+                      });
+                    });
+                  }
+                }
+              });
+            } else {
+              // ขั้นตอนสุดท้าย: Commit transaction (กรณีไม่มี homeId)
+              db.commit((commitErr) => {
+                if (commitErr) {
+                  console.error("❌ Commit error:", commitErr);
+                  return db.rollback(() => {
+                    res.status(500).json({ 
+                      error: "เกิดข้อผิดพลาดในการ commit transaction",
+                      details: commitErr.message 
+                    });
+                  });
+                }
+                
+                console.log("✅ Transaction committed successfully");
+                
+                // ส่งผลลัพธ์สำเร็จ
+                res.json({ 
+                  success: true, 
+                  message: "ลบผู้พักอาศัยสำเร็จ",
+                  deletedGuest: {
+                    id: guestId,
+                    name: guest.name,
+                    lname: guest.lname
+                  },
+                  logsDeleted: logDeleteResult.affectedRows
+                });
               });
             }
-          );
+          });
         });
       });
-    }
-  );
+    });
+  });
 });
 
 // เพิ่ม API สำหรับประเภทบ้าน
@@ -1698,5 +1945,104 @@ app.get("/api/eligible-ranks/:home_id", (req, res) => {
     } else {
       res.json(results);
     }
+  });
+});
+
+// เพิ่ม guest ใหม่ - แก้ไขให้ตรวจสอบและแปลงปี
+app.post("/api/guests", (req, res) => {
+  const { 
+    home_id, 
+    name, 
+    lname, 
+    rank_id, 
+    title,  // ✅ เพิ่มบรรทัดนี้
+    phone, 
+    id_card, 
+    is_right_holder,
+    dob,
+    pos,
+    income,
+    job_phone,
+    image_url
+  } = req.body;
+
+  console.log("📝 Received guest data:", { 
+    name, lname, rank_id, title, dob, is_right_holder 
+  });
+
+  // ✅ ตรวจสอบและแปลงปี ถ้าจำเป็น
+  let convertedDob = null;
+  if (dob) {
+    const dobDate = new Date(dob);
+    const year = dobDate.getFullYear();
+    
+    console.log(`📅 Processing DOB: ${dob}, Year: ${year}`);
+    
+    // ถ้าปีมากกว่า 2100 ถือว่าเป็น พ.ศ. ให้แปลงเป็น ค.ศ.
+    if (year > 2100) {
+      const christianYear = year - 543;
+      dobDate.setFullYear(christianYear);
+      convertedDob = dobDate.toISOString().split('T')[0];
+      console.log(`🔄 Converting Buddhist year ${year} to Christian year ${christianYear}: ${convertedDob}`);
+    } else {
+      convertedDob = dob;
+      console.log(`✅ Date is already in Christian era: ${convertedDob}`);
+    }
+  } else {
+    console.log("⚠️ No DOB provided");
+  }
+
+  // ✅ จัดการ rank_id และ title
+  let finalRankId = null;
+  let finalTitle = null;
+
+  if (is_right_holder) {
+    // ผู้ถือสิทธิ - ใช้ rank_id
+    finalRankId = rank_id && !isNaN(rank_id) ? rank_id : null;
+  } else {
+    // สมาชิกครอบครัว - ใช้ title
+    finalTitle = title || null;
+  }
+
+  console.log("💾 Final data to save:", {
+    home_id, name, lname, 
+    finalRankId, finalTitle, 
+    convertedDob, is_right_holder
+  });
+
+  const sql = `INSERT INTO guest (
+    home_id, name, lname, rank_id, title, phone, id_card, is_right_holder, dob, pos, income, job_phone, image_url
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+  const values = [
+    home_id, 
+    name, 
+    lname, 
+    finalRankId,  // อาจเป็น null สำหรับสมาชิกครอบครัว
+    finalTitle,   // อาจเป็น null สำหรับผู้ถือสิทธิ
+    phone, 
+    id_card, 
+    is_right_holder || 0,
+    convertedDob, // DOB ที่แปลงแล้ว
+    pos,
+    income,
+    job_phone,
+    image_url
+  ];
+
+  console.log("🚀 Executing SQL with values:", values);
+
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error("❌ Error adding guest:", err);
+      return res.status(500).json({ error: "Failed to add guest", details: err.message });
+    }
+
+    console.log("✅ Guest added successfully with ID:", result.insertId);
+    res.json({ 
+      success: true, 
+      id: result.insertId,
+      message: "เพิ่มผู้พักสำเร็จ"
+    });
   });
 });

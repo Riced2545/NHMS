@@ -69,7 +69,6 @@ export default function GuestTable({
           <th>เบอร์โทรศัพท์</th>
           <th>เบอร์โทรที่ทำงาน</th>
           <th>เงินเดือน</th>
-          <th>สถานะ</th>
           {((role_id === "1" && (onEdit || onDelete)) || role_id !== "1") && <th>จัดการ</th>}
         </tr>
       </thead>
@@ -100,11 +99,7 @@ export default function GuestTable({
               <td className="guest-data-cell">{g.phone || "-"}</td>
               <td className="guest-data-cell">{g.job_phone || "-"}</td>
               <td className="guest-data-cell">{g.income || "-"}</td>
-              <td className="status-cell">
-                <span className={`status-badge ${g.is_right_holder ? 'right-holder' : 'family-member'}`}>
-                  {g.is_right_holder ? 'ผู้ถือสิทธิ์' : 'สมาชิกครอบครัว'}
-                </span>
-              </td>
+             
               
               {((role_id === "1" && (onEdit || onDelete)) || role_id !== "1") && (
                 <td className="action-cell" onClick={e => e.stopPropagation()}>

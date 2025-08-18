@@ -16,21 +16,41 @@ export default function RetirementPage() {
   const fetchRetirementData = async () => {
     try {
       setLoading(true);
+      console.log("🔄 Fetching retirement data...");
+      
       const response = await axios.get("http://localhost:3001/api/retirement");
+      console.log("📋 Retirement data received:", response.data);
+      console.log("📊 Records count:", response.data.length);
+      
       setRetirementData(response.data);
+      
+      // Debug ข้อมูลที่ได้
+      if (response.data.length > 0) {
+        console.log("✅ Sample record:", response.data[0]);
+      }
+      
     } catch (error) {
-      console.error("Error fetching retirement data:", error);
+      console.error("❌ Error fetching retirement data:", error);
+      console.error("❌ Error details:", error.response?.data);
+      
+      // แสดง error ให้ผู้ใช้เห็น
+      setRetirementData([]);
     } finally {
       setLoading(false);
     }
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('th-TH', {
+    const date = new Date(dateString);
+    const options = {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
-    });
+      day: 'numeric',
+      calendar: 'buddhist', // ใช้ปฏิทิน พ.ศ.
+      numberingSystem: 'latn' // ใช้ตัวเลขอารบิก
+    };
+    
+    return date.toLocaleDateString('th-TH', options);
   };
 
   const getDaysMessage = (days) => {

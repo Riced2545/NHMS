@@ -39,6 +39,8 @@ export default function ViewGuest() {
       return;
     }
     
+    console.log("🗑️ Attempting to delete guest:", guest);
+    
     const confirmToast = toast(
       ({ closeToast }) => (
         <div style={{ padding: '10px' }}>
@@ -105,8 +107,13 @@ export default function ViewGuest() {
 
     const performDelete = async () => {
       try {
-        await axios.delete(`http://localhost:3001/api/guests/${guest.id}`);
-        fetchGuests();
+        console.log("🔄 Sending delete request to:", `http://localhost:3001/api/guests/${guest.id}`);
+        
+        const response = await axios.delete(`http://localhost:3001/api/guests/${guest.id}`);
+        
+        console.log("✅ Delete response:", response.data);
+        
+        fetchGuests(); // รีเฟรชรายการ
         
         toast.success(`ลบข้อมูล ${guest.name} ${guest.lname} เสร็จแล้ว!`, {
           position: "top-right",
@@ -114,10 +121,30 @@ export default function ViewGuest() {
         });
         
       } catch (error) {
-        console.error('Error deleting guest:', error);
-        toast.error("เกิดข้อผิดพลาดในการลบข้อมูล", {
+        console.error('❌ Error deleting guest:', error);
+        
+        let errorMessage = "เกิดข้อผิดพลาดในการลบข้อมูล";
+        
+        if (error.response) {
+          console.error('Error response:', error.response.data);
+          console.error('Error status:', error.response.status);
+          
+          // แสดงข้อความ error จาก backend
+          if (error.response.data.message) {
+            errorMessage = error.response.data.message;
+          } else if (error.response.data.error) {
+            errorMessage = error.response.data.error;
+          } else {
+            errorMessage = `เกิดข้อผิดพลาด: ${error.response.status}`;
+          }
+        } else if (error.request) {
+          console.error('No response received:', error.request);
+          errorMessage = "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้";
+        }
+        
+        toast.error(errorMessage, {
           position: "top-right",
-          autoClose: 3000,
+          autoClose: 5000,
         });
       }
     };

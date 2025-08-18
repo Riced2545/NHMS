@@ -83,19 +83,7 @@ export default function Navbar() {
             หน้าหลัก
           </li>
           
-          {role_id === "1" && (
-            <li
-              style={{
-                cursor: "pointer",
-                borderBottom: isActive("/addhome") ? "3px solid #fff" : "none",
-                fontWeight: isActive("/addhome") ? "bold" : "normal",
-                color: isActive("/addhome") ? "#ffe066" : "#fff",
-              }}
-              onClick={() => navigate("/addhome")}
-            >
-              เพิ่มประเภทบ้านพัก
-            </li>
-          )}
+
 
           {role_id === "1" && (
             <li

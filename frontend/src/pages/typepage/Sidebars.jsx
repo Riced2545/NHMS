@@ -29,13 +29,42 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
   const searchParams = new URLSearchParams(location.search);
   const currentHomeType = searchParams.get('type');
 
-  // ✅ โหลดข้อมูลสำหรับ Sidebar เสมอ
+  // ✅ โหลดข้อมูลสำหรับ Sidebar เสมอพร้อมอัปเดตอัตโนมัติ
   useEffect(() => {
     loadSidebarData();
+    
+    // ✅ ตั้ง interval สำหรับอัปเดตข้อมูลทุก 10 วินาที
+    const interval = setInterval(() => {
+      loadSidebarData();
+    }, 10000);
+    
+    // ✅ เพิ่ม event listener สำหรับ focus event เพื่ออัปเดตเมื่อกลับมาที่หน้าต่าง
+    const handleFocus = () => {
+      loadSidebarData();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    // ✅ เพิ่ม custom event listener สำหรับการอัปเดตจากหน้าอื่น
+    const handleHomeDataUpdate = () => {
+      console.log("🔄 Received home data update event - refreshing sidebar");
+      loadSidebarData();
+    };
+    
+    window.addEventListener('homeDataUpdated', handleHomeDataUpdate);
+    
+    // Cleanup
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('homeDataUpdated', handleHomeDataUpdate);
+    };
   }, []);
 
   const loadSidebarData = async () => {
     try {
+      console.log("🔄 Loading sidebar data...");
+      
       // โหลดข้อมูล twin areas
       const twinAreasRes = await axios.get("http://localhost:3001/api/twin-areas");
       setSidebarTwinAreas(twinAreasRes.data);
@@ -63,17 +92,31 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
       });
       setSidebarRowCounts(rowCounts);
       
-      console.log("Sidebar data loaded:", {
+      console.log("✅ Sidebar data loaded:", {
         twinAreas: twinAreasRes.data.length,
         townhomeRows: townhomeRowsRes.data.length,
         areaCounts,
-        rowCounts
+        rowCounts,
+        totalHomes: homesRes.data.length
       });
       
     } catch (error) {
-      console.error("Error loading sidebar data:", error);
+      console.error("❌ Error loading sidebar data:", error);
     }
   };
+
+  // ✅ เพิ่มฟังก์ชันสำหรับการแจ้งให้ Sidebar อัปเดต (สามารถเรียกจากหน้าอื่นได้)
+  useEffect(() => {
+    // สร้าง global function สำหรับให้หน้าอื่นเรียกใช้
+    window.refreshSidebar = () => {
+      console.log("🔄 Manual sidebar refresh requested");
+      loadSidebarData();
+    };
+    
+    return () => {
+      delete window.refreshSidebar;
+    };
+  }, []);
 
   // ✅ ใช้ข้อมูลจาก Sidebar หรือ props (ใช้ที่มีข้อมูลครบกว่า)
   const availableTwinAreas = sidebarTwinAreas.length > 0 ? sidebarTwinAreas : twinAreas;
@@ -106,20 +149,32 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
     
     console.log("Navigating to:", url);
     navigate(url);
+    
+    // ✅ อัปเดต sidebar หลังการนำทาง
+    setTimeout(() => {
+      loadSidebarData();
+    }, 500);
   };
 
-  // โหลดข้อมูล home types
+  // โหลดข้อมูล home types พร้อมอัปเดตอัตโนมัติ
   useEffect(() => {
     loadHomeTypes();
+    
+    // ✅ อัปเดต home types ทุก 30 วินาที
+    const homeTypesInterval = setInterval(() => {
+      loadHomeTypes();
+    }, 30000);
+    
+    return () => clearInterval(homeTypesInterval);
   }, []);
 
   const loadHomeTypes = async () => {
     try {
       const response = await axios.get("http://localhost:3001/api/home_types");
-      console.log("Home types loaded:", response.data);
+      console.log("🏠 Home types loaded:", response.data.length);
       setHomeTypes(response.data);
     } catch (error) {
-      console.error("Error loading home types:", error);
+      console.error("❌ Error loading home types:", error);
     }
   };
 
@@ -127,6 +182,11 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
   const handleHomeTypeClick = (homeTypeName) => {
     // ใช้ query parameter แทนการสร้าง route ใหม่
     navigate(`/homes?type=${encodeURIComponent(homeTypeName)}`);
+    
+    // ✅ อัปเดต sidebar หลังการนำทาง
+    setTimeout(() => {
+      loadSidebarData();
+    }, 500);
   };
 
   // ฟังก์ชันตรวจสอบว่าประเภทบ้านนั้นถูกเลือกหรือไม่
@@ -647,9 +707,23 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
             fontSize: '14px',
             fontWeight: 'bold',
             color: '#0369a1',
-            margin: '0 0 8px 0'
+            margin: '0 0 8px 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
           }}>
             {currentHomeType ? `ข้อมูล${currentHomeType}` : 'ข้อมูลบ้านพัก'}
+            {/* ✅ แสดงเวลาอัปเดตล่าสุด */}
+            <span style={{
+              fontSize: '10px',
+              color: '#64748b',
+              fontWeight: 'normal'
+            }}>
+              อัปเดต: {new Date().toLocaleTimeString('th-TH', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
+            </span>
           </h4>
           <p style={{
             fontSize: '12px',
@@ -661,25 +735,28 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
               <>
                 • ทุกพื้นที่: สูงสุด 6 คน<br />
                 • เลือกพื้นที่เพื่อดูรายละเอียด<br />
-                • สามารถจัดการผู้เข้าพักได้
+                • สามารถจัดการผู้เข้าพักได้<br />
               </>
             ) : currentHomeType === 'บ้านพักเรือนแถว' ? (
               <>
                 • เลือกแถวเพื่อดูบ้านในแถวนั้น<br />
                 • ทุกบ้าน: สูงสุด 6 คน<br />
-                • คลิก "ทั้งหมด" เพื่อดูทุกแถว
+                • คลิก "ทั้งหมด" เพื่อดูทุกแถว<br />
               </>
             ) : currentHomeType ? (
               <>
                 • แสดงข้อมูลบ้านประเภท {currentHomeType}<br />
                 • ความจุสูงสุด: 6 คนต่อบ้าน<br />
-                • สามารถจัดการข้อมูลได้
+                • สามารถจัดการข้อมูลได้<br />
               </>
             ) : (
               <>
                 • เลือกประเภทบ้านเพื่อดูข้อมูล<br />
                 • ความจุสูงสุด: 6 คนต่อบ้าน<br />
-                • จัดการผู้เข้าพักและสถานะ
+                • จัดการผู้เข้าพักและสถานะ<br />
+                <span style={{ fontSize: '11px', opacity: 0.8 }}>
+                  • ข้อมูลอัปเดตแบบ real-time
+                </span>
               </>
             )}
           </p>
