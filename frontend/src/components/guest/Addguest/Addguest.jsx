@@ -372,17 +372,31 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
     const currentMonth = familyMonths[currentFamilyIndex];
     const currentYear = familyYears[currentFamilyIndex];
     
+    let updatedForm = { ...familyForms[currentFamilyIndex] };
+    
     if (currentDay && currentMonth !== "" && currentYear) {
       const christianYear = parseInt(currentYear) - 543; // แปลง พ.ศ. เป็น ค.ศ.
       const dobString = `${christianYear}-${String(parseInt(currentMonth) + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
-      handleFamilyFormChange(currentFamilyIndex, 'dob', dobString);
+      updatedForm.dob = dobString;
+      
+      // ✅ **นี่คือสิ่งที่ขาด - ต้อง update state**
+      const updatedForms = [...familyForms];
+      updatedForms[currentFamilyIndex] = updatedForm;
+      setFamilyForms(updatedForms);
+      
+      console.log("📅 Updated DOB for family member:", dobString);
+    } else {
+      console.log("⚠️ Incomplete date info:", { currentDay, currentMonth, currentYear });
     }
     
     if (currentFamilyIndex < familyCount - 1) {
       setCurrentFamilyIndex(currentFamilyIndex + 1);
       toast.success(`บันทึกข้อมูลสมาชิกคนที่ ${currentFamilyIndex + 1} แล้ว`);
     } else {
-      saveAllData();
+      // ✅ ใช้ข้อมูลที่อัพเดทแล้วหลังจาก state update
+      setTimeout(() => {
+        saveAllData();
+      }, 100); // ให้เวลา state update
     }
   };
 
@@ -392,15 +406,47 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
     try {
       if (hasRightHolder) {
         // มีผู้ถือสิทธิแล้ว - บันทึกเฉพาะสมาชิกครอบครัว
-        const promises = familyForms.map(guestData => 
-          axios.post("http://localhost:3001/api/guests", {
+        console.log("💾 Saving family members:", familyForms);
+        
+        // ✅ ประมวลผล DOB สำหรับสมาชิกครอบครัวทั้งหมดก่อนส่ง
+        const processedFamilyForms = familyForms.map((guestData, index) => {
+          let processedGuest = { ...guestData };
+          
+          // ตรวจสอบ DOB ที่มีอยู่แล้ว
+          if (!processedGuest.dob) {
+            const day = familyDays[index];
+            const month = familyMonths[index];
+            const year = familyYears[index];
+            
+            if (day && month !== "" && year) {
+              const christianYear = parseInt(year) - 543;
+              const dobString = `${christianYear}-${String(parseInt(month) + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              processedGuest.dob = dobString;
+              
+              console.log(`📅 Family member ${index + 1} DOB: ${dobString}`);
+            } else {
+              console.log(`⚠️ Family member ${index + 1} incomplete date:`, { day, month, year });
+            }
+          }
+          
+          return processedGuest;
+        });
+        
+        const promises = processedFamilyForms.map((guestData, index) => {
+          console.log(`📝 Family member ${index + 1} final data:`, {
+            name: guestData.name,
+            dob: guestData.dob,
+            rank_id: guestData.rank_id
+          });
+          
+          return axios.post("http://localhost:3001/api/guests", {
             ...guestData,
             home_id: Number(guestData.home_id)
-          })
-        );
+          });
+        });
 
         await Promise.all(promises);
-        toast.success(`เพิ่มสมาชิกครอบครัว ${familyForms.length} คน สำเร็จ!`);
+        toast.success(`เพิ่มสมาชิกครอบครัว ${processedFamilyForms.length} คน สำเร็จ!`);
       } else {
         // ไม่มีผู้ถือสิทธิ - บันทึกทั้งผู้ถือสิทธิและสมาชิกครอบครัว
         const allData = [];

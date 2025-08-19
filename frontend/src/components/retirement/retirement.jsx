@@ -1,12 +1,23 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import Navbar from "../Sidebar"; // เปลี่ยนจาก ".././Sidebar" เป็น "../Sidebar"
+import Navbar from "../Sidebar";
 import { useNavigate } from "react-router-dom";
 import "./retirement.css";
 
 export default function RetirementPage() {
   const [retirementData, setRetirementData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    timeRange: '',
+    homeType: '',
+    area: '',
+    searchName: ''
+  });
+  
+  // เพิ่ม state สำหรับ pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5); // default 10 รายการต่อหน้า
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,20 +31,32 @@ export default function RetirementPage() {
       
       const response = await axios.get("http://localhost:3001/api/retirement");
       console.log("📋 Retirement data received:", response.data);
-      console.log("📊 Records count:", response.data.length);
       
-      setRetirementData(response.data);
+      // กรองเฉพาะคนที่เหลือ 1 ปีจะครบ 60 ปี และเป็นผู้ถือสิทธิ
+      const filteredData = response.data.filter(person => {
+        const daysToRetirement = calculateDaysToRetirement(person.dob);
+        
+        // เช็คว่าเหลือไม่เกิน 1 ปี
+        const isWithinOneYear = daysToRetirement > 0 && daysToRetirement <= 365;
+        
+        // เช็คว่าเป็นผู้ถือสิทธิ
+        const isRightsHolder = person.is_right_holder === 1 || 
+                              person.is_right_holder === true ||
+                              person.is_right_holder === "1";
+        
+        console.log(`Person: ${person.name} ${person.lname}, Days: ${daysToRetirement}, Rights: ${person.is_right_holder}, IsRightHolder: ${isRightsHolder}`);
+        
+        return isWithinOneYear && isRightsHolder;
+      });
       
-      // Debug ข้อมูลที่ได้
-      if (response.data.length > 0) {
-        console.log("✅ Sample record:", response.data[0]);
-      }
+      console.log("🎯 Filtered for 1-year retirement (rights holders only):", filteredData);
+      console.log("📊 Records count (1 year, rights holders):", filteredData.length);
+      
+      setRetirementData(filteredData);
       
     } catch (error) {
       console.error("❌ Error fetching retirement data:", error);
       console.error("❌ Error details:", error.response?.data);
-      
-      // แสดง error ให้ผู้ใช้เห็น
       setRetirementData([]);
     } finally {
       setLoading(false);
@@ -46,24 +69,37 @@ export default function RetirementPage() {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-      calendar: 'buddhist', // ใช้ปฏิทิน พ.ศ.
-      numberingSystem: 'latn' // ใช้ตัวเลขอารบิก
+      calendar: 'buddhist',
+      numberingSystem: 'latn'
     };
     
     return date.toLocaleDateString('th-TH', options);
   };
 
-  const getDaysMessage = (days) => {
+const getDaysMessage = (days) => {
     if (days <= 0) return "เกษียณแล้ว";
-    if (days <= 30) return `เหลือ ${days} วัน (เกือบจะเกษียณ!)`;
-    if (days <= 60) return `เหลือ ${days} วัน`;
-    return `เหลือ ${days} วัน`;
-  };
+    
+    const totalMonths = Math.ceil(days / 30);
+    const years = Math.floor(totalMonths / 12);
+    const months = totalMonths % 12;
+    
+    if (days <= 30) return `เหลือ ${totalMonths} เดือน`;
+    
+    if (years > 0 && months > 0) {
+        return `เหลือ ${years} ปี ${months} เดือน`;
+    } else if (years > 0) {
+        return `เหลือ ${years} ปี`;
+    } else {
+        return `เหลือ ${months} เดือน`;
+    }
+};
 
   const getStatusColor = (days) => {
     if (days <= 0) return "#ef4444"; // แดง - เกษียณแล้ว
-    if (days <= 30) return "#f59e0b"; // ส้ม - เกือบเกษียณ
-    if (days <= 60) return "#10b981"; // เขียว - ใกล้เกษียณ
+    if (days <= 30) return "#dc2626"; // แดงเข้ม - เกือบเกษียณ
+    if (days <= 90) return "#f59e0b"; // ส้ม - 3 เดือน
+    if (days <= 180) return "#eab308"; // เหลือง - 6 เดือน
+    if (days <= 365) return "#10b981"; // เขียว - 1 ปี
     return "#6b7280"; // เทา
   };
 
@@ -78,6 +114,70 @@ export default function RetirementPage() {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     return diffDays;
+  };
+
+  // คำนวณจำนวนเดือนที่เหลือ
+  const getMonthsToRetirement = (days) => {
+    return Math.ceil(days / 30);
+  };
+
+  // ฟังก์ชันกรองข้อมูล
+  const getFilteredData = () => {
+    let filtered = retirementData;
+    
+    // กรองตามช่วงเวลา
+    if (filters.timeRange) {
+      filtered = filtered.filter(person => {
+        const days = calculateDaysToRetirement(person.dob);
+        return days <= parseInt(filters.timeRange);
+      });
+    }
+    
+    // กรองตามประเภทบ้าน
+    if (filters.homeType) {
+      filtered = filtered.filter(person => 
+        person.home_type_name === filters.homeType
+      );
+    }
+    
+    // กรองตามชื่อ
+    if (filters.searchName) {
+      filtered = filtered.filter(person => 
+        `${person.name} ${person.lname}`.toLowerCase()
+          .includes(filters.searchName.toLowerCase())
+      );
+    }
+    
+    return filtered.sort((a, b) => calculateDaysToRetirement(a.dob) - calculateDaysToRetirement(b.dob));
+  };
+
+  // ฟังก์ชันสำหรับข้อมูลในหน้าปัจจุบัน
+  const getPaginatedData = () => {
+    const filtered = getFilteredData();
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filtered.slice(startIndex, endIndex);
+  };
+
+  // คำนวณจำนวนหน้าทั้งหมด
+  const totalPages = Math.ceil(getFilteredData().length / itemsPerPage);
+
+  // Reset หน้าเมื่อมีการกรอง
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+    setCurrentPage(1); // กลับไปหน้าแรก
+  };
+
+  // ฟังก์ชันเปลี่ยนหน้า
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // เลื่อนขึ้นบนสุด
+  };
+
+  // ฟังก์ชันเปลี่ยนจำนวนรายการต่อหน้า
+  const handleItemsPerPageChange = (items) => {
+    setItemsPerPage(items);
+    setCurrentPage(1); // กลับไปหน้าแรก
   };
 
   return (
@@ -96,36 +196,241 @@ export default function RetirementPage() {
         maxWidth: "100%",
         boxSizing: "border-box"
       }}>
-        {/* Header */}
-        <div style={{ 
-          display: "flex", 
-          justifyContent: "center", 
-          marginTop: "24px",
-          marginBottom: "32px",
-          width: "100%"
-        }}>
+
+                {/* สถิติสรุปพร้อมตัวกรอง */}
+         {!loading && retirementData.length > 0 && (
           <div style={{
-            // background: "#19b0d9", 
-            fontWeight: "bold", 
-            fontSize: "30px", // responsive font size
-            color: "#3b2566",
-            padding: "18px 48px", 
-            borderRadius: "8px", 
-            border: "6px solid #31c3e7",
-            boxShadow: " 8px 8px 0 #2b2b3d",
-            fontFamily: "'Press Start 2P', 'Courier New', monospace",
-            letterSpacing: "2px", 
-            // textShadow: "2px 2px 0 #31c3e7", 
-            userSelect: "none",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            textAlign: "center",
-            maxWidth: "90%"
+            backgroundColor: "#fff",
+            borderRadius: "18px",
+            padding: "24px",
+            boxShadow: "0 4px 24px #e5e7eb",
+            marginBottom: "24px"
           }}>
-            🕐 รายชื่อผู้ใกล้เกษียณ
+            {/* Header */}
+            <div style={{
+              fontSize: "24px",
+              fontWeight: "bold",
+              color: "#1f2937",
+              marginBottom: "8px",
+              textAlign: "center"
+            }}>
+              📊 สรุปผู้ถือสิทธิที่จะเกษียณในปีนี้
+            </div>
+
+            {/* ตัวกรองข้อมูล */}
+            <div style={{
+              borderTop: "1px solid #e5e7eb",
+              paddingTop: "20px",
+              marginTop: "20px"
+            }}>
+              {/* บรรทัดแรก - ตัวกรองหลัก */}
+              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "16px" }}>
+                
+                {/* ค้นหาชื่อ */}
+                <input
+                  type="text"
+                  placeholder="🔍 ค้นหาชื่อ-นามสกุล..."
+                  value={filters.searchName}
+                  onChange={(e) => handleFilterChange({...filters, searchName: e.target.value})}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: "2px solid #e5e7eb",
+                    minWidth: "220px",
+                    fontSize: "14px",
+                    outline: "none",
+                    transition: "border-color 0.2s"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "#3b82f6"}
+                  onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
+                />
+                
+                {/* กรองตามเวลา */}
+                <select
+                  value={filters.timeRange}
+                  onChange={(e) => handleFilterChange({...filters, timeRange: e.target.value})}
+                  style={{ 
+                    padding: "10px 12px", 
+                    borderRadius: "8px",
+                    border: "2px solid #e5e7eb",
+                    fontSize: "14px",
+                    minWidth: "160px"
+                  }}
+                >
+                  <option value="">⏰ ทุกช่วงเวลา</option>
+                  <option value="30">🔥 เร่งด่วน (30 วัน)</option>
+                  <option value="90">⚠️ 3 เดือน</option>
+                  <option value="180">📋 6 เดือน</option>
+                  <option value="273">📅 9 เดือน</option>
+                </select>
+                
+                {/* กรองตามประเภทบ้าน */}
+                <select
+                  value={filters.homeType}
+                  onChange={(e) => handleFilterChange({...filters, homeType: e.target.value})}
+                  style={{ 
+                    padding: "10px 12px", 
+                    borderRadius: "8px",
+                    border: "2px solid #e5e7eb",
+                    fontSize: "14px",
+                    minWidth: "180px"
+                  }}
+                >
+                  <option value="">🏠 ทุกประเภทบ้าน</option>
+                  <option value="บ้านพักเรือนแถว">🏘️ บ้านพักเรือนแถว</option>
+                  <option value="บ้านพักแฝด">👯 บ้านพักแฝด</option>
+                </select>
+                
+                {/* ปุ่มล้างตัวกรอง */}
+                <button
+                  onClick={() => {
+                    handleFilterChange({timeRange: '', homeType: '', area: '', searchName: ''});
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    padding: "10px 16px",
+                    backgroundColor: "#ef4444",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    transition: "background-color 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
+                >
+                  🗑️ ล้างตัวกรอง
+                </button>
+              </div>
+
+              {/* บรรทัดสอง - การจัดการหน้าและจำนวนรายการ */}
+              <div style={{ 
+                display: "flex", 
+                justifyContent: "space-between", 
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "16px",
+                paddingTop: "16px",
+                borderTop: "1px solid #e5e7eb"
+              }}>
+                
+                {/* จำนวนรายการต่อหน้า */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "14px", color: "#6b7280" }}>
+                    📄 แสดงต่อหน้า:
+                  </span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
+                    style={{
+                      padding: "6px 8px",
+                      borderRadius: "6px",
+                      border: "1px solid #d1d5db",
+                      fontSize: "14px"
+                    }}
+                  >
+                    <option value="5">5 รายการ</option>
+                    <option value="10">10 รายการ</option>
+                    <option value="20">20 รายการ</option>
+                    <option value="50">50 รายการ</option>
+                    <option value="100">100 รายการ</option>
+                  </select>
+                </div>
+
+                {/* สถิติ */}
+                <div style={{ fontSize: "14px", color: "#6b7280" }}>
+                  📊 แสดงผลลัพธ์: <strong>{getPaginatedData().length}</strong> จาก <strong>{getFilteredData().length}</strong> คน 
+                  (ทั้งหมด {retirementData.length} คน)
+                </div>
+
+                {/* ข้อมูลหน้าปัจจุบันและปุ่ม Pagination */}
+                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                  <div style={{ fontSize: "14px", color: "#6b7280" }}>
+                    📖 หน้า <strong>{currentPage}</strong> จาก <strong>{totalPages}</strong> หน้า
+                  </div>
+                  
+                  {/* ปุ่ม Pagination แบบย่อ */}
+                  {totalPages > 1 && (
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px"
+                    }}>
+                      {/* ปุ่มหน้าก่อนหน้า */}
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        style={{
+                          padding: "4px 8px",
+                          backgroundColor: currentPage === 1 ? "#e5e7eb" : "#3b82f6",
+                          color: currentPage === 1 ? "#9ca3af" : "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                          fontSize: "12px",
+                          fontWeight: "500"
+                        }}
+                      >
+                        ◀️
+                      </button>
+
+                      {/* แสดงเฉพาะ 3 หน้าใกล้เคียง */}
+                      {(() => {
+                        const pages = [];
+                        const startPage = Math.max(1, currentPage - 1);
+                        const endPage = Math.min(totalPages, currentPage + 1);
+
+                        for (let i = startPage; i <= endPage; i++) {
+                          pages.push(
+                            <button
+                              key={i}
+                              onClick={() => handlePageChange(i)}
+                              style={{
+                                padding: "4px 8px",
+                                backgroundColor: currentPage === i ? "#3b82f6" : "#f3f4f6",
+                                color: currentPage === i ? "white" : "#374151",
+                                border: "1px solid #d1d5db",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "12px",
+                                fontWeight: currentPage === i ? "600" : "400",
+                                minWidth: "28px"
+                              }}
+                            >
+                              {i}
+                            </button>
+                          );
+                        }
+                        return pages;
+                      })()}
+
+                      {/* ปุ่มหน้าถัดไป */}
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        style={{
+                          padding: "4px 8px",
+                          backgroundColor: currentPage === totalPages ? "#e5e7eb" : "#3b82f6",
+                          color: currentPage === totalPages ? "#9ca3af" : "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                          fontSize: "12px",
+                          fontWeight: "500"
+                        }}
+                      >
+                        ▶️
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
 
         {/* Content */}
         {loading ? (
@@ -137,9 +442,10 @@ export default function RetirementPage() {
             marginTop: "64px",
             width: "100%"
           }}>
+            <div style={{ fontSize: "48px", marginBottom: "16px" }}>⏳</div>
             กำลังโหลดข้อมูล...
           </div>
-        ) : retirementData.length === 0 ? (
+        ) : getFilteredData().length === 0 ? (
           <div style={{
             textAlign: "center",
             backgroundColor: "#fff",
@@ -151,175 +457,221 @@ export default function RetirementPage() {
             width: "100%",
             boxSizing: "border-box"
           }}>
-            <div style={{ fontSize: "48px", marginBottom: "16px" }}>🎉</div>
+            <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔍</div>
             <div style={{ 
               fontSize: "20px", 
-              color: "#10b981", 
+              color: "#6b7280", 
               fontWeight: "600",
               marginBottom: "8px"
             }}>
-              ไม่มีผู้ใกล้เกษียณในช่วง 2 เดือนข้างหน้า
+              ไม่พบข้อมูลที่ตรงกับเงื่อนไข
             </div>
             <div style={{ color: "#6b7280" }}>
-              ผู้พักอาศัยทุกคนยังห่างจากการเกษียณอายุ
+              ลองปรับเงื่อนไขการค้นหาใหม่
             </div>
           </div>
         ) : (
-          <div style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "20px",
-            width: "100%",
-            maxWidth: "100%",
-            margin: "0 auto",
-            boxSizing: "border-box"
-          }}>
-            {retirementData.map((person, index) => {
-              const daysToRetirement = calculateDaysToRetirement(person.dob);
-              
-              return (
-                <div
-                  key={person.id}
-                  style={{
-                    backgroundColor: "#fff",
-                    borderRadius: "18px",
-                    padding: "24px",
-                    boxShadow: "0 4px 24px #e5e7eb",
-                    border: "1px solid #e5e7eb",
-                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                    width: "100%",
-                    maxWidth: "100%",
-                    boxSizing: "border-box"
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.15)";
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 4px 24px #e5e7eb";
-                  }}
-                >
-                  <div style={{ 
-                    display: "flex", 
-                    justifyContent: "space-between", 
-                    alignItems: "flex-start",
-                    flexWrap: "wrap",
-                    gap: "16px"
-                  }}>
+          <>
+            {/* รายการข้อมูล */}
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+              width: "100%",
+              maxWidth: "100%",
+              margin: "0 auto",
+              boxSizing: "border-box"
+            }}>
+              {getPaginatedData().map((person, index) => {
+                const daysToRetirement = calculateDaysToRetirement(person.dob);
+                const monthsToRetirement = getMonthsToRetirement(daysToRetirement);
+                
+                return (
+                  <div
+                    key={person.id}
+                    style={{
+                      backgroundColor: "#fff",
+                      borderRadius: "18px",
+                      padding: "24px",
+                      boxShadow: "0 4px 24px #e5e7eb",
+                      border: `3px solid ${getStatusColor(daysToRetirement)}`,
+                      borderLeftWidth: "8px",
+                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                      width: "100%",
+                      maxWidth: "100%",
+                      boxSizing: "border-box"
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.transform = "translateY(-4px)";
+                      e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.15)";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 4px 24px #e5e7eb";
+                    }}
+                  >
                     <div style={{ 
-                      flex: 1, 
-                      minWidth: "300px",
-                      width: "100%"
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "flex-start",
+                      flexWrap: "wrap",
+                      gap: "16px"
                     }}>
-                      <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        marginBottom: "12px"
-                      }}>
-                        <div style={{ fontSize: "24px" }}>👤</div>
-                        <div>
-                          <h3 style={{
-                            margin: "0",
-                            fontSize: "20px",
-                            color: "#1f2937",
-                            fontWeight: "600"
-                          }}>
-                            {person.rank_name} {person.name} {person.lname}
-                          </h3>
-                          <div style={{
-                            fontSize: "14px",
-                            color: "#6b7280",
-                            marginTop: "4px"
-                          }}>
-                            อายุปัจจุบัน: {person.current_age} ปี
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                        gap: "16px",
-                        marginBottom: "16px",
+                      <div style={{ 
+                        flex: 1, 
+                        minWidth: "300px",
                         width: "100%"
                       }}>
-                        <div>
-                          <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
-                            📍 ที่อยู่
+                        <div style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          marginBottom: "12px"
+                        }}>
+                          <div style={{ fontSize: "24px" }}>
+                            {daysToRetirement <= 30 ? "🔥" : daysToRetirement <= 90 ? "⚠️" : "🎯"}
                           </div>
-                          <div style={{ fontWeight: "500" }}>
-                            {person.Address} ({person.home_type_name})
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
-                            🎂 วันเกิด
-                          </div>
-                          <div style={{ fontWeight: "500" }}>
-                            {formatDate(person.dob)}
+                          <div>
+                            <h3 style={{
+                              margin: "0",
+                              fontSize: "20px",
+                              color: "#1f2937",
+                              fontWeight: "600",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px"
+                            }}>
+                              {person.rank_name} {person.name} {person.lname}
+                            </h3>
+                            <div style={{
+                              fontSize: "14px",
+                              color: "#6b7280",
+                              marginTop: "4px"
+                            }}>
+                              อายุปัจจุบัน: {person.current_age} ปี • จะครบ 60 ปีในอีก {monthsToRetirement} เดือน
+                            </div>
                           </div>
                         </div>
 
-                        <div>
-                          <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
-                            🏆 วันเกษียณอายุ
+                        <div style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                          gap: "16px",
+                          marginBottom: "16px",
+                          width: "100%"
+                        }}>
+                          <div>
+                            <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
+                              📍 ที่อยู่
+                            </div>
+                            <div style={{ fontWeight: "500" }}>
+                              {person.Address} ({person.home_type_name})
+                            </div>
+                            {/* เพิ่มข้อมูลพื้นที่/แถว */}
+                            <div style={{ 
+                              fontSize: "14px", 
+                              color: "#151618ff", 
+                              marginTop: "4px",
+                              fontStyle: "italic"
+                            }}>
+                              {(() => {
+                                if (person.home_type_name === 'บ้านพักเรือนแถว') {
+                                  if (person.row_name) {
+                                    return ` ${person.row_name}`;
+                                  } else if (person.row_number) {
+                                    return ` แถว ${person.row_number}`;
+                                  }
+                                } else if (person.home_type_name === 'บ้านพักแฝด') {
+                                  if (person.twin_area_name) {
+                                    return ` ${person.twin_area_name}`;
+                                  }
+                                } 
+                                return '';
+                              })()}
+                            </div>
                           </div>
-                          <div style={{ fontWeight: "500" }}>
-                            {formatDate(person.retirement_date)}
+                          
+                          <div>
+                            <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
+                              🎂 วันเกิด
+                            </div>
+                            <div style={{ fontWeight: "500" }}>
+                              {formatDate(person.dob)}
+                            </div>
                           </div>
+
+                          <div>
+                            <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
+                              🏆 วันเกษียณอายุ
+                            </div>
+                            <div style={{ fontWeight: "500", color: getStatusColor(daysToRetirement) }}>
+                              {formatDate(person.retirement_date)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{
+                        textAlign: "center",
+                        padding: "16px",
+                        backgroundColor: `${getStatusColor(daysToRetirement)}15`,
+                        borderRadius: "12px",
+                        minWidth: "160px",
+                        flexShrink: 0,
+                        border: `2px solid ${getStatusColor(daysToRetirement)}`
+                      }}>
+                        <div style={{
+                          fontSize: "28px",
+                          fontWeight: "bold",
+                          color: getStatusColor(daysToRetirement),
+                          marginBottom: "8px"
+                        }}>
+                          {daysToRetirement}
+                        </div>
+                        <div style={{
+                          fontSize: "12px",
+                          color: getStatusColor(daysToRetirement),
+                          fontWeight: "600",
+                          marginBottom: "4px"
+                        }}>
+                          วันที่เหลือ
+                        </div>
+                        <div style={{
+                          fontSize: "14px",
+                          color: getStatusColor(daysToRetirement),
+                          fontWeight: "bold"
+                        }}>
+                          {getDaysMessage(daysToRetirement)}
                         </div>
                       </div>
                     </div>
 
-                    <div style={{
-                      textAlign: "center",
-                      padding: "16px",
-                      backgroundColor: "#f8fafc",
-                      borderRadius: "12px",
-                      minWidth: "160px",
-                      flexShrink: 0
-                    }}>
-                      <div style={{
-                        fontSize: "28px",
-                        fontWeight: "bold",
-                        color: getStatusColor(daysToRetirement),
-                        marginBottom: "8px"
-                      }}>
-                        {daysToRetirement}
-                      </div>
-                      <div style={{
-                        fontSize: "14px",
-                        color: getStatusColor(daysToRetirement),
-                        fontWeight: "600"
-                      }}>
-                        {getDaysMessage(daysToRetirement)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {daysToRetirement <= 30 && (
                     <div style={{
                       marginTop: "16px",
                       padding: "12px",
-                      backgroundColor: "#fef3c7",
+                      backgroundColor: daysToRetirement <= 30 ? "#fef3c7" : 
+                                      daysToRetirement <= 90 ? "#fef3e2" : 
+                                      daysToRetirement <= 180 ? "#f0fdf4" : "#f8fafc",
                       borderRadius: "8px",
-                      border: "1px solid #f59e0b",
-                      color: "#92400e",
+                      border: `1px solid ${getStatusColor(daysToRetirement)}`,
+                      color: daysToRetirement <= 30 ? "#92400e" : 
+                             daysToRetirement <= 90 ? "#c2410c" : 
+                             daysToRetirement <= 180 ? "#166534" : "#374151",
                       fontSize: "14px",
                       fontWeight: "500",
                       width: "100%",
                       boxSizing: "border-box"
                     }}>
-                      ⚠️ ต้องเตรียมการสำหรับการเกษียณอายุ
+                      {daysToRetirement <= 30 && "🔥 เร่งด่วน: ผู้ถือสิทธิต้องเตรียมการสำหรับการเกษียณอายุ"}
+                      {daysToRetirement > 30 && daysToRetirement <= 90 && "⚠️ แจ้งเตือน: ผู้ถือสิทธิใกล้จะถึงเวลาเกษียณ"}
+                      {daysToRetirement > 90 && daysToRetirement <= 180 && "📋 ผู้ถือสิทธิควรเริ่มเตรียมการสำหรับการเกษียณ"}
+                      {daysToRetirement > 180 && "📅 ผู้ถือสิทธิอยู่ในรายชื่อที่จะเกษียณใน 1 ปีนี้"}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>

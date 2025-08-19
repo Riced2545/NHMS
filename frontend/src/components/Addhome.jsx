@@ -290,118 +290,247 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title">เพิ่มบ้านพัก</h3>
+      <div 
+        className="modal-content" 
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '800px',
+          minWidth: '800px',
+          maxWidth: '95vw',
+          height: 'auto',
+          maxHeight: '90vh'
+        }}
+      >
+        <div 
+          className="modal-header"
+          style={{ padding: '20px 24px' }}
+        >
+          <h3 
+            className="modal-title"
+            style={{ fontSize: '1.4rem' }}
+          >
+            เพิ่มบ้านพัก
+          </h3>
           <button className="modal-close" onClick={handleClose}>×</button>
         </div>
         
-        <div className="modal-body">
+        <div 
+          className="modal-body"
+          style={{ padding: '24px' }}
+        >
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label">ประเภทบ้าน</label>
-              <select
-                name="home_type_id"
-                value={form.home_type_id}
-                onChange={handleChange}
-                required
-                className="form-select"
-                disabled={!!homeTypeName} // ปิดการแก้ไขถ้ามีการระบุประเภทมาแล้ว
-              >
-                <option value="">เลือกประเภทบ้าน</option>
-                {homeTypes
-                  .filter(ht => !ht.name.includes('พื้นที่'))
-                  .map(ht => (
-                    <option key={ht.id} value={ht.id}>{ht.name}</option>
-                  ))}
-              </select>
+            {/* แถวแรก - ประเภทบ้านกับเลือกแถว/พื้นที่ */}
+            <div 
+              style={{ 
+                display: 'grid', 
+                gridTemplateColumns: selectedHomeType?.name === 'บ้านพักแฝด' || selectedHomeType?.name === 'บ้านพักเรือนแถว' ? '1fr 1fr' : '1fr', 
+                gap: '20px',
+                marginBottom: '20px' 
+              }}
+            >
+              <div className="form-group">
+                <label 
+                  className="form-label"
+                  style={{ 
+                    fontSize: '14px',
+                    marginBottom: '8px' 
+                  }}
+                >
+                  ประเภทบ้าน
+                </label>
+                <select
+                  name="home_type_id"
+                  value={form.home_type_id}
+                  onChange={handleChange}
+                  required
+                  className="form-select"
+                  disabled={!!homeTypeName}
+                  style={{ 
+                    padding: '12px 16px',
+                    fontSize: '14px',
+                    minHeight: '40px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    width: '100%'
+                  }}
+                >
+                  <option value="">เลือกประเภทบ้าน</option>
+                  {homeTypes
+                    .filter(ht => !ht.name.includes('พื้นที่'))
+                    .map(ht => (
+                      <option key={ht.id} value={ht.id}>{ht.name}</option>
+                    ))}
+                </select>
+              </div>
+              
+              {/* เลือกพื้นที่สำหรับบ้านพักแฝด */}
+              {selectedHomeType?.name === 'บ้านพักแฝด' && (
+                <div className="form-group">
+                  <label 
+                    className="form-label"
+                    style={{ fontSize: '14px', marginBottom: '8px' }}
+                  >
+                    เลือกพื้นที่
+                  </label>
+                  <select
+                    name="twin_area_id"
+                    value={form.twin_area_id}
+                    onChange={handleChange}
+                    required
+                    className="form-select"
+                    style={{ 
+                      padding: '12px 16px',
+                      fontSize: '14px',
+                      minHeight: '40px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      width: '100%'
+                    }}
+                  >
+                    <option value="">เลือกพื้นที่</option>
+                    {twinAreas.map(area => (
+                      <option key={area.id} value={area.id}>{area.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              {/* เลือกแถวสำหรับบ้านพักเรือนแถว */}
+              {selectedHomeType?.name === 'บ้านพักเรือนแถว' && (
+                <div className="form-group">
+                  <label 
+                    className="form-label"
+                    style={{ fontSize: '14px', marginBottom: '8px' }}
+                  >
+                    เลือกแถว
+                  </label>
+                  <select
+                    name="row_id"
+                    value={form.row_id}
+                    onChange={handleChange}
+                    required
+                    className="form-select"
+                    style={{ 
+                      padding: '12px 16px',
+                      fontSize: '14px',
+                      minHeight: '40px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      width: '100%'
+                    }}
+                  >
+                    <option value="">เลือกแถว</option>
+                    {townhomeRows.map(row => (
+                      <option 
+                        key={row.id} 
+                        value={row.id}
+                        disabled={row.home_count >= row.max_capacity}
+                      >
+                        {row.name} ({row.home_count}/{row.max_capacity})
+                        {row.home_count >= row.max_capacity ? ' - เต็ม' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
             
-            {/* Dropdown เลือกพื้นที่สำหรับบ้านพักแฝด */}
-            {selectedHomeType?.name === 'บ้านพักแฝด' && (
+            {/* แถวที่สอง - หมายเลขบ้านกับรูปภาพ */}
+            <div 
+              style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '20px',
+                marginBottom: '20px' 
+              }}
+            >
               <div className="form-group">
-                <label className="form-label">เลือกพื้นที่</label>
-                <select
-                  name="twin_area_id"
-                  value={form.twin_area_id}
-                  onChange={handleChange}
-                  required
-                  className="form-select"
+                <label 
+                  className="form-label"
+                  style={{ fontSize: '14px', marginBottom: '8px' }}
                 >
-                  <option value="">เลือกพื้นที่</option>
-                  {twinAreas.map(area => (
-                    <option key={area.id} value={area.id}>{area.name}</option>
-                  ))}
-                </select>
+                  หมายเลขบ้าน
+                </label>
+                <input
+                  type="text"
+                  name="Address"
+                  value={form.Address}
+                  onChange={handleAddressChange}
+                  className="form-input"
+                  required
+                  placeholder="กรอกหมายเลขบ้าน (เช่น 101, 201)"
+                  style={{ 
+                    padding: '12px 16px',
+                    fontSize: '14px',
+                    minHeight: '40px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    width: '100%'
+                  }}
+                />
               </div>
-            )}
-            
-            {/* Dropdown เลือกแถวสำหรับบ้านพักเรือนแถว */}
-            {selectedHomeType?.name === 'บ้านพักเรือนแถว' && (
+
               <div className="form-group">
-                <label className="form-label">เลือกแถว</label>
-                <select
-                  name="row_id"
-                  value={form.row_id}
-                  onChange={handleChange}
-                  required
-                  className="form-select"
+                <label 
+                  className="form-label"
+                  style={{ fontSize: '14px', marginBottom: '8px' }}
                 >
-                  <option value="">เลือกแถว</option>
-                  {townhomeRows.map(row => (
-                    <option 
-                      key={row.id} 
-                      value={row.id}
-                      disabled={row.home_count >= row.max_capacity}
-                    >
-                      {row.name} ({row.home_count}/{row.max_capacity})
-                      {row.home_count >= row.max_capacity ? ' - เต็ม' : ''}
-                    </option>
-                  ))}
-                </select>
+                  เพิ่มภาพ
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="form-file"
+                  style={{ 
+                    padding: '12px',
+                    fontSize: '14px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    width: '100%'
+                  }}
+                />
               </div>
-            )}
-            
-            <div className="form-group">
-              <label className="form-label">หมายเลขบ้าน</label>
-              <input
-                type="text"
-                name="Address"
-                value={form.Address}
-                onChange={handleAddressChange} // เปลี่ยนจาก handleChange
-                className="form-input"
-                required
-                placeholder="กรอกหมายเลขบ้าน (เช่น 101, 201)"
-              />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">เพิ่มภาพ</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="form-file"
-              />
-              {image && (
+            {/* แสดงรูปตัวอย่าง */}
+            {image && (
+              <div style={{ marginBottom: '20px', textAlign: 'center' }}>
                 <img 
                   src={URL.createObjectURL(image)}
                   alt="preview"
                   className="image-preview"
-                  style={{ maxWidth: '200px', maxHeight: '200px', marginTop: '10px' }}
+                  style={{ 
+                    maxWidth: '200px', 
+                    maxHeight: '200px', 
+                    borderRadius: '8px',
+                    border: '2px solid #e5e7eb'
+                  }}
                 />
-              )}
-            </div>
+              </div>
+            )}
             
-            <div className="modal-actions">
+            <div 
+              className="modal-actions"
+              style={{ 
+                marginTop: '24px',
+                gap: '12px',
+                display: 'flex',
+                justifyContent: 'flex-end'
+              }}
+            >
               <button 
                 type="button" 
                 onClick={handleClose} 
                 className="btn-secondary"
                 disabled={loading}
-                // style={{
-                //   color: '#2d3138ff',
-                // }}
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '14px',
+                  minWidth: '80px',
+                  borderRadius: '6px',
+                  color:'grey'
+                }}
               >
                 ยกเลิก
               </button>
@@ -409,6 +538,12 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
                 type="submit" 
                 className="btn-primary"
                 disabled={loading}
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '14px',
+                  minWidth: '80px',
+                  borderRadius: '6px'
+                }}
               >
                 {loading ? 'กำลังบันทึก...' : 'บันทึก'}
               </button>
