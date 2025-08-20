@@ -16,7 +16,7 @@ export default function RetirementPage() {
   
   // เพิ่ม state สำหรับ pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5); // default 10 รายการต่อหน้า
+  const [itemsPerPage, setItemsPerPage] = useState(5); // default 5 รายการต่อหน้า
   
   const navigate = useNavigate();
 
@@ -103,17 +103,25 @@ const getDaysMessage = (days) => {
     return "#6b7280"; // เทา
   };
 
-  // คำนวณที่ Frontend แทน
-  const calculateDaysToRetirement = (dob) => {
+  function getRetirementDate(dob) {
     const birthDate = new Date(dob);
-    const retirementDate = new Date(birthDate);
-    retirementDate.setFullYear(birthDate.getFullYear() + 60);
-    
+    const birthYear = birthDate.getFullYear();
+    const birthMonth = birthDate.getMonth() + 1;
+    const birthDay = birthDate.getDate();
+    let retirementYear = birthYear + 60;
+    // ถ้าเกิดหลังวันที่ 2 ตุลาคม ให้เลื่อนไปปีหน้า
+    if (birthMonth > 10 || (birthMonth === 10 && birthDay > 2)) {
+      retirementYear += 1;
+    }
+    return new Date(`${retirementYear}-09-30`);
+  }
+
+  // คำนวณจำนวนวันจนกว่าเกษียณ
+  const calculateDaysToRetirement = (dob) => {
+    const retirementDate = getRetirementDate(dob);
     const today = new Date();
     const diffTime = retirementDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   // คำนวณจำนวนเดือนที่เหลือ

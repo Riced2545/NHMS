@@ -57,7 +57,7 @@ export default function Navbar() {
         boxShadow: "0 4px 12px #e5e7eb1a",
         borderTopLeftRadius: 12,
         borderTopRightRadius: 12,
-        position: "sticky",
+        position: "static", // <-- เปลี่ยนจาก "sticky" เป็น "static"
         top: 0,
         zIndex: 100,
       }}

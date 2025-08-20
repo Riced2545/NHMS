@@ -1352,9 +1352,6 @@ app.listen(3001, () => {
 
 // เพิ่ม API สำหรับดูคนใกล้เกษียณ - แก้ไข
 app.get("/api/retirement", (req, res) => {
-  console.log("🔍 Fetching retirement data...");
-  
-  // Query แบบง่าย - ดึงทุกคนที่มี DOB พร้อมข้อมูลแถว/พื้นที่
   const sql = `
     SELECT 
       guest.*,
@@ -1364,9 +1361,7 @@ app.get("/api/retirement", (req, res) => {
       townhome_rows.name as row_name,
       townhome_rows.row_number,
       twin_areas.name as twin_area_name,
-      DATE_ADD(guest.dob, INTERVAL 60 YEAR) as retirement_date,
-      TIMESTAMPDIFF(YEAR, guest.dob, CURDATE()) as current_age,
-      DATEDIFF(DATE_ADD(guest.dob, INTERVAL 60 YEAR), CURDATE()) as days_to_retirement
+      guest.dob
     FROM guest 
     LEFT JOIN ranks ON guest.rank_id = ranks.id
     LEFT JOIN home ON guest.home_id = home.home_id
@@ -1374,32 +1369,35 @@ app.get("/api/retirement", (req, res) => {
     LEFT JOIN townhome_rows ON home.row_id = townhome_rows.id
     LEFT JOIN twin_areas ON home.twin_area_id = twin_areas.id
     WHERE guest.dob IS NOT NULL
-    ORDER BY days_to_retirement ASC
+    ORDER BY guest.dob ASC
   `;
-  
-  console.log("🔍 Executing retirement query with area/row info...");
-  
   db.query(sql, (err, results) => {
-    if (err) {
-      console.error("❌ Database error:", err);
-      return res.status(500).json({ error: "Database error", details: err.message });
-    }
-    
-    console.log(`✅ Found ${results.length} people with DOB and location info`);
-    
-    if (results.length > 0) {
-      console.log("📋 First record:", {
-        name: results[0].name,
-        dob: results[0].dob,
-        home_type: results[0].home_type_name,
-        row_name: results[0].row_name,
-        twin_area: results[0].twin_area_name,
-        age: results[0].current_age,
-        days_to_retirement: results[0].days_to_retirement
-      });
-    }
-    
-    res.json(results);
+    if (err) return res.status(500).json({ error: "Database error", details: err.message });
+
+    // คำนวณ retirement_date เป็น 30 กันยายน
+    const processed = results.map(person => {
+      const dob = new Date(person.dob);
+      let retirementYear = dob.getFullYear() + 60;
+      const birthMonth = dob.getMonth() + 1;
+      const birthDay = dob.getDate();
+      if (birthMonth > 9 || (birthMonth === 9 && birthDay > 30)) {
+        retirementYear += 1;
+      }
+      const retirementDate = new Date(`${retirementYear}-09-30`);
+      // คำนวณวันเหลือ
+      const today = new Date();
+      const daysToRetirement = Math.ceil((retirementDate - today) / (1000 * 60 * 60 * 24));
+      // คำนวณอายุ
+      const currentAge = today.getFullYear() - dob.getFullYear() - 
+        (today.getMonth() + 1 < birthMonth || (today.getMonth() + 1 === birthMonth && today.getDate() < birthDay) ? 1 : 0);
+      return {
+        ...person,
+        retirement_date: retirementDate.toISOString().split('T')[0],
+        days_to_retirement: daysToRetirement,
+        current_age: currentAge
+      };
+    });
+    res.json(processed);
   });
 });
 

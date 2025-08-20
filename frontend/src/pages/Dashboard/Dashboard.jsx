@@ -223,7 +223,7 @@ export default function Dashboard() {
   }
 
   return (
-   <div style={{ 
+    <div style={{ 
       minHeight: "100vh", 
       background: "#fafbff", 
       padding: "0 0 64px 0",

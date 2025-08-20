@@ -10,6 +10,8 @@ export default function Search() {
   const [loading, setLoading] = useState(false);
   const [houseTypes, setHouseTypes] = useState([]);
   const [selectedType, setSelectedType] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // โหลดประเภทบ้านทั้งหมด
   useEffect(() => {
@@ -68,14 +70,25 @@ export default function Search() {
   // ฟังก์ชันลบ
   const handleDelete = async (id) => {
     if (window.confirm("คุณต้องการลบข้อมูลนี้ใช่หรือไม่?")) {
+      setLoading(true);
       try {
         await axios.delete(`http://localhost:3001/api/guests/${id}`);
-        setResults(results.filter(g => g.id !== id));
+        // หลังลบให้รีเฟรชข้อมูลใหม่
+        fetchRightHolders();
       } catch (err) {
         alert("เกิดข้อผิดพลาดในการลบข้อมูล");
+      } finally {
+        setLoading(false);
       }
     }
   };
+
+  // Pagination logic
+  const paginatedResults = results.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  const totalPages = Math.ceil(results.length / itemsPerPage);
 
   return (
     <div className="search-bg dashboard-container">
@@ -116,13 +129,49 @@ export default function Search() {
             <div className="search-no-data">ไม่มีข้อมูลผู้ถือสิทธิ์</div>
           )}
           {results.length > 0 && (
-            <GuestTable
-              guests={results}
-              showAddress={true}
-              showType={true}
-              onEdit={g => window.location.href = `/editguest/${g.id}`}
-              onDelete={g => handleDelete(g.id)}
-            />
+            <>
+              <GuestTable
+                guests={paginatedResults}
+                showAddress={true}
+                showType={true}
+                onEdit={g => window.location.href = `/editguest/${g.id}`}
+                onDelete={g => handleDelete(g.id)}
+              />
+              {/* Pagination controls */}
+              <div style={{ display: "flex", justifyContent: "center", marginTop: 24, gap: 8 }}>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #ccc", background: currentPage === 1 ? "#eee" : "#fff", cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
+                >
+                  ◀
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button
+                    key={i + 1}
+                    onClick={() => setCurrentPage(i + 1)}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: 6,
+                      border: "1px solid #ccc",
+                      background: currentPage === i + 1 ? "#3b82f6" : "#fff",
+                      color: currentPage === i + 1 ? "#fff" : "#333",
+                      fontWeight: currentPage === i + 1 ? "bold" : "normal",
+                      cursor: "pointer"
+                    }}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #ccc", background: currentPage === totalPages ? "#eee" : "#fff", cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
+                >
+                  ▶
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>

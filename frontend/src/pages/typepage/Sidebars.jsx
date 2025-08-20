@@ -286,8 +286,8 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
       id: 'home',
       label: 'หน้าหลัก',
       icon: faHome,
-      path: '/',
-      active: isActive('') && !currentHomeType
+      path: '/home',
+      active: isActive('home') && !currentHomeType
     }
   ];
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Navbar from "../../components/Sidebar";
+import Sidebar from "./Sidebars"; // นำเข้า Sidebar
 import { useNavigate } from "react-router-dom";
 import "./index.css";
 import "../../components/Search/Search.css";
@@ -173,250 +174,209 @@ export default function TypePage() {
   };
 
   return (
-    <div className="dashboard-container" style={{ minHeight: "100vh", background: "#fafbff", padding: "0 0 64px 0", position: "relative" }}>
+  <div style={{ 
+      minHeight: "100vh", 
+      background: "#fafbff", 
+      padding: "0 0 64px 0",
+      width: "100vw",
+      margin: 0,
+      overflow: "hidden"
+    }}>
       <Navbar />
-      
-      {/* Floating Button ด้านบนขวา */}
-      <div style={{
-        position: "fixed",
-        top: "100px",
-        right: "32px",
-        zIndex: 50,
-        borderRadius: "16px",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
-        background: "#fff",
-        border: "1px solid #e5e7eb",
-        animation: "float 3s ease-in-out infinite"
-      }}>
-        <PDFDownload 
-          typeStats={typeStats}
-          houseStatus={houseStatus}
-          detailData={detailData}
-          reportType="comprehensive"
-          disabled={loading}
-        />
-      </div>
-      
-      <div className="content-container" style={{ flex: 1, padding: 32 }}>
-        <div style={{
-          display: "flex", justifyContent: "center", marginTop: 24, marginBottom: 24,
-        }}>
+      <div style={{ display: "flex", minHeight: "calc(100vh - 84px)" }}>
+        {/* Sidebar ซ้ายมือ */}
+        <Sidebar />
+        {/* ส่วนเนื้อหาขวา */}
+        <div style={{ flex: 1, position: "relative", padding: "32px" }}>
+          {/* ส่วนหัว */}
           <div style={{
-            color: "#3b2566", 
-            fontWeight: "bold", 
-            fontSize: "35px",
-            padding: "18px 48px", 
-            borderRadius: "8px", 
-            border: "6px solid #31c3e7",
-            boxShadow: " 8px 8px 0 #2b2b3d",
-            fontFamily: "'Press Start 2P', 'Courier New', monospace",
-            letterSpacing: "2px", 
-            userSelect: "none",
+            display: "flex", justifyContent: "center", marginTop: 24, marginBottom: 24,
+          }}>
+            <div style={{
+              color: "#3b2566", 
+              fontWeight: "bold", 
+              fontSize: "35px",
+              padding: "18px 48px", 
+              borderRadius: "8px", 
+              border: "6px solid #31c3e7",
+              boxShadow: " 8px 8px 0 #2b2b3d",
+              fontFamily: "'Press Start 2P', 'Courier New', monospace",
+              letterSpacing: "2px", 
+              userSelect: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              textAlign: "center",
+              maxWidth: "90%",
+            }}>
+              ระบบจัดการบ้านพักกรมแพทย์ทหารเรือ
+            </div>
+          </div>
+          
+          
+          {/* ปุ่ม PDFDownload */}
+          <div style={{
+            position: "fixed",
+            top: "100px",
+            right: "32px",
+            zIndex: 50,
+            borderRadius: "16px",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            animation: "float 3s ease-in-out infinite"
+          }}>
+            <PDFDownload 
+              typeStats={typeStats}
+              houseStatus={houseStatus}
+              detailData={detailData}
+              reportType="comprehensive"
+              disabled={loading}
+            />
+          </div>
+          
+          {/* ส่วนการ์ดประเภทบ้าน - Dynamic */}
+          <div style={{
             display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            textAlign: "center",
-            maxWidth: "90%",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: 32,
+            marginTop: 64,
+            width: "100%",
+            marginLeft: 0,
+            marginRight: 0,
           }}>
-            ระบบจัดการบ้านพักกรมแพทย์ทหารเรือ
-          </div>
-        </div>
-        
-        {/* ส่วนสรุปสถิติ */}
-        <div style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: 24,
-          marginTop: 32,
-          marginBottom: 32
-        }}>
-          <div style={{
-            background: "#fff",
-            padding: "24px",
-            borderRadius: "12px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-            textAlign: "center",
-            minWidth: "200px"
-          }}>
-            <h4 style={{ color: "#374151", margin: "0 0 8px 0" }}>ประเภทบ้านทั้งหมด</h4>
-            <div style={{ fontSize: "32px", fontWeight: "bold", color: "#3b82f6" }}>
-              {typeStats.length}
-            </div>
-          </div>
-          <div style={{
-            background: "#fff",
-            padding: "24px",
-            borderRadius: "12px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-            textAlign: "center",
-            minWidth: "200px"
-          }}>
-            <h4 style={{ color: "#374151", margin: "0 0 8px 0" }}>บ้านทั้งหมด</h4>
-            <div style={{ fontSize: "32px", fontWeight: "bold", color: "#10b981" }}>
-              {typeStats.reduce((sum, stat) => sum + stat.count, 0)}
-            </div>
-          </div>
-        </div>
-        
-        {/* ส่วนการ์ดประเภทบ้าน - Dynamic */}
-        <div style={{
-          display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 32,
-          marginTop: 64, width: "96vw", marginLeft: 0, marginRight: 0,
-        }}>
-          {loading ? (
-            <div style={{ color: "#19b0d9", fontWeight: "bold", fontSize: 18 }}>
-              กำลังโหลดข้อมูล...
-            </div>
-          ) : typeStats.length === 0 ? (
-            <div style={{ color: "#ef4444", fontWeight: "bold" }}>
-              ไม่พบประเภทบ้านพัก
-            </div>
-          ) : (
-            typeStats.map((homeType, index) => {
-              const cardColors = getCardColor(homeType.type, index);
-              
-              return (
-                <div
-                  key={homeType.id}
-                  className="type-card card-container"
-                  style={{
-                    border: `2px solid ${cardColors.border}`,
-                    borderRadius: 18,
-                    boxShadow: "0 4px 24px #e5e7eb",
-                    width: 550,
-                    padding: "46px 32px",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    background: cardColors.bg,
-                    cursor: "pointer",
-                    transition: "transform 0.2s cubic-bezier(.4,2,.6,1), box-shadow 0.2s",
-                    animationDelay: `${index * 0.1}s`
-                  }}
-                  onClick={() => handleTypeClick(homeType.type)}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.transform = "translateY(-8px) scale(1.02)";
-                    e.currentTarget.style.boxShadow = "0 20px 40px rgba(0,0,0,0.15)";
-                    const icon = e.currentTarget.querySelector('.home-icon');
-                    if (icon) {
-                      icon.style.transform = "scale(1.1) rotate(5deg)";
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = "none";
-                    e.currentTarget.style.boxShadow = "0 4px 24px #e5e7eb";
-                    const icon = e.currentTarget.querySelector('.home-icon');
-                    if (icon) {
-                      icon.style.transform = "scale(1) rotate(0deg)";
-                    }
-                  }}
-                >
-                  {/* ไอคอน */}
-                  <div 
-                    className="home-icon"
-                    style={{ 
-                      fontSize: 64, 
-                      marginBottom: 20,
-                      transition: "transform 0.3s ease",
-                      transform: "scale(1)"
+            {loading ? (
+              <div style={{ color: "#19b0d9", fontWeight: "bold", fontSize: 18 }}>
+                กำลังโหลดข้อมูล...
+              </div>
+            ) : typeStats.length === 0 ? (
+              <div style={{ color: "#ef4444", fontWeight: "bold" }}>
+                ไม่พบประเภทบ้านพัก
+              </div>
+            ) : (
+              typeStats.map((homeType, index) => {
+                const cardColors = getCardColor(homeType.type, index);
+                
+                return (
+                  <div
+                    key={homeType.id}
+                    className="type-card card-container"
+                    style={{
+                      border: `2px solid ${cardColors.border}`,
+                      borderRadius: 18,
+                      boxShadow: "0 4px 24px #e5e7eb",
+                      width: 550,
+                      padding: "46px 32px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      background: cardColors.bg,
+                      cursor: "pointer",
+                      transition: "transform 0.2s cubic-bezier(.4,2,.6,1), box-shadow 0.2s",
+                      animationDelay: `${index * 0.1}s`
                     }}
+                    onClick={() => navigate(`/homes?type=${encodeURIComponent(homeType.type)}`)}
                   >
-                    {getHomeTypeIcon(homeType.type)}
-                  </div>
-                  
-                  {/* ชื่อประเภท */}
-                  <h3 style={{ 
-                    color: cardColors.text, 
-                    margin: "0 0 16px 0",
-                    fontSize: 20,
-                    fontWeight: "600",
-                    textAlign: "center"
-                  }}>
-                    {homeType.type}
-                  </h3>
-                  
-                  {/* คำอธิบาย */}
-                  {homeType.description && (
-                    <p style={{
-                      color: cardColors.text,
-                      fontSize: 14,
-                      margin: "0 0 12px 0",
-                      textAlign: "center",
-                      opacity: 0.8
+                    {/* ไอคอน */}
+                    <div 
+                      className="home-icon"
+                      style={{ 
+                        fontSize: 64, 
+                        marginBottom: 20,
+                        transition: "transform 0.3s ease",
+                        transform: "scale(1)"
+                      }}
+                    >
+                      {getHomeTypeIcon(homeType.type)}
+                    </div>
+                    
+                    {/* ชื่อประเภท */}
+                    <h3 style={{ 
+                      color: cardColors.text, 
+                      margin: "0 0 16px 0",
+                      fontSize: 20,
+                      fontWeight: "600",
+                      textAlign: "center"
                     }}>
-                      {homeType.description}
-                    </p>
-                  )}
-                  
-                  {/* จำนวนบ้าน */}
-                  <div style={{ 
-                    fontSize: 18, 
-                    marginBottom: 12,
-                    color: "#374151"
-                  }}>
-                    จำนวนบ้าน: <b style={{ color: cardColors.text, fontSize: 20 }}>{homeType.count}</b> หลัง
-                  </div>
+                      {homeType.type}
+                    </h3>
+                    
+                    {/* คำอธิบาย */}
+                    {homeType.description && (
+                      <p style={{
+                        color: cardColors.text,
+                        fontSize: 14,
+                        margin: "0 0 12px 0",
+                        textAlign: "center",
+                        opacity: 0.8
+                      }}>
+                        {homeType.description}
+                      </p>
+                    )}
+                    
+                    {/* จำนวนบ้าน */}
+                    <div style={{ 
+                      fontSize: 18, 
+                      marginBottom: 12,
+                      color: "#374151"
+                    }}>
+                      จำนวนบ้าน: <b style={{ color: cardColors.text, fontSize: 20 }}>{homeType.count}</b> หลัง
+                    </div>
                                     
-                  {/* ข้อความคลิก */}
-                  <div style={{ 
-                    fontSize: 14, 
-                    color: "#6b7280",
-                    textAlign: "center",
-                    lineHeight: 1.4,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    marginTop: 8
-                  }}>
-                    <span>👁️</span>
-                    <div>
-                      <div style={{ fontSize: 16, color: cardColors.text, fontWeight: "500" }}>
-                        คลิกเพื่อดูรายละเอียด
-                      </div>
-                      <div style={{ fontSize: 12, color: "#94a3b8" }}>
-                        บ้านทั้งหมดในประเภทนี้
+                    {/* ข้อความคลิก */}
+                    <div style={{ 
+                      fontSize: 14, 
+                      color: "#6b7280",
+                      textAlign: "center",
+                      lineHeight: 1.4,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      marginTop: 8
+                    }}>
+                      <span>👁️</span>
+                      <div>
+                        <div style={{ fontSize: 16, color: cardColors.text, fontWeight: "500" }}>
+                          คลิกเพื่อดูรายละเอียด
+                        </div>
+                        <div style={{ fontSize: 12, color: "#94a3b8" }}>
+                          บ้านทั้งหมดในประเภทนี้
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+                );
+              })
+            )}
+          </div>
 
-        {/* เพิ่มปุ่มจัดการประเภทบ้าน */}
-        <div style={{
-          display: "flex",
-          justifyContent: "center",
-          marginTop: 48,
-          gap: 16
-        }}>
-          <button
-            onClick={() => navigate("/addtype")}
-            style={{
-              background: "#3b82f6",
-              color: "white",
-              border: "none",
-              padding: "12px 24px",
-              borderRadius: "8px",
-              fontSize: "16px",
-              fontWeight: "500",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)"
-            }}
-            onMouseEnter={e => {
-              e.target.style.background = "#2563eb";
-              e.target.style.transform = "translateY(-2px)";
-            }}
-            onMouseLeave={e => {
-              e.target.style.background = "#3b82f6";
-              e.target.style.transform = "translateY(0)";
-            }}
-          >
-            ➕ จัดการประเภทบ้าน
-          </button>
+          {/* เพิ่มปุ่มจัดการประเภทบ้าน */}
+          <div style={{
+            display: "flex",
+            justifyContent: "center",
+            marginTop: 48,
+            gap: 16
+          }}>
+            <button
+              onClick={() => navigate("/addtype")}
+              style={{
+                background: "#3b82f6",
+                color: "white",
+                border: "none",
+                padding: "12px 24px",
+                borderRadius: "8px",
+                fontSize: "16px",
+                fontWeight: "500",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)"
+              }}
+            >
+              ➕ จัดการประเภทบ้าน
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -25,7 +25,7 @@ import AuditLog from "./components/Auditlog/auditlog.jsx";
 import ScoreForm from "./components/form/scoreform.jsx";
 import Home from "./pages/Home.jsx";
 import RetirementPage from "./components/retirement/retirement.jsx";
-import Dashboard from "./pages/dashboard/Dashboard.jsx";
+import Dashboard from "./pages/Dashboard/Dashboard.jsx";
 import Addtype from "./pages/Addtype/Addtype";
 import TwinHomeAllPage from "./pages/typepage/twinhome/all";
 import GenericHomePage from './pages/GenericHomePage';
@@ -58,7 +58,7 @@ function App() {
         <Route path="/addguest/:home_id" element={<Addguest />} />
         <Route path="/guestview/:home_id" element={<ViewGuest />} />
         <Route path="/type" element={<MainPage />} />
-        <Route path="/" element={<TypeDetailPage />} />
+        <Route path="/" element={<Dashboard />} />
         <Route path="/flat" element={<FlatListPage />} />
         <Route path="/twin1" element={<TwinHomeListPage />} />
         <Route path="/twin2" element={<TwinHomeListPage2 />} />
@@ -72,9 +72,9 @@ function App() {
         <Route path="/editguest/:id" element={<EditGuest />} />
         <Route path="/auditlog" element={<AuditLog />} />
         <Route path="/score" element={<ScoreForm />} />
-        <Route path="/home" element={<Home/>} />
+        <Route path="/home1" element={<Home/>} />
         <Route path="/retirement" element={<RetirementPage/>} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/home" element={<TypeDetailPage />} />
         <Route path="/addtype" element={<Addtype />} />
         <Route path="/twinhome" element={<TwinHomeAllPage />} />
         <Route path="/homes" element={<GenericHomePage />} />

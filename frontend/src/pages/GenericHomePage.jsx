@@ -33,6 +33,9 @@ export default function GenericHomePage() {
 
   // เพิ่ม state สำหรับเก็บ all homes
   const [allFilteredHomes, setAllFilteredHomes] = useState([]);
+  // เพิ่ม state สำหรับ pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(8);
 
   useEffect(() => {
     if (homeTypeName) {
@@ -79,26 +82,38 @@ export default function GenericHomePage() {
   // ✅ เพิ่ม useEffect สำหรับกรองข้อมูลใหม่เมื่อ filter เปลี่ยน
   useEffect(() => {
     if (allFilteredHomes.length > 0) {
-      console.log("🔄 Re-filtering homes due to filter change");
-      console.log("Selected Area:", selectedArea, "Selected Row:", selectedRow);
-      console.log("Home Type:", homeTypeName);
-      
       let finalHomes = allFilteredHomes;
-      
+
       if (homeTypeName === 'บ้านพักแฝด' && selectedArea !== "all") {
-        console.log("Filtering by area:", selectedArea);
         finalHomes = allFilteredHomes.filter(h => h.twin_area_id == selectedArea);
-        console.log("Filtered homes by area:", finalHomes.length);
       } else if (homeTypeName === 'บ้านพักเรือนแถว' && selectedRow !== "all") {
-        console.log("Filtering by row:", selectedRow);
         finalHomes = allFilteredHomes.filter(h => h.row_id == selectedRow);
-        console.log("Filtered homes by row:", finalHomes.length);
       }
-      
-      console.log("Final homes to display:", finalHomes.length);
+
+      // เรียงตามพื้นที่/แถว แล้วตามเลขที่บ้าน
+      finalHomes = finalHomes.sort((a, b) => {
+        if (homeTypeName === 'บ้านพักแฝด') {
+          // เรียงตาม twin_area_id ก่อน
+          if (a.twin_area_id !== b.twin_area_id) {
+            return (a.twin_area_id || 0) - (b.twin_area_id || 0);
+          }
+        } else if (homeTypeName === 'บ้านพักเรือนแถว') {
+          // เรียงตาม row_id ก่อน
+          if (a.row_id !== b.row_id) {
+            return (a.row_id || 0) - (b.row_id || 0);
+          }
+        }
+        // จากนั้นเรียงตามเลขที่บ้าน
+        const numA = parseInt(a.Address, 10);
+        const numB = parseInt(b.Address, 10);
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return numA - numB;
+        }
+        return (a.Address || '').localeCompare(b.Address || '');
+      });
+
       setHomes(finalHomes);
-      
-      // ✅ แจ้ง Sidebar ให้อัปเดต
+
       if (window.refreshSidebar) {
         window.refreshSidebar();
       }
@@ -263,6 +278,29 @@ export default function GenericHomePage() {
     return home.guest_count >= maxCapacity;
   };
 
+  useEffect(() => {
+    // Reset homes ทันทีเมื่อเปลี่ยนประเภทบ้านหรือ query
+    setHomes([]);
+    setAllFilteredHomes([]);
+    setSelectedRow("all");
+    setSelectedArea("all");
+  }, [homeTypeName]);
+
+  // ฟังก์ชันสำหรับข้อมูลในหน้าปัจจุบัน
+  const getPaginatedHomes = () => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return homes.slice(startIndex, endIndex);
+  };
+
+  // คำนวณจำนวนหน้าทั้งหมด
+  const totalPages = Math.ceil(homes.length / itemsPerPage);
+
+  // Reset หน้าเมื่อ homes เปลี่ยน
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [homes, itemsPerPage]);
+
   if (!homeTypeName) {
     return (
       <div style={{ minHeight: "100vh", background: "#fafbff" }}>
@@ -275,9 +313,15 @@ export default function GenericHomePage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#fafbff" }}>
+    <div style={{ 
+      minHeight: "100vh", 
+      background: "#fafbff", 
+      padding: "0 0 64px 0",
+      width: "100vw",
+      margin: 0,
+      overflow: "hidden"
+    }}>
       <Navbar />
-      
       <div style={{ display: "flex", minHeight: "calc(100vh - 84px)" }}>
         <Sidebar 
           selectedRow={selectedRow}
@@ -289,7 +333,6 @@ export default function GenericHomePage() {
           areaCounts={areaCounts}
           twinAreas={twinAreas}
         />
-        
         <div style={{ flex: 1, position: "relative" }}>
           {/* หัวข้ออยู่ตรงกลาง */}
           <div style={{ 
@@ -337,6 +380,106 @@ export default function GenericHomePage() {
             + เพิ่มบ้าน
           </button>
           )}
+          {/* Pagination Controls */}
+          {homes.length > 0 && (
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              margin: "0 32px 16px 32px",
+              paddingTop: "8px"
+            }}>
+              {/* จำนวนรายการต่อหน้า */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "14px", color: "#6b7280" }}>
+                  📄 แสดงต่อหน้า:
+                </span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
+                  style={{
+                    padding: "6px 8px",
+                    borderRadius: "6px",
+                    border: "1px solid #d1d5db",
+                    fontSize: "14px"
+                  }}
+                >
+                  <option value="5">5 รายการ</option>
+                  <option value="10">10 รายการ</option>
+                  <option value="20">20 รายการ</option>
+                  <option value="50">50 รายการ</option>
+                  <option value="100">100 รายการ</option>
+                </select>
+              </div>
+              {/* สถิติ */}
+              <div style={{ fontSize: "14px", color: "#6b7280" }}>
+                📊 แสดงผลลัพธ์: <strong>{getPaginatedHomes().length}</strong> จาก <strong>{homes.length}</strong> บ้าน
+              </div>
+              {/* Pagination */}
+              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                <button
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  style={{
+                    padding: "4px 8px",
+                    backgroundColor: currentPage === 1 ? "#e5e7eb" : "#3b82f6",
+                    color: currentPage === 1 ? "#9ca3af" : "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                    fontSize: "12px",
+                    fontWeight: "500"
+                  }}
+                >
+                  ◀️
+                </button>
+                {/* แสดงเฉพาะ 3 หน้าใกล้เคียง */}
+                {(() => {
+                  const pages = [];
+                  const startPage = Math.max(1, currentPage - 1);
+                  const endPage = Math.min(totalPages, currentPage + 1);
+                  for (let i = startPage; i <= endPage; i++) {
+                    pages.push(
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPage(i)}
+                        style={{
+                          padding: "4px 8px",
+                          backgroundColor: currentPage === i ? "#3b82f6" : "#f3f4f6",
+                          color: currentPage === i ? "white" : "#374151",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          fontWeight: currentPage === i ? "600" : "400",
+                          minWidth: "28px"
+                        }}
+                      >
+                        {i}
+                      </button>
+                    );
+                  }
+                  return pages;
+                })()}
+                <button
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    padding: "4px 8px",
+                    backgroundColor: currentPage === totalPages ? "#e5e7eb" : "#3b82f6",
+                    color: currentPage === totalPages ? "#9ca3af" : "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                    fontSize: "12px",
+                    fontWeight: "500"
+                  }}
+                >
+                  ▶️
+                </button>
+              </div>
+            </div>
+          )}
           {/* เนื้อหาที่เหลือ... */}
           <div style={{ 
             padding: "0 20px 32px 32px",
@@ -358,7 +501,7 @@ export default function GenericHomePage() {
                   </button>
                 </div>
               ) : (
-                homes.map((home) => (
+                getPaginatedHomes().map((home) => (
                   <div key={home.home_id} className="movie-card">
                     <div className="movie-poster">
                       <div className="house-image-container">
