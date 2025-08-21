@@ -18,45 +18,31 @@ export default function RetirementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5); // default 5 รายการต่อหน้า
   
+  // เปลี่ยนค่า default retirementYearFilter เป็นปีนี้
+  const [retirementYearFilter, setRetirementYearFilter] = useState(String(new Date().getFullYear()));
+  
+  const [homeTypes, setHomeTypes] = useState([]);
+
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchRetirementData();
   }, []);
 
+  useEffect(() => {
+    // ดึงประเภทบ้านจาก backend
+    axios.get("http://localhost:3001/api/home-types")
+      .then(res => setHomeTypes(res.data))
+      .catch(() => setHomeTypes([]));
+  }, []);
+
   const fetchRetirementData = async () => {
     try {
       setLoading(true);
-      console.log("🔄 Fetching retirement data...");
-      
       const response = await axios.get("http://localhost:3001/api/retirement");
-      console.log("📋 Retirement data received:", response.data);
-      
-      // กรองเฉพาะคนที่เหลือ 1 ปีจะครบ 60 ปี และเป็นผู้ถือสิทธิ
-      const filteredData = response.data.filter(person => {
-        const daysToRetirement = calculateDaysToRetirement(person.dob);
-        
-        // เช็คว่าเหลือไม่เกิน 1 ปี
-        const isWithinOneYear = daysToRetirement > 0 && daysToRetirement <= 365;
-        
-        // เช็คว่าเป็นผู้ถือสิทธิ
-        const isRightsHolder = person.is_right_holder === 1 || 
-                              person.is_right_holder === true ||
-                              person.is_right_holder === "1";
-        
-        console.log(`Person: ${person.name} ${person.lname}, Days: ${daysToRetirement}, Rights: ${person.is_right_holder}, IsRightHolder: ${isRightsHolder}`);
-        
-        return isWithinOneYear && isRightsHolder;
-      });
-      
-      console.log("🎯 Filtered for 1-year retirement (rights holders only):", filteredData);
-      console.log("📊 Records count (1 year, rights holders):", filteredData.length);
-      
-      setRetirementData(filteredData);
-      
+      // ไม่ต้องกรอง isWithinOneYear ที่นี่
+      setRetirementData(response.data);
     } catch (error) {
-      console.error("❌ Error fetching retirement data:", error);
-      console.error("❌ Error details:", error.response?.data);
       setRetirementData([]);
     } finally {
       setLoading(false);
@@ -116,9 +102,9 @@ const getDaysMessage = (days) => {
     return new Date(`${retirementYear}-09-30`);
   }
 
-  // คำนวณจำนวนวันจนกว่าเกษียณ
-  const calculateDaysToRetirement = (dob) => {
-    const retirementDate = getRetirementDate(dob);
+  // ใช้ retirement_date จาก backend ในการคำนวณวันเหลือ
+  const calculateDaysToRetirement = (retirement_date) => {
+    const retirementDate = new Date(retirement_date);
     const today = new Date();
     const diffTime = retirementDate - today;
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -132,11 +118,19 @@ const getDaysMessage = (days) => {
   // ฟังก์ชันกรองข้อมูล
   const getFilteredData = () => {
     let filtered = retirementData;
-    
+
+    // กรองตามปีเกษียณ
+    if (retirementYearFilter !== "all") {
+      filtered = filtered.filter(person => {
+        const year = new Date(person.retirement_date).getFullYear();
+        return year === parseInt(retirementYearFilter);
+      });
+    }
+
     // กรองตามช่วงเวลา
     if (filters.timeRange) {
       filtered = filtered.filter(person => {
-        const days = calculateDaysToRetirement(person.dob);
+        const days = calculateDaysToRetirement(person.retirement_date);
         return days <= parseInt(filters.timeRange);
       });
     }
@@ -156,7 +150,7 @@ const getDaysMessage = (days) => {
       );
     }
     
-    return filtered.sort((a, b) => calculateDaysToRetirement(a.dob) - calculateDaysToRetirement(b.dob));
+    return filtered.sort((a, b) => calculateDaysToRetirement(a.retirement_date) - calculateDaysToRetirement(b.retirement_date));
   };
 
   // ฟังก์ชันสำหรับข้อมูลในหน้าปัจจุบัน
@@ -253,25 +247,6 @@ const getDaysMessage = (days) => {
                   onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
                 />
                 
-                {/* กรองตามเวลา */}
-                <select
-                  value={filters.timeRange}
-                  onChange={(e) => handleFilterChange({...filters, timeRange: e.target.value})}
-                  style={{ 
-                    padding: "10px 12px", 
-                    borderRadius: "8px",
-                    border: "2px solid #e5e7eb",
-                    fontSize: "14px",
-                    minWidth: "160px"
-                  }}
-                >
-                  <option value="">⏰ ทุกช่วงเวลา</option>
-                  <option value="30">🔥 เร่งด่วน (30 วัน)</option>
-                  <option value="90">⚠️ 3 เดือน</option>
-                  <option value="180">📋 6 เดือน</option>
-                  <option value="273">📅 9 เดือน</option>
-                </select>
-                
                 {/* กรองตามประเภทบ้าน */}
                 <select
                   value={filters.homeType}
@@ -285,8 +260,27 @@ const getDaysMessage = (days) => {
                   }}
                 >
                   <option value="">🏠 ทุกประเภทบ้าน</option>
-                  <option value="บ้านพักเรือนแถว">🏘️ บ้านพักเรือนแถว</option>
-                  <option value="บ้านพักแฝด">👯 บ้านพักแฝด</option>
+                  {homeTypes.map(ht => (
+                    <option key={ht.name} value={ht.name}>
+                      {ht.name}
+                    </option>
+                  ))}
+                </select>
+                
+                {/* กรองตามปีเกษียณ */}
+                <select
+                  value={retirementYearFilter}
+                  onChange={e => setRetirementYearFilter(e.target.value)}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: "2px solid #e5e7eb",
+                    fontSize: "14px",
+                    minWidth: "160px"
+                  }}
+                >
+                  <option value={new Date().getFullYear()}>🎯 ปีนี้ ({new Date().getFullYear()})</option>
+                  <option value={new Date().getFullYear() + 1}>🎯 ปีหน้า ({new Date().getFullYear() + 1})</option>
                 </select>
                 
                 {/* ปุ่มล้างตัวกรอง */}
@@ -491,7 +485,7 @@ const getDaysMessage = (days) => {
               boxSizing: "border-box"
             }}>
               {getPaginatedData().map((person, index) => {
-                const daysToRetirement = calculateDaysToRetirement(person.dob);
+                const daysToRetirement = calculateDaysToRetirement(person.retirement_date);
                 const monthsToRetirement = getMonthsToRetirement(daysToRetirement);
                 
                 return (

@@ -2052,3 +2052,22 @@ app.post("/api/guests", (req, res) => {
     });
   });
 });
+
+// เพิ่มด้านล่าง API /api/guests
+app.get("/api/guests/:id", (req, res) => {
+  const guestId = req.params.id;
+  db.query(
+    `SELECT guest.*, ranks.name as rank, home_types.name as hType, home.Address 
+     FROM guest 
+     LEFT JOIN ranks ON guest.rank_id = ranks.id
+     LEFT JOIN home ON guest.home_id = home.home_id
+     LEFT JOIN home_types ON home.home_type_id = home_types.id
+     WHERE guest.id = ?`,
+    [guestId],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      if (results.length === 0) return res.status(404).json({ error: "Guest not found" });
+      res.json(results[0]);
+    }
+  );
+});

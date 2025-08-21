@@ -82,6 +82,20 @@ export default function Navbar() {
           >
             หน้าหลัก
           </li>
+
+          {role_id === "1" && (
+            <li
+              style={{
+                cursor: "pointer",
+                borderBottom: isActive("/home") ? "3px solid #fff" : "none",
+                fontWeight: isActive("/home") ? "bold" : "normal",
+                color: isActive("/home") ? "#ffe066" : "#fff",
+              }}
+              onClick={() => navigate("/home")}
+            >
+              ดูบ้านพักทั้งหมด
+            </li>
+          )}
           
 
 

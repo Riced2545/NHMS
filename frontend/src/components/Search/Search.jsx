@@ -11,7 +11,7 @@ export default function Search() {
   const [houseTypes, setHouseTypes] = useState([]);
   const [selectedType, setSelectedType] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   // โหลดประเภทบ้านทั้งหมด
   useEffect(() => {

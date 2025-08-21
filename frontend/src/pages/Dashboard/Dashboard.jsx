@@ -31,7 +31,7 @@ export default function Dashboard() {
         axios.get("http://localhost:3001/api/homes"),
         axios.get("http://localhost:3001/api/guests"),
         axios.get("http://localhost:3001/api/retirement"),
-        axios.get("http://localhost:3001/api/guest_logs") // เพิ่ม API สำหรับ logs
+        axios.get("http://localhost:3001/api/guest_logs")
       ]);
 
       const homes = homesRes.data;
@@ -47,12 +47,19 @@ export default function Dashboard() {
       const retirementSoon = retirement.filter(r => r.days_to_retirement <= 30).length;
       const occupancyRate = totalHomes > 0 ? ((occupiedHomes / totalHomes) * 100).toFixed(1) : 0;
 
+      // จำนวนคนเกษียณปีนี้
+      const currentYear = new Date().getFullYear();
+      const retirementThisYear = retirement.filter(r => {
+        const year = new Date(r.retirement_date).getFullYear();
+        return year === currentYear;
+      }).length;
+
       setDashboardData({
         totalHomes,
         vacantHomes,
         occupiedHomes,
         totalGuests,
-        retirementSoon,
+        retirementSoon: retirementThisYear, // เปลี่ยนตรงนี้
         occupancyRate
       });
 
@@ -288,8 +295,8 @@ export default function Dashboard() {
             color="#06b6d4"
           />
           <StatCard
-            title="ใกล้เกษียณ"
-            value={dashboardData.retirementSoon}
+            title="เกษียณปีนี้"
+            value={`${dashboardData.retirementSoon} คน`}
             icon="⏰"
             color="#ef4444"
           />
@@ -332,20 +339,32 @@ export default function Dashboard() {
           }}>
             <h3 style={{ marginBottom: "16px", color: "#1f2937" }}>🔔 การแจ้งเตือน</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {notifications.length > 0 ? notifications.map((notif, index) => (
-                <div key={index} style={{
+              {dashboardData.retirementSoon > 0 ? (
+                <div style={{
                   padding: "12px",
                   borderRadius: "8px",
-                  backgroundColor: notif.type === "warning" ? "#fef3c7" : "#dbeafe",
-                  border: `1px solid ${notif.type === "warning" ? "#f59e0b" : "#3b82f6"}`,
-                  color: notif.type === "warning" ? "#92400e" : "#1e40af"
+                  backgroundColor: "#fee2e2",
+                  border: "1px solid #ef4444",
+                  color: "#b91c1c"
                 }}>
-                  <span style={{ marginRight: "8px" }}>{notif.icon}</span>
-                  {notif.message}
+                  <span style={{ marginRight: "8px" }}>⏰</span>
+                  มีผู้เกษียณในปีนี้จำนวน <b>{dashboardData.retirementSoon}</b> คน
                 </div>
-              )) : (
+              ) : (
                 <div style={{ textAlign: "center", color: "#6b7280", padding: "20px" }}>
-                  ✅ ไม่มีการแจ้งเตือน
+                  ✅ ไม่มีผู้เกษียณในปีนี้
+                </div>
+              )}
+              {dashboardData.vacantHomes > 5 && (
+                <div style={{
+                  padding: "12px",
+                  borderRadius: "8px",
+                  backgroundColor: "#dbeafe",
+                  border: "1px solid #3b82f6",
+                  color: "#1e40af"
+                }}>
+                  <span style={{ marginRight: "8px" }}>🏠</span>
+                  มีบ้านว่าง <b>{dashboardData.vacantHomes}</b> หลัง พร้อมให้เข้าพัก
                 </div>
               )}
             </div>
