@@ -508,7 +508,7 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
 
   return (
     <>
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay" >
         <div className="modal-content-horizontal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h2>{getStepTitle()}</h2>

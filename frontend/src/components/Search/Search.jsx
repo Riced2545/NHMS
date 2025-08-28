@@ -3,6 +3,8 @@ import axios from "axios";
 import Navbar from ".././Sidebar";
 import GuestTable from "../guest/GuestTable";
 import "./Search.css";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Search() {
   const [keyword, setKeyword] = useState("");
@@ -12,6 +14,7 @@ export default function Search() {
   const [selectedType, setSelectedType] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [selectedIds, setSelectedIds] = useState([]);
 
   // โหลดประเภทบ้านทั้งหมด
   useEffect(() => {
@@ -68,19 +71,118 @@ export default function Search() {
   };
 
   // ฟังก์ชันลบ
-  const handleDelete = async (id) => {
-    if (window.confirm("คุณต้องการลบข้อมูลนี้ใช่หรือไม่?")) {
-      setLoading(true);
-      try {
-        await axios.delete(`http://localhost:3001/api/guests/${id}`);
-        // หลังลบให้รีเฟรชข้อมูลใหม่
-        fetchRightHolders();
-      } catch (err) {
-        alert("เกิดข้อผิดพลาดในการลบข้อมูล");
-      } finally {
-        setLoading(false);
-      }
+  const handleDelete = async ({ id }) => {
+    setLoading(true);
+    try {
+      await axios.delete(`http://localhost:3001/api/guests/${id}`);
+      fetchRightHolders();
+    } catch (err) {
+      alert("เกิดข้อผิดพลาดในการลบข้อมูล");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // ฟังก์ชันลบทั้งหมดแบบ toast
+  const handleDeleteSelected = () => {
+    if (selectedIds.length === 0) return;
+    toast(
+      ({ closeToast }) => (
+        <div style={{ padding: "8px 0" }}>
+          <div style={{ fontWeight: "bold", marginBottom: 8 }}>ยืนยันการลบข้อมูล</div>
+          <div style={{ marginBottom: 12 }}>
+            ต้องการลบข้อมูลที่เลือกทั้งหมด ({selectedIds.length} รายการ) หรือไม่?
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button
+              style={{
+                background: "#ef4444",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                padding: "6px 18px",
+                fontWeight: "bold",
+                cursor: "pointer"
+              }}
+              onClick={async () => {
+                closeToast();
+                for (const id of selectedIds) {
+                  await handleDelete({ id });
+                }
+                setSelectedIds([]);
+                fetchRightHolders();
+                toast.success("ลบข้อมูลเรียบร้อยแล้ว", { position: "top-right" });
+              }}
+            >
+              ลบ
+            </button>
+            <button
+              style={{
+                background: "#e5e7eb",
+                color: "#333",
+                border: "none",
+                borderRadius: 6,
+                padding: "6px 18px",
+                fontWeight: "bold",
+                cursor: "pointer"
+              }}
+              onClick={closeToast}
+            >
+              ยกเลิก
+            </button>
+          </div>
+        </div>
+      ),
+      { position: "top-right", autoClose: false }
+    );
+  };
+
+  const handleDeleteWithConfirm = (guest) => {
+    toast(
+      ({ closeToast }) => (
+        <div style={{ padding: "8px 0" }}>
+          <div style={{ fontWeight: "bold", marginBottom: 8 }}>ยืนยันการลบข้อมูล</div>
+          <div style={{ marginBottom: 12 }}>
+            ต้องการลบข้อมูล {guest.name} {guest.lname} หรือไม่?
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button
+              style={{
+                background: "#ef4444",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                padding: "6px 18px",
+                fontWeight: "bold",
+                cursor: "pointer"
+              }}
+              onClick={async () => {
+                closeToast();
+                await handleDelete({ id: guest.id });
+                toast.success("ลบข้อมูลเรียบร้อยแล้ว", { position: "top-right" });
+              }}
+            >
+              ลบ
+            </button>
+            <button
+              style={{
+                background: "#e5e7eb",
+                color: "#333",
+                border: "none",
+                borderRadius: 6,
+                padding: "6px 18px",
+                fontWeight: "bold",
+                cursor: "pointer"
+              }}
+              onClick={closeToast}
+            >
+              ยกเลิก
+            </button>
+          </div>
+        </div>
+      ),
+      { position: "top-right", autoClose: false }
+    );
   };
 
   // Pagination logic
@@ -130,12 +232,37 @@ export default function Search() {
           )}
           {results.length > 0 && (
             <>
+              {/* ปุ่มลบทั้งหมด */}
+              <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 12, justifyContent: "flex-end" }}>
+                <button
+                  onClick={handleDeleteSelected}
+                  disabled={selectedIds.length === 0}
+                  style={{
+                    background: selectedIds.length === 0 ? "#eee" : "#ef4444",
+                    color: selectedIds.length === 0 ? "#888" : "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "8px 18px",
+                    fontWeight: "bold",
+                    cursor: selectedIds.length === 0 ? "not-allowed" : "pointer"
+                  }}
+                >
+                  🗑️ ลบทั้งหมด
+                </button>
+                <span style={{ color: "#666", fontSize: 14 }}>
+                  {selectedIds.length > 0 ? `เลือก ${selectedIds.length} รายการ` : ""}
+                </span>
+              </div>
               <GuestTable
                 guests={paginatedResults}
                 showAddress={true}
                 showType={true}
                 onEdit={g => window.location.href = `/editguest/${g.id}`}
-                onDelete={g => handleDelete(g.id)}
+                onDelete={handleDeleteWithConfirm} // เปลี่ยนตรงนี้
+                selectedIds={selectedIds}
+                setSelectedIds={setSelectedIds}
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
               />
               {/* Pagination controls */}
               <div style={{ display: "flex", justifyContent: "center", marginTop: 24, gap: 8 }}>
@@ -175,6 +302,18 @@ export default function Search() {
           )}
         </div>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        style={{ zIndex: 9999 }}
+      />
     </div>
   );
 }

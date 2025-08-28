@@ -208,8 +208,8 @@ export default function EditHomeModal({ isOpen, onClose, homeId, onUpdate }) {
         position: "top-right",
         autoClose: 2000,
         style: {
-          background: '#10b981',
-          color: 'white',
+          background: '#fcfcfcff',
+          color: 'grey',
           fontWeight: 'bold'
         }
       });
@@ -262,8 +262,8 @@ export default function EditHomeModal({ isOpen, onClose, homeId, onUpdate }) {
         pauseOnHover: true,
         draggable: true,
         style: {
-          background: '#2bd66aff',
-          color: 'white',
+          background: '#ebebebff',
+          color: 'grey',
           fontWeight: 'bold',
           fontSize: '16px'
         }
@@ -302,7 +302,6 @@ export default function EditHomeModal({ isOpen, onClose, homeId, onUpdate }) {
 
   // ฟังก์ชันลบบ้าน
   const handleDeleteHome = async () => {
-    // แสดง toast แจ้งเตือนก่อนลบ - ย้ายไปขวาบน
     const deleteConfirm = () => {
       return new Promise((resolve) => {
         toast.warn(
@@ -376,7 +375,7 @@ export default function EditHomeModal({ isOpen, onClose, homeId, onUpdate }) {
             style: {
               background: '#fff',
               color: '#000',
-              border: '2px solid #ff0000ff',
+              border: '2px solid #1100ffff',
               borderRadius: '12px',
               minWidth: '350px', // ลดขนาดเล็กน้อย
               maxWidth: '400px', // ลดขนาดเล็กน้อย
@@ -391,37 +390,17 @@ export default function EditHomeModal({ isOpen, onClose, homeId, onUpdate }) {
     const shouldDelete = await deleteConfirm();
     
     if (!shouldDelete) {
-      // Toast เมื่อยกเลิกการลบ
-      toast.info("🛡️ ยกเลิกการลบบ้านแล้ว", {
-        position: "top-right",
-        autoClose: 2000,
-        style: {
-          background: '#3b82f6',
-          color: 'white',
-          fontWeight: 'bold'
-        }
-      });
+      // ลบ toast.info ออก ไม่ต้องแจ้งเตือนเมื่อกดยกเลิก
       return;
     }
 
-    // Toast แจ้งเริ่มการลบ
-    toast.warning("🗑️ กำลังลบบ้าน...", {
-      position: "top-right",
-      autoClose: 3000,
-      style: {
-        background: '#f59e0b',
-        color: 'white',
-        fontWeight: 'bold'
-      }
-    });
-
+    // ลบ toast.warning ออก ไม่ต้องแจ้งเตือน "กำลังลบบ้าน..."
     setLoading(true);
     
     try {
       const response = await axios.delete(`http://localhost:3001/api/homes/${homeId}`);
       
       if (response.data.success) {
-        // Toast แจ้งลบสำเร็จพร้อมข้อมูลเพิ่มเติม
         toast.success(
           <div style={{ lineHeight: '1.4' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
@@ -439,12 +418,12 @@ export default function EditHomeModal({ isOpen, onClose, homeId, onUpdate }) {
             }
           }
         );
-        
-        onUpdate(); // อัพเดตรายการบ้าน
-        
         setTimeout(() => {
-          onClose();
-        }, 2000);
+          onClose();    // ปิด modal ก่อน
+          setTimeout(() => {
+            onUpdate(); // แล้วค่อยรีเฟรชข้อมูลบ้าน
+          }, 300);
+        }, 500);
       }
       
     } catch (error) {
@@ -487,7 +466,7 @@ export default function EditHomeModal({ isOpen, onClose, homeId, onUpdate }) {
 
   return (
     <>
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay">
         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h2>{showRankManagement ? "🎖️ จัดการยศที่อนุญาต" : "✏️ แก้ไขข้อมูลบ้าน"}</h2>

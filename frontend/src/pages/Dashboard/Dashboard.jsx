@@ -4,8 +4,6 @@ import Navbar from "../../components/Sidebar";
 import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ResponsiveContainer } from "recharts";
 import "./Dashboard.css";
 
-const COLORS = ['#4CAF50', '#F44336', '#FF9800', '#2196F3', '#9C27B0'];
-
 export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState({
     totalHomes: 0,
@@ -20,6 +18,9 @@ export default function Dashboard() {
   const [recentActivities, setRecentActivities] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedType, setSelectedType] = useState("ทั้งหมด");
+  const [homes, setHomes] = useState([]); // เพิ่ม state homes
+  const [guests, setGuests] = useState([]); // เพิ่ม state guests
 
   useEffect(() => {
     fetchDashboardData();
@@ -33,23 +34,21 @@ export default function Dashboard() {
         axios.get("http://localhost:3001/api/retirement"),
         axios.get("http://localhost:3001/api/guest_logs")
       ]);
-
       const homes = homesRes.data;
-      const guests = guestsRes.data;
-      const retirement = retirementRes.data;
-      const logs = logsRes.data;
+      setHomes(homes);
+      setGuests(guestsRes.data); // set guests
 
       // คำนวณสถิติหลัก
       const totalHomes = homes.length;
       const vacantHomes = homes.filter(h => h.status_id === 2).length;
       const occupiedHomes = homes.filter(h => h.status_id === 1).length;
-      const totalGuests = guests.length;
-      const retirementSoon = retirement.filter(r => r.days_to_retirement <= 30).length;
+      const totalGuests = guestsRes.data.length;
+      const retirementSoon = retirementRes.data.filter(r => r.days_to_retirement <= 30).length;
       const occupancyRate = totalHomes > 0 ? ((occupiedHomes / totalHomes) * 100).toFixed(1) : 0;
 
       // จำนวนคนเกษียณปีนี้
       const currentYear = new Date().getFullYear();
-      const retirementThisYear = retirement.filter(r => {
+      const retirementThisYear = retirementRes.data.filter(r => {
         const year = new Date(r.retirement_date).getFullYear();
         return year === currentYear;
       }).length;
@@ -82,7 +81,7 @@ export default function Dashboard() {
 
       // สถิติตามยศ
       const rankData = {};
-      guests.forEach(g => {
+      guestsRes.data.forEach(g => {
         const rank = g.rank || "ไม่ระบุ";
         rankData[rank] = (rankData[rank] || 0) + 1;
       });
@@ -112,7 +111,7 @@ export default function Dashboard() {
       setNotifications(notifs);
 
       // กิจกรรมล่าสุดจาก database (เอา 10 รายการล่าสุด)
-      const recentActivitiesData = logs.slice(0, 10).map(log => {
+      const recentActivitiesData = logsRes.data.slice(0, 10).map(log => {
         let actionText = "";
         let userName = "";
         let locationInfo = "";
@@ -219,6 +218,71 @@ export default function Dashboard() {
     }
   };
 
+  // สร้างอาร์เรย์ประเภทบ้าน
+  const homeTypes = ["ทั้งหมด", ...Array.from(new Set(homes.map(h => h.hType || "ไม่ระบุ")))];
+  // กรอง homes ตามประเภทที่เลือก
+  const filteredHomes = selectedType === "ทั้งหมด"
+    ? homes
+    : homes.filter(h => h.hType === selectedType);
+  // กรอง guests ตามประเภทบ้านที่เลือก
+  const filteredGuests = selectedType === "ทั้งหมด"
+    ? guests
+    : guests.filter(g => g.hType === selectedType);
+  // กรอง typeStats ตามประเภทที่เลือก
+  const filteredTypeStats = selectedType === "ทั้งหมด"
+    ? typeStats
+    : typeStats.filter(t => t.type === selectedType);
+  // สถิติตามยศ (Pie Chart)
+  const filteredRankStats = (() => {
+    const rankData = {};
+    filteredGuests.forEach(g => {
+      const rank = g.rank || "ไม่ระบุ";
+      rankData[rank] = (rankData[rank] || 0) + 1;
+    });
+    return Object.entries(rankData).map(([rank, count]) => ({ rank, count }));
+  })();
+
+  // แม่สีหลัก
+const BASE_COLORS = [
+  "#3b82f6", // ฟ้า
+  "#10b981", // เขียว
+  "#f59e0b", // ส้ม
+  "#8b5cf6", // ม่วง
+  "#ef4444", // แดง
+  "#6366f1", // น้ำเงิน
+  "#f43f5e", // ชมพู
+  "#22d3ee", // ฟ้าอ่อน
+  "#84cc16", // เขียวอ่อน
+  "#eab308", // เหลือง
+];
+
+// ฟังก์ชันสุ่มสีจากแม่สีและปรับความสว่าง
+function getRandomColorFromBase() {
+  const base = BASE_COLORS[Math.floor(Math.random() * BASE_COLORS.length)];
+  // ปรับความสว่างแบบง่าย ๆ (เพิ่ม/ลด brightness)
+  const amt = Math.floor(Math.random() * 60) - 30; // -30 ถึง +30
+  return shadeColor(base, amt);
+}
+
+// ฟังก์ชันปรับความสว่าง HEX
+function shadeColor(color, percent) {
+  let R = parseInt(color.substring(1,3),16);
+  let G = parseInt(color.substring(3,5),16);
+  let B = parseInt(color.substring(5,7),16);
+
+  R = Math.min(255, Math.max(0, R + percent));
+  G = Math.min(255, Math.max(0, G + percent));
+  B = Math.min(255, Math.max(0, B + percent));
+
+  return "#" + 
+    ("0" + R.toString(16)).slice(-2) +
+    ("0" + G.toString(16)).slice(-2) +
+    ("0" + B.toString(16)).slice(-2);
+}
+
+// สุ่มสีสำหรับ Pie Chart และ Card Grid
+const pieColors = filteredRankStats.map(() => getRandomColorFromBase());
+
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", background: "#fafbff", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -230,16 +294,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div style={{ 
-      minHeight: "100vh", 
-      background: "#fafbff", 
-      padding: "0 0 64px 0",
-      width: "100vw",
-      margin: 0,
-      overflow: "hidden"
-    }}>
+    <div style={{ minHeight: "100vh", background: "#fafbff", padding: "0 0 64px 0", width: "100vw", margin: 0, overflow: "hidden" }}>
       <Navbar />
-      
+
       <div className="dashboard-grid" style={{ padding: "32px" }}>
         {/* หัวข้อ */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
@@ -255,6 +312,23 @@ export default function Dashboard() {
           <p style={{ color: "#6b7280", fontSize: "16px", marginTop: "8px" }}>
             ภาพรวมข้อมูลและสถิติการใช้งานระบบ
           </p>
+          <div style={{ margin: "16px 0 0 0", textAlign: "center" }}>
+            <label style={{ marginRight: "8px", fontWeight: "bold" }}>ประเภทบ้าน:</label>
+            <select
+              value={selectedType}
+              onChange={e => setSelectedType(e.target.value)}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "6px",
+                border: "1px solid #d1d5db",
+                fontSize: "16px"
+              }}
+            >
+              {["ทั้งหมด", ...Array.from(new Set(typeStats.map(t => t.type)))].map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Cards สถิติหลัก */}
@@ -289,12 +363,6 @@ export default function Dashboard() {
             color="#8b5cf6"
           />
           <StatCard
-            title="อัตราการเข้าพัก"
-            value={`${dashboardData.occupancyRate}%`}
-            icon="📊"
-            color="#06b6d4"
-          />
-          <StatCard
             title="เกษียณปีนี้"
             value={`${dashboardData.retirementSoon} คน`}
             icon="⏰"
@@ -314,13 +382,14 @@ export default function Dashboard() {
             backgroundColor: "#fff",
             borderRadius: "18px",
             padding: "24px",
-            boxShadow: "0 4px 24px #e5e7eb"
+            boxShadow: "0 4px 24px #e5e7eb",
+            marginLeft: "40px" // เพิ่มบรรทัดนี้เพื่อขยับกราฟไปทางขวา
           }}>
             <h3 style={{ marginBottom: "16px", color: "#1f2937" }}>สถิติตามประเภทบ้าน</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={typeStats}>
+              <BarChart data={filteredTypeStats}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="type" angle={-45} textAnchor="end" height={100} />
+                <XAxis dataKey="type" fontSize={20} textAnchor="end" height={100} position="center" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
@@ -390,7 +459,7 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={400}>
               <PieChart>
                 <Pie
-                  data={rankStats.sort((a, b) => b.count - a.count)}
+                  data={filteredRankStats.sort((a, b) => b.count - a.count)}
                   cx="50%"
                   cy="50%"
                   innerRadius={80}
@@ -402,10 +471,10 @@ export default function Dashboard() {
                   labelLine={false}
                   fontSize={12}
                 >
-                  {rankStats.map((entry, index) => (
+                  {filteredRankStats.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={COLORS[index % COLORS.length]} 
+                      fill={pieColors[index]} // ใช้สีสุ่ม
                       stroke="#fff"
                       strokeWidth={2}
                     />
@@ -453,7 +522,7 @@ export default function Dashboard() {
                 marginBottom: "4px",
                 fontFamily: "'Inter', sans-serif"
               }}>
-                {rankStats.reduce((sum, rank) => sum + rank.count, 0)}
+                {filteredRankStats.reduce((sum, rank) => sum + rank.count, 0)}
               </div>
               <div style={{
                 fontSize: "12px",
@@ -467,7 +536,7 @@ export default function Dashboard() {
                 fontSize: "10px",
                 color: "#9ca3af"
               }}>
-                {rankStats.length} ยศ
+                {filteredRankStats.length} ยศ
               </div>
             </div>
           </div>
@@ -523,7 +592,8 @@ export default function Dashboard() {
                     padding: "16px 12px",
                     borderRadius: "8px",
                     backgroundColor: "#f8fafc",
-                    border: `1px solid ${COLORS[index % COLORS.length]}20`,
+                    border: `1px solid ${pieColors[index]}20`,
+                    color: pieColors[index],
                     textAlign: "center",
                     minHeight: "90px",
                     display: "flex",
@@ -569,7 +639,7 @@ export default function Dashboard() {
                   <div style={{ 
                     fontSize: "24px",
                     fontWeight: "700", 
-                    color: COLORS[index % COLORS.length],
+                    color: pieColors[index],
                     marginBottom: "6px",
                     pointerEvents: "none",
                     fontFamily: "'Inter', sans-serif"
@@ -601,7 +671,7 @@ export default function Dashboard() {
                   }}>
                     <div style={{
                       height: "100%",
-                      background: COLORS[index % COLORS.length],
+                      background: pieColors[index],
                       borderRadius: "1px",
                       width: `${(rank.count / Math.max(...rankStats.map(r => r.count))) * 100}%`,
                       transition: "width 0.8s ease"
@@ -637,92 +707,9 @@ export default function Dashboard() {
         </div>
 
         {/* แถวที่ 3: กิจกรรมล่าสุด (เต็มความกว้าง) */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr",
-          gap: "24px"
-        }}>
           {/* กิจกรรมล่าสุดจาก Database */}
-          <div style={{
-            backgroundColor: "#fff",
-            borderRadius: "18px",
-            padding: "24px",
-            boxShadow: "0 4px 24px #e5e7eb"
-          }}>
-            <h3 style={{ marginBottom: "16px", color: "#1f2937" }}>📋 กิจกรรมล่าสุด</h3>
-            <div style={{ 
-              display: "flex", 
-              flexDirection: "column", 
-              gap: "12px",
-              maxHeight: "400px",
-              overflowY: "auto"
-            }}>
-              {recentActivities.length > 0 ? recentActivities.map((activity) => (
-                <div key={activity.id} style={{
-                  padding: "12px",
-                  borderRadius: "8px",
-                  backgroundColor: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start"
-                }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: "500", color: "#1f2937", marginBottom: "4px" }}>
-                      {getActivityIcon(activity.type)} {activity.action}
-                    </div>
-                    <div style={{ 
-                      fontSize: "14px", 
-                      color: "#6b7280",
-                      lineHeight: "1.4",
-                      marginBottom: "2px"
-                    }}>
-                      👤 {activity.user}
-                    </div>
-                    {activity.location && (
-                      <div style={{ 
-                        fontSize: "13px", 
-                        color: "#059669",
-                        lineHeight: "1.4",
-                        marginBottom: "2px"
-                      }}>
-                        🏠 {activity.location}
-                      </div>
-                    )}
-                    {activity.detail && (
-                      <div style={{ 
-                        fontSize: "12px", 
-                        color: "#9ca3af",
-                        marginTop: "4px",
-                        fontStyle: "italic",
-                        lineHeight: "1.5",
-                        wordWrap: "break-word",
-                        whiteSpace: "pre-wrap"
-                      }}>
-                        {activity.detail}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ 
-                    fontSize: "12px", 
-                    color: "#9ca3af",
-                    marginLeft: "8px",
-                    whiteSpace: "nowrap",
-                    alignSelf: "flex-start"
-                  }}>
-                    {activity.time}
-                  </div>
-                </div>
-              )) : (
-                <div style={{ textAlign: "center", color: "#6b7280", padding: "20px" }}>
-                  ไม่มีกิจกรรมล่าสุด
-                </div>
-              )}
             </div>
           </div>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -757,4 +744,9 @@ function getActivityIcon(type) {
     case "update": return "✏️";
     default: return "📝";
   }
+}
+
+// ฟังก์ชันสุ่มสี HEX
+function getRandomColor() {
+  return "#" + Math.floor(Math.random()*16777215).toString(16).padStart(6, "0");
 }

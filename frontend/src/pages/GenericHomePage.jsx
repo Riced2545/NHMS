@@ -123,44 +123,15 @@ export default function GenericHomePage() {
 
   const fetchHomes = async () => {
     try {
-      console.log("Fetching homes for:", homeTypeName);
-      
       const res = await axios.get("http://localhost:3001/api/homes");
+      // filter homes ตาม homeTypeName
       const filteredHomes = res.data.filter(h => h.hType === homeTypeName);
-      
+      setAllFilteredHomes(filteredHomes); // อัปเดต homes ทุกครั้ง
+      setHomes(filteredHomes);            // อัปเดต homes ทุกครั้ง
       console.log("Filtered homes:", filteredHomes.length);
-      console.log("Homes data:", filteredHomes.map(h => ({ id: h.home_id, address: h.Address, area: h.twin_area_id, row: h.row_id })));
-      
-      // เก็บ filteredHomes ใน state
-      setAllFilteredHomes(filteredHomes);
-      
-      // โหลดข้อมูลผู้ถือสิทธิ
-      const homesWithRightHolders = await Promise.all(
-        filteredHomes.map(async (home) => {
-          try {
-            const guestsResponse = await axios.get(`http://localhost:3001/api/guests/home/${home.home_id}`);
-            const rightHolder = guestsResponse.data.find(guest => guest.is_right_holder === 1);
-            return {
-              ...home,
-              right_holder: rightHolder || null
-            };
-          } catch (error) {
-            console.error(`Error fetching guests for home ${home.home_id}:`, error);
-            return {
-              ...home,
-              right_holder: null
-            };
-          }
-        })
-      );
-
-      // ✅ อัปเดต allFilteredHomes ด้วยข้อมูล right holders
-      setAllFilteredHomes(homesWithRightHolders);
-      
-      // ✅ ไม่ต้องกรองที่นี่แล้ว เพราะจะกรองใน useEffect ข้างบน
-      
     } catch (err) {
-      console.error("Error fetching homes:", err);
+      setAllFilteredHomes([]);
+      setHomes([]);
     }
   };
 

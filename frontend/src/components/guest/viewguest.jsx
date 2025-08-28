@@ -12,6 +12,7 @@ export default function ViewGuest() {
   const [homeInfo, setHomeInfo] = useState(null);
   const { home_id } = useParams();
   const navigate = useNavigate();
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const fetchGuests = () => {
     axios.get(`http://localhost:3001/api/guests/home/${home_id}`)
@@ -33,125 +34,125 @@ export default function ViewGuest() {
     fetchHomeInfo();
   }, [home_id]);
 
-  const handleDelete = async (guest) => {
-    if (!guest.id) {
+  const handleDelete = async ({ id }, showToast = true) => {
+    if (!id) {
       toast.error("ไม่พบ ID ของผู้พักอาศัย");
       return;
     }
-    
-    console.log("🗑️ Attempting to delete guest:", guest);
-    
-    const confirmToast = toast(
+    try {
+      await axios.delete(`http://localhost:3001/api/guests/${id}`);
+      fetchGuests();
+      if (showToast) {
+        toast.success("ลบข้อมูลเรียบร้อยแล้ว", { position: "top-right" });
+      }
+    } catch (error) {
+      toast.error("เกิดข้อผิดพลาดในการลบข้อมูล", { position: "top-right" });
+    }
+  };
+
+  const handleEdit = (guest) => {
+    window.location.href = `/editguest/${guest.id}`;
+  };
+
+  // ฟังก์ชันลบทั้งหมดแบบ toast
+  const handleDeleteSelected = () => {
+    if (selectedIds.length === 0) return;
+    toast(
       ({ closeToast }) => (
-        <div style={{ padding: '10px' }}>
-          <div style={{ marginBottom: '15px', fontSize: '16px', fontWeight: 'bold' }}>
-            ยืนยันการลบข้อมูล
+        <div style={{ padding: "8px 0" }}>
+          <div style={{ fontWeight: "bold", marginBottom: 8 }}>ยืนยันการลบข้อมูล</div>
+          <div style={{ marginBottom: 12 }}>
+            ต้องการลบข้อมูลที่เลือกทั้งหมด ({selectedIds.length} รายการ) หรือไม่?
           </div>
-          <div style={{ marginBottom: '15px', color: '#666' }}>
-            ต้องการลบข้อมูล {guest.name} {guest.lname} หรือไม่?
-          </div>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <button
-              onClick={() => {
-                closeToast();
-                performDelete();
-              }}
               style={{
-                background: '#ef4444',
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                fontSize: '14px'
+                background: "#ef4444",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                padding: "6px 18px",
+                fontWeight: "bold",
+                cursor: "pointer"
+              }}
+              onClick={async () => {
+                closeToast();
+                for (const id of selectedIds) {
+                  await handleDelete({ id }, false); // ไม่แจ้งเตือนแต่ละอัน
+                }
+                setSelectedIds([]);
+                fetchGuests();
+                toast.success("ลบข้อมูลเรียบร้อยแล้ว", { position: "top-right" }); // แจ้งเตือนแค่ครั้งเดียว
               }}
             >
               ลบ
             </button>
             <button
-              onClick={closeToast}
               style={{
-                background: '#6b7280',
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                fontSize: '14px'
+                background: "#e5e7eb",
+                color: "#333",
+                border: "none",
+                borderRadius: 6,
+                padding: "6px 18px",
+                fontWeight: "bold",
+                cursor: "pointer"
               }}
+              onClick={closeToast}
             >
               ยกเลิก
             </button>
           </div>
         </div>
       ),
-      {
-        position: "top-right",
-        autoClose: false,
-        hideProgressBar: true,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: false,
-        closeButton: false,
-        style: {
-          background: 'white',
-          border: '1px solid #e5e7eb',
-          borderRadius: '8px',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-          minWidth: '400px'
-        }
-      }
+      { position: "top-right", autoClose: false }
     );
-
-    const performDelete = async () => {
-      try {
-        console.log("🔄 Sending delete request to:", `http://localhost:3001/api/guests/${guest.id}`);
-        
-        const response = await axios.delete(`http://localhost:3001/api/guests/${guest.id}`);
-        
-        console.log("✅ Delete response:", response.data);
-        
-        fetchGuests(); // รีเฟรชรายการ
-        
-        toast.success(`ลบข้อมูล ${guest.name} ${guest.lname} เสร็จแล้ว!`, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        
-      } catch (error) {
-        console.error('❌ Error deleting guest:', error);
-        
-        let errorMessage = "เกิดข้อผิดพลาดในการลบข้อมูล";
-        
-        if (error.response) {
-          console.error('Error response:', error.response.data);
-          console.error('Error status:', error.response.status);
-          
-          // แสดงข้อความ error จาก backend
-          if (error.response.data.message) {
-            errorMessage = error.response.data.message;
-          } else if (error.response.data.error) {
-            errorMessage = error.response.data.error;
-          } else {
-            errorMessage = `เกิดข้อผิดพลาด: ${error.response.status}`;
-          }
-        } else if (error.request) {
-          console.error('No response received:', error.request);
-          errorMessage = "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้";
-        }
-        
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 5000,
-        });
-      }
-    };
   };
 
-  const handleEdit = (guest) => {
-    window.location.href = `/editguest/${guest.id}`;
+  const handleDeleteWithConfirm = (guest) => {
+    toast(
+      ({ closeToast }) => (
+        <div style={{ padding: "8px 0" }}>
+          <div style={{ fontWeight: "bold", marginBottom: 8 }}>ยืนยันการลบข้อมูล</div>
+          <div style={{ marginBottom: 12 }}>
+            ต้องการลบข้อมูล {guest.name} {guest.lname} หรือไม่?
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button
+              style={{
+                background: "#ef4444",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                padding: "6px 18px",
+                fontWeight: "bold",
+                cursor: "pointer"
+              }}
+              onClick={async () => {
+                closeToast();
+                await handleDelete({ id: guest.id }, true);
+              }}
+            >
+              ลบ
+            </button>
+            <button
+              style={{
+                background: "#e5e7eb",
+                color: "#333",
+                border: "none",
+                borderRadius: 6,
+                padding: "6px 18px",
+                fontWeight: "bold",
+                cursor: "pointer"
+              }}
+              onClick={closeToast}
+            >
+              ยกเลิก
+            </button>
+          </div>
+        </div>
+      ),
+      { position: "top-right", autoClose: false }
+    );
   };
 
   return (
@@ -232,10 +233,35 @@ export default function ViewGuest() {
             width: '100%',
             minHeight: '400px'
           }}>
+            {/* ปุ่มลบทั้งหมด */}
+            <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 12, justifyContent: "flex-end" }}>
+              <button
+                onClick={handleDeleteSelected}
+                disabled={selectedIds.length === 0}
+                style={{
+                  background: selectedIds.length === 0 ? "#eee" : "#ef4444",
+                  color: selectedIds.length === 0 ? "#888" : "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "8px 18px",
+                  fontWeight: "bold",
+                  cursor: selectedIds.length === 0 ? "not-allowed" : "pointer"
+                }}
+              >
+                🗑️ ลบทั้งหมด
+              </button>
+              <span style={{ color: "#666", fontSize: 14 }}>
+                {selectedIds.length > 0 ? `เลือก ${selectedIds.length} รายการ` : ""}
+              </span>
+            </div>
+            
             <GuestTable
               guests={guests}
               onEdit={handleEdit}
-              onDelete={handleDelete}
+              onDelete={handleDeleteWithConfirm}
+              selectedIds={selectedIds}
+              setSelectedIds={setSelectedIds}
+              onSaved={fetchGuests} // เพิ่มตรงนี้
             />
             
             {guests.length === 0 && (

@@ -289,7 +289,7 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
+    <div className="modal-overlay" >
       <div 
         className="modal-content" 
         onClick={(e) => e.stopPropagation()}
