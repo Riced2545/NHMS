@@ -19,6 +19,8 @@ export default function Dashboard() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState("ทั้งหมด");
+  const [selectedTitle, setSelectedTitle] = useState("ทั้งหมด");
+  const [selectedRank, setSelectedRank] = useState("ทั้งหมด");
   const [homes, setHomes] = useState([]); // เพิ่ม state homes
   const [guests, setGuests] = useState([]); // เพิ่ม state guests
 
@@ -224,14 +226,44 @@ export default function Dashboard() {
   const filteredHomes = selectedType === "ทั้งหมด"
     ? homes
     : homes.filter(h => h.hType === selectedType);
-  // กรอง guests ตามประเภทบ้านที่เลือก
-  const filteredGuests = selectedType === "ทั้งหมด"
-    ? guests
-    : guests.filter(g => g.hType === selectedType);
-  // กรอง typeStats ตามประเภทที่เลือก
-  const filteredTypeStats = selectedType === "ทั้งหมด"
-    ? typeStats
-    : typeStats.filter(t => t.type === selectedType);
+  // สร้างอาร์เรย์คำนำหน้าจาก guests
+  const titles = ["ทั้งหมด", ...Array.from(new Set(guests.map(g => g.title || "ไม่ระบุ")))];
+  // สร้างอาร์เรย์ยศจาก guests
+  const ranks = ["ทั้งหมด", ...Array.from(new Set(guests.map(g => g.rank || "ไม่ระบุ")))];
+
+  // กรอง guests ตามประเภทบ้าน, คำนำหน้า, และยศที่เลือก
+  const filteredGuests = guests.filter(g => {
+    const typeMatch = selectedType === "ทั้งหมด" || g.hType === selectedType;
+    const titleMatch = selectedTitle === "ทั้งหมด" || (g.title || "ไม่ระบุ") === selectedTitle;
+    const rankMatch = selectedRank === "ทั้งหมด" || (g.rank || "ไม่ระบุ") === selectedRank;
+    return typeMatch && titleMatch && rankMatch;
+  });
+
+  // กรอง typeStats ตามตัวกรอง (ประเภทบ้าน, คำนำหน้า, ยศ)
+const filteredTypeStats = (() => {
+  // สร้างอ็อบเจกต์เก็บสถิติ
+  const typeData = {};
+  filteredGuests.forEach(g => {
+    const type = g.hType || "ไม่ระบุ";
+    if (!typeData[type]) typeData[type] = { total: 0, occupied: 0 };
+    typeData[type].total++;
+    typeData[type].occupied++;
+  });
+
+  // ดึงข้อมูลบ้านว่างจาก homes ที่ตรงประเภท
+  Object.keys(typeData).forEach(type => {
+    const totalHomesOfType = homes.filter(h => (h.hType || "ไม่ระบุ") === type).length;
+    typeData[type].vacant = totalHomesOfType - typeData[type].occupied;
+  });
+
+  return Object.entries(typeData).map(([type, data]) => ({
+    type,
+    total: data.total,
+    occupied: data.occupied,
+    vacant: data.vacant
+  }));
+})();
+
   // สถิติตามยศ (Pie Chart)
   const filteredRankStats = (() => {
     const rankData = {};
@@ -312,23 +344,84 @@ const pieColors = filteredRankStats.map(() => getRandomColorFromBase());
           <p style={{ color: "#6b7280", fontSize: "16px", marginTop: "8px" }}>
             ภาพรวมข้อมูลและสถิติการใช้งานระบบ
           </p>
-          <div style={{ margin: "16px 0 0 0", textAlign: "center" }}>
-            <label style={{ marginRight: "8px", fontWeight: "bold" }}>ประเภทบ้าน:</label>
-            <select
-              value={selectedType}
-              onChange={e => setSelectedType(e.target.value)}
-              style={{
-                padding: "6px 12px",
-                borderRadius: "6px",
-                border: "1px solid #d1d5db",
-                fontSize: "16px"
-              }}
-            >
-              {["ทั้งหมด", ...Array.from(new Set(typeStats.map(t => t.type)))].map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
+          {/* ตัวกรองข้อมูล (ดีไซน์ใหม่) */}
+<div style={{
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "20px",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "#f3f4f6",
+  borderRadius: "12px",
+  padding: "20px 24px",
+  marginBottom: "16px",
+  boxShadow: "0 2px 8px #e0e7eb"
+}}>
+  {/* ตัวกรองประเภทบ้าน */}
+  <div style={{ minWidth: 180 }}>
+    <label style={{ marginRight: "8px", fontWeight: "bold" }}>ประเภทบ้าน:</label>
+    <select
+      value={selectedType}
+      onChange={e => setSelectedType(e.target.value)}
+      style={{
+        width: "100%",
+        padding: "10px 14px",
+        borderRadius: "8px",
+        border: "1.5px solid #d1d5db",
+        fontSize: "15px",
+        background: "#fff",
+        boxShadow: "0 1px 2px #e5e7eb"
+      }}
+    >
+      {homeTypes.map(type => (
+        <option key={type} value={type}>{type}</option>
+      ))}
+    </select>
+  </div>
+  {/* ตัวกรองคำนำหน้า */}
+  <div style={{ minWidth: 160 }}>
+    <label style={{ marginRight: "8px", fontWeight: "bold" }}>คำนำหน้า:</label>
+    <select
+      value={selectedTitle}
+      onChange={e => setSelectedTitle(e.target.value)}
+      style={{
+        width: "100%",
+        padding: "10px 14px",
+        borderRadius: "8px",
+        border: "1.5px solid #d1d5db",
+        fontSize: "15px",
+        background: "#fff",
+        boxShadow: "0 1px 2px #e5e7eb"
+      }}
+    >
+      {titles.map(title => (
+        <option key={title} value={title}>{title}</option>
+      ))}
+    </select>
+  </div>
+  {/* ตัวกรองยศ */}
+  <div style={{ minWidth: 160 }}>
+    <label style={{ marginRight: "8px", fontWeight: "bold" }}>ยศ:</label>
+    <select
+      value={selectedRank}
+      onChange={e => setSelectedRank(e.target.value)}
+      style={{
+        width: "100%",
+        padding: "10px 14px",
+        borderRadius: "8px",
+        border: "1.5px solid #d1d5db",
+        fontSize: "15px",
+        background: "#fff",
+        boxShadow: "0 1px 2px #e5e7eb"
+      }}
+    >
+      {ranks.map(rank => (
+        <option key={rank} value={rank}>{rank}</option>
+      ))}
+    </select>
+  </div>
+
+</div>
         </div>
 
         {/* Cards สถิติหลัก */}

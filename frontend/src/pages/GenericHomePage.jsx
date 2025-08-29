@@ -360,28 +360,6 @@ export default function GenericHomePage() {
               margin: "0 32px 16px 32px",
               paddingTop: "8px"
             }}>
-              {/* จำนวนรายการต่อหน้า */}
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontSize: "14px", color: "#6b7280" }}>
-                  📄 แสดงต่อหน้า:
-                </span>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
-                  style={{
-                    padding: "6px 8px",
-                    borderRadius: "6px",
-                    border: "1px solid #d1d5db",
-                    fontSize: "14px"
-                  }}
-                >
-                  <option value="5">5 รายการ</option>
-                  <option value="10">10 รายการ</option>
-                  <option value="20">20 รายการ</option>
-                  <option value="50">50 รายการ</option>
-                  <option value="100">100 รายการ</option>
-                </select>
-              </div>
               {/* สถิติ */}
               <div style={{ fontSize: "14px", color: "#6b7280" }}>
                 📊 แสดงผลลัพธ์: <strong>{getPaginatedHomes().length}</strong> จาก <strong>{homes.length}</strong> บ้าน

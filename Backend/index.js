@@ -284,6 +284,17 @@ db.connect((err) => {
       console.log("✅ image_url column ready");
     }
   });
+
+  db.query(`CREATE TABLE IF NOT EXISTS guest_scores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    rank_id INT,
+    title VARCHAR(50),
+    name VARCHAR(255),
+    lname VARCHAR(255),
+    phone VARCHAR(20),
+    total_score INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`);
 });
 
 // Register (แก้ไขให้รับข้อมูล profile)
@@ -809,14 +820,29 @@ app.get("/api/guests/search", (req, res) => {
 // Home management APIs
 app.get("/api/homes", (req, res) => {
   const sql = `
-    SELECT home.*, 
-           home_types.name as hType, 
-           status.name as status,
-           twin_areas.name as twin_area_name,
-           twin_areas.id as twin_area_id,
-           townhome_rows.name as row_name,
-           townhome_rows.row_number,
-           (SELECT COUNT(*) FROM guest WHERE guest.home_id = home.home_id) AS guest_count
+    SELECT 
+      home.*, 
+      home_types.name as hType, 
+      status.name as status,
+      twin_areas.name as twin_area_name,
+      twin_areas.id as twin_area_id,
+      townhome_rows.name as row_name,
+      townhome_rows.row_number,
+      (SELECT COUNT(*) FROM guest WHERE guest.home_id = home.home_id) AS guest_count,
+      -- ข้อมูลผู้ถือสิทธิ
+      (
+        SELECT JSON_OBJECT(
+          'id', g.id,
+          'name', g.name,
+          'lname', g.lname,
+          'rank', COALESCE(ranks.name, g.title),
+          'image_url', g.image_url
+        )
+        FROM guest g
+        LEFT JOIN ranks ON g.rank_id = ranks.id
+        WHERE g.home_id = home.home_id AND g.is_right_holder = TRUE
+        LIMIT 1
+      ) AS right_holder
     FROM home
     LEFT JOIN home_types ON home.home_type_id = home_types.id
     LEFT JOIN status ON home.status_id = status.id
@@ -824,14 +850,21 @@ app.get("/api/homes", (req, res) => {
     LEFT JOIN townhome_rows ON home.row_id = townhome_rows.id
     ORDER BY home.home_id ASC
   `;
-  
   db.query(sql, (err, results) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).json({ error: "Database error" });
     }
-    
-    
+    // แปลง right_holder จาก string เป็น object
+    results.forEach(h => {
+      if (h.right_holder) {
+        try {
+          h.right_holder = JSON.parse(h.right_holder);
+        } catch {
+          h.right_holder = null;
+        }
+      }
+    });
     res.json(results);
   });
 });
@@ -1077,8 +1110,7 @@ app.get("/api/guests/home/:home_id", (req, res) => {
 
 // แก้ไขข้อมูล guest
 app.put("/api/guests/:id", (req, res) => {
-  const { rank_id, name, lname, phone, job_phone } = req.body;
-  
+  const { rank_id, name, lname, phone, job_phone, dob } = req.body; // เพิ่ม dob
   // ดึงข้อมูลเดิมก่อนแก้ไข
   db.query(
     `SELECT guest.*, ranks.name as old_rank_name, home.Address 
@@ -1091,13 +1123,11 @@ app.put("/api/guests/:id", (req, res) => {
       if (err || oldData.length === 0) {
         return res.status(404).json({ error: "Guest not found" });
       }
-      
       const oldGuest = oldData[0];
-      
-      // อัพเดทข้อมูล
+      // อัพเดทข้อมูล (เพิ่ม dob)
       db.query(
-        "UPDATE guest SET rank_id=?, name=?, lname=?, phone=?, job_phone=? WHERE id=?",
-        [rank_id, name, lname, phone, job_phone, req.params.id],
+        "UPDATE guest SET rank_id=?, name=?, lname=?, phone=?, job_phone=?, dob=? WHERE id=?",
+        [rank_id, name, lname, phone, job_phone, dob, req.params.id],
         (err, result) => {
           if (err) return res.status(500).json({ error: "Database error" });
           
@@ -1928,7 +1958,7 @@ app.get("/api/eligible-ranks/:home_id", (req, res) => {
     INNER JOIN home h ON ht.id = h.home_type_id
     WHERE h.home_id = ?
     ORDER BY r.id ASC
-  `;
+   `;
   
   db.query(sql, [home_id], (err, results) => {
     if (err) {
@@ -2070,4 +2100,28 @@ app.get("/api/guests/:id", (req, res) => {
       res.json(results[0]);
     }
   );
+});
+
+// เพิ่ม endpoint สำหรับรับคะแนนและข้อมูลส่วนตัว
+app.post("/api/score", (req, res) => {
+  const { rank_id, title, name, lname, phone, total_score } = req.body;
+
+  db.query(
+    "INSERT INTO guest_scores (rank_id, title, name, lname, phone, total_score) VALUES (?, ?, ?, ?, ?, ?)",
+    [rank_id, title, name, lname, phone, total_score],
+    (err, result) => {
+      if (err) {
+        console.error(err); // ดู error ใน console
+        return res.status(500).json({ error: "Database error" });
+      }
+      res.json({ success: true });
+    }
+  );
+});
+
+app.get("/api/viewscore", (req, res) => {
+  db.query("SELECT * FROM guest_scores ORDER BY total_score DESC", (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    res.json(results);
+  });
 });

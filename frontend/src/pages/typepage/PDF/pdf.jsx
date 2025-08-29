@@ -228,12 +228,12 @@ const ComprehensiveReportPDF = ({ typeStats, houseStatus, detailData }) => {
         {/* ตารางสรุปประเภทบ้าน */}
         <Text style={styles.subHeader}>สถิติประเภทบ้านพัก</Text>
         <View style={styles.summaryTable}>
-          <View style={[styles.tableRow, styles.tableHeader]}>
+            <View style={[styles.tableRow, styles.tableHeader, { backgroundColor: '#2563eb' }]}>
             <View style={styles.summaryCol1}>
-              <Text style={styles.cellTextBold}>ประเภทบ้านพัก</Text>
+               <Text style={{ ...styles.cellTextBold, color: '#fff' }}>ประเภทบ้านพัก</Text>
             </View>
             <View style={styles.summaryCol2}>
-              <Text style={styles.cellTextBold}>จำนวน (หลัง)</Text>
+              <Text style={{ ...styles.cellTextBold, color: '#fff' }}>จำนวน (หลัง)</Text>
             </View>
           </View>
 
@@ -270,7 +270,7 @@ const ComprehensiveReportPDF = ({ typeStats, houseStatus, detailData }) => {
         </View>
 
         <Text style={styles.footer}>
-          สร้างโดยระบบจัดการบ้านพัก • หน้า 1
+          หน้า 1
         </Text>
       </Page>
 
@@ -286,24 +286,25 @@ const ComprehensiveReportPDF = ({ typeStats, houseStatus, detailData }) => {
 
           {/* ตารางรายละเอียด */}
           <View style={styles.detailTable}>
-            <View style={[styles.tableRow, styles.tableHeader]}>
+            <View style={[styles.tableRow, styles.tableHeader, { backgroundColor: '#2563eb' }]}>
               <View style={styles.detailCol1}>
-                <Text style={styles.cellTextBold}>ลำดับ</Text>
+                <Text style={{ ...styles.cellTextBold, color: '#fff' }}>ลำดับ</Text>
               </View>
               <View style={styles.detailCol2}>
-                <Text style={styles.cellTextBold}>เลขที่</Text>
+                <Text style={{ ...styles.cellTextBold, color: '#fff' }}>เลขที่</Text>
               </View>
               <View style={styles.detailCol3}>
-                <Text style={styles.cellTextBold}>ยศ ชื่อ-สกุล</Text>
+                <Text style={{ ...styles.cellTextBold, color: '#fff' }}>ยศ ชื่อ-สกุล</Text>
               </View>
               <View style={styles.detailCol4}>
-                <Text style={styles.cellTextBold}>เบอร์โทรศัพท์</Text>
+                <Text style={{ ...styles.cellTextBold, color: '#fff' }}>เบอร์โทรศัพท์</Text>
               </View>
             </View>
 
             {houses.map((house, index) => {
               const residentName = formatResidentName(house);
               const isEmpty = residentName === 'ว่าง';
+              const rowStyle = index % 2 === 0 ? { backgroundColor: '#f3f4f6' } : {};
               
               return (
                 <View key={index} style={isEmpty ? styles.tableRowEmpty : styles.tableRow}>
@@ -354,7 +355,7 @@ const ComprehensiveReportPDF = ({ typeStats, houseStatus, detailData }) => {
           </View>
 
           <Text style={styles.footer}>
-            สร้างโดยระบบจัดการบ้านพัก • หน้า {typeIndex + 2}
+            หน้า {typeIndex + 2}
           </Text>
         </Page>
       ))}
@@ -484,7 +485,7 @@ const PDFDownload = ({ typeStats, houseStatus, detailData, reportType = 'summary
           <span>⏳ กำลังสร้าง PDF...</span>
         ) : (
           <span>
-            📄 รายงานครบถ้วน
+            📄 พิมพ์รายงานภาพรวม
           </span>
         );
       }}

@@ -17,7 +17,7 @@ import TwinHomeListPage2 from "./pages/typepage/twinhome2/page.jsx";
 import TownhomeListPage from "./pages/typepage/townhome/page.jsx";
 import EmployeeHomeListPage from "./pages/typepage/employee_home/page.jsx";
 import LoobyPage from "./pages/lobby/page.jsx";
-import LoobyPage2 from "./pages/lobby/page 2.jsx";
+import ViewScore from "./components/form/viewscore.jsx";
 import ViewHome from "./components/viewhome/viewhome.jsx";
 import Search from "./components/Search/Search.jsx";
 import EditGuest from "./components/guest/Editguest/editguest.jsx";
@@ -78,6 +78,7 @@ function App() {
         <Route path="/addtype" element={<Addtype />} />
         <Route path="/twinhome" element={<TwinHomeAllPage />} />
         <Route path="/homes" element={<GenericHomePage />} />
+        <Route path="/viewscore" element={<ViewScore />} />
       </Routes>
     </BrowserRouter>
   );
