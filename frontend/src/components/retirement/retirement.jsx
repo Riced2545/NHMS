@@ -119,6 +119,9 @@ const getDaysMessage = (days) => {
   const getFilteredData = () => {
     let filtered = retirementData;
 
+    // กรองเฉพาะผู้ถือสิทธิ
+    filtered = filtered.filter(person => person.is_right_holder);
+
     // กรองตามปีเกษียณ
     if (retirementYearFilter !== "all") {
       filtered = filtered.filter(person => {

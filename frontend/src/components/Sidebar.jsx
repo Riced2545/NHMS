@@ -113,6 +113,20 @@ export default function Navbar() {
             </li>
           )}
           
+           {role_id === "1" && (
+            <li
+              style={{
+                cursor: "pointer",
+                borderBottom: isActive("/viewscore") ? "3px solid #fff" : "none",
+                fontWeight: isActive("/viewscore") ? "bold" : "normal",
+                color: isActive("/viewscore") ? "#ffe066" : "#fff",
+              }}
+              onClick={() => navigate("/viewscore")}
+            >
+              ดูคะแนน
+            </li>
+          )}
+
           <li
             style={{
               cursor: "pointer",

@@ -258,11 +258,12 @@ export default function Search() {
                 showAddress={true}
                 showType={true}
                 onEdit={g => window.location.href = `/editguest/${g.id}`}
-                onDelete={handleDeleteWithConfirm} // เปลี่ยนตรงนี้
+                onDelete={handleDeleteWithConfirm}
                 selectedIds={selectedIds}
                 setSelectedIds={setSelectedIds}
                 currentPage={currentPage}
                 onPageChange={setCurrentPage}
+                onSaved={fetchRightHolders} // เพิ่มตรงนี้
               />
               {/* Pagination controls */}
               <div style={{ display: "flex", justifyContent: "center", marginTop: 24, gap: 8 }}>

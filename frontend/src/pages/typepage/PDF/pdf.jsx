@@ -263,8 +263,8 @@ const ComprehensiveReportPDF = ({ typeStats, houseStatus, detailData }) => {
         {/* สรุปสถานะ */}
         <View style={styles.summarySection}>
           <Text style={styles.summaryTitle}>สรุปข้อมูลการใช้งาน</Text>
-          <Text style={styles.summaryText}>• บ้านที่มีผู้อยู่อาศัย: {houseStatus.occupied} หลัง ({occupancyRate}%)</Text>
-          <Text style={styles.summaryText}>• บ้านว่าง: {houseStatus.vacant} หลัง ({vacancyRate}%)</Text>
+          <Text style={styles.summaryText}>• บ้านที่มีผู้อยู่อาศัย: {houseStatus.occupied} หลัง</Text>
+          <Text style={styles.summaryText}>• บ้านว่าง: {houseStatus.vacant} หลัง </Text>
           <Text style={styles.summaryText}>• รวมทั้งหมด: {totalHouses} หลัง</Text>
           <Text style={styles.summaryText}>• จำนวนประเภทบ้าน: {typeStats.length} ประเภท</Text>
         </View>
@@ -331,28 +331,6 @@ const ComprehensiveReportPDF = ({ typeStats, houseStatus, detailData }) => {
             })}
           </View>
 
-          {/* สรุปประเภทนี้ */}
-          <View style={styles.summarySection}>
-            <Text style={styles.summaryTitle}>สรุปข้อมูล {type}</Text>
-            <Text style={styles.summaryText}>
-              • จำนวนบ้านทั้งหมด: {houses.length} หลัง
-            </Text>
-            <Text style={styles.summaryText}>
-              • จำนวนบ้านที่มีผู้อยู่อาศัย: {houses.filter(house => 
-                formatResidentName(house) !== 'ว่าง'
-              ).length} หลัง
-            </Text>
-            <Text style={styles.summaryText}>
-              • จำนวนบ้านว่าง: {houses.filter(house => 
-                formatResidentName(house) === 'ว่าง'
-              ).length} หลัง
-            </Text>
-            <Text style={styles.summaryText}>
-              • อัตราการเข้าพัก: {houses.length > 0 ? 
-                ((houses.filter(house => formatResidentName(house) !== 'ว่าง').length / houses.length) * 100).toFixed(1)
-                : 0}%
-            </Text>
-          </View>
 
           <Text style={styles.footer}>
             หน้า {typeIndex + 2}

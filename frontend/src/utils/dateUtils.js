@@ -26,3 +26,12 @@ export function joinThaiDate(day, month, year) {
   if (!day || !month || !year) return "";
   return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
 }
+
+export function getYearOptions(range = 80) {
+  const buddhistYearNow = new Date().getFullYear() + 543;
+  const years = [];
+  for (let y = buddhistYearNow - range; y <= buddhistYearNow; y++) {
+    years.push(y);
+  }
+  return years;
+}

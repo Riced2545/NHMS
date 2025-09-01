@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Navbar from "../Sidebar";
+import "../Search/Search.css"; // เพิ่มบรรทัดนี้ ถ้ายังไม่ได้ import
 
 export default function ViewScore() {
   const [scores, setScores] = useState([]);
@@ -92,26 +93,26 @@ export default function ViewScore() {
           )}
           {scores.length > 0 && (
             <>
-              <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 16 }}>
+              <table className="search-table">
                 <thead>
-                  <tr style={{ background: "#f3f4f6" }}>
-                    <th style={{ padding: 10, border: "1px solid #e5e7eb" }}>ลำดับ</th>
-                    <th style={{ padding: 10, border: "1px solid #e5e7eb" }}>คำนำหน้า/ยศ</th>
-                    <th style={{ padding: 10, border: "1px solid #e5e7eb" }}>ชื่อ</th>
-                    <th style={{ padding: 10, border: "1px solid #e5e7eb" }}>นามสกุล</th>
-                    <th style={{ padding: 10, border: "1px solid #e5e7eb" }}>เบอร์โทร</th>
-                    <th style={{ padding: 10, border: "1px solid #e5e7eb" }}>คะแนนรวม</th>
+                  <tr>
+                    <th>ลำดับ</th>
+                    <th>คำนำหน้า/ยศ</th>
+                    <th>ชื่อ</th>
+                    <th>นามสกุล</th>
+                    <th>เบอร์โทร</th>
+                    <th>คะแนนรวม</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedScores.map((item, idx) => (
                     <tr key={item.id}>
-                      <td style={{ padding: 10, border: "1px solid #e5e7eb" }}>{(currentPage - 1) * itemsPerPage + idx + 1}</td>
-                      <td style={{ padding: 10, border: "1px solid #e5e7eb" }}>{item.title || item.rank_id || "-"}</td>
-                      <td style={{ padding: 10, border: "1px solid #e5e7eb" }}>{item.name}</td>
-                      <td style={{ padding: 10, border: "1px solid #e5e7eb" }}>{item.lname}</td>
-                      <td style={{ padding: 10, border: "1px solid #e5e7eb" }}>{item.phone}</td>
-                      <td style={{ padding: 10, border: "1px solid #e5e7eb" }}>{item.total_score}</td>
+                      <td>{(currentPage - 1) * itemsPerPage + idx + 1}</td>
+                      <td>{item.title || item.rank_id || "-"}</td>
+                      <td>{item.name}</td>
+                      <td>{item.lname}</td>
+                      <td>{item.phone}</td>
+                      <td>{item.total_score}</td>
                     </tr>
                   ))}
                 </tbody>

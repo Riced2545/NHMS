@@ -21,7 +21,7 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
     "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
   ];
   const currentYear = new Date().getFullYear() + 543;
-  const years = Array.from({ length: 100 }, (_, i) => (currentYear - 99 + i).toString()); // เริ่มจากปีเก่าสุด
+  const years_options = Array.from({ length: 80 }, (_, i) => (currentYear - 80 + i).toString()); // ปีปัจจุบันถึง 80 ปีถัดไป
 
   const [dobParts, setDobParts] = useState({ day: "", month: "", year: "" });
 
@@ -182,7 +182,7 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
                   style={inputStyle}
                 >
                   <option value="">ปี</option>
-                  {years.map(y => <option key={y} value={y}>{y}</option>)}
+                  {years_options.map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
             </div>
