@@ -250,14 +250,18 @@ export default function AuditLog() {
                     {/* ✅ Header พร้อมสถิติ */}
                     <div style={{ marginBottom: 32 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                            <h2 style={{ 
-                                color: "#1e40af", 
-                                fontWeight: "bold", 
+                            <h2 style={{
+                                color: "#3b2566",
+                                fontWeight: "bold",
                                 fontSize: "28px",
                                 margin: 0,
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "12px"
+                                gap: "12px",
+                                textAlign: "center", // เพิ่มบรรทัดนี้
+                                width: "100%",       // เพิ่มบรรทัดนี้
+                                justifyContent: "center" // เพิ่มบรรทัดนี้
+                                
                             }}>
                                 📊 ประวัติการบันทึกการพักอาศัย
                             </h2>

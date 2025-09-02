@@ -213,9 +213,9 @@ const getDaysMessage = (days) => {
           }}>
             {/* Header */}
             <div style={{
-              fontSize: "24px",
+              fontSize: "28px",
               fontWeight: "bold",
-              color: "#1f2937",
+              color: "#3b2566",
               marginBottom: "8px",
               textAlign: "center"
             }}>

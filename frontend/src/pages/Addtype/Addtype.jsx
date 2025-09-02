@@ -79,7 +79,7 @@ export default function Addtype() {
       toast.success("เพิ่มประเภทบ้านสำเร็จ!", {
         position: "top-right",
         autoClose: 3000,
-        style: { background: '#22c55e', color: 'white' }
+        style: { background: '#ffffffff', color: 'grey' }
       });
       
       // รีเซ็ตฟอร์ม
@@ -109,7 +109,7 @@ export default function Addtype() {
       toast.error(errorMessage, {
         position: "top-right",
         autoClose: 5000,
-        style: { background: '#ef4444', color: 'white' }
+        style: { background: '#ef4444', color: 'grey' }
       });
     }
   };
@@ -125,7 +125,7 @@ export default function Addtype() {
       toast.success("ลบประเภทบ้านสำเร็จ!", {
         position: "top-right",
         autoClose: 3000,
-        style: { background: '#22c55e', color: 'white' }
+        style: { background: '#ffffffff', color: 'grey' }
       });
       
       loadHomeTypes();
@@ -163,7 +163,7 @@ export default function Addtype() {
             
             <form onSubmit={handleSubmit} className="form-full-width">
               <div className="form-group">
-                <label className="form-label">ชื่อประเภทบ้าน *</label>
+                <label className="form-label">ชื่อประเภทบ้าน <span className="required">*</span></label>
                 <input
                   type="text"
                   name="name"
@@ -171,7 +171,7 @@ export default function Addtype() {
                   onChange={handleChange}
                   className="form-input"
                   required
-                  placeholder="เช่น คอนโดมิเนียม, บ้านเดี่ยว"
+                  placeholder="เช่น คอนโด, บ้านเดี่ยว"
                 />
               </div>
               
@@ -182,46 +182,14 @@ export default function Addtype() {
                   value={form.description}
                   onChange={handleChange}
                   className="form-textarea"
-                  placeholder="คำอธิบายเพิ่มเติม (ไม่บังคับ)"
                 />
               </div>
               
-              <div className="form-group">
-                <label className="form-label">ความจุสูงสุด (หน่วย)</label>
-                <input
-                  type="number"
-                  name="max_capacity"
-                  value={form.max_capacity}
-                  onChange={handleChange}
-                  className="form-input"
-                  placeholder="ระบุจำนวนหน่วยสูงสุด (ไม่บังคับ)"
-                  min="1"
-                />
-              </div>
               
-              <div className="form-group">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="is_row_type"
-                    checked={form.is_row_type}
-                    onChange={handleChange}
-                    className="form-checkbox"
-                  />
-                  เป็นประเภทบ้านที่มีการจัดแถว (เช่น บ้านพักเรือนแถว)
-                </label>
-              </div>
               
               <div className={styles.buttonGroup}>
                 <button type="submit" className={styles.btnPrimary}>
                   เพิ่มประเภทบ้าน
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => navigate("/")} 
-                  className={styles.btnSecondary}
-                >
-                  ยกเลิก
                 </button>
               </div>
             </form>
