@@ -718,13 +718,14 @@ app.post("/api/homes", upload.single("image"), (req, res) => {
 
         function saveLog() {
           db.query(
-            "INSERT INTO guest_logs (guest_id, home_id, action, detail, created_at) VALUES (NULL, ?, 'add_home', ?, NOW())",
-            [newHomeId, logDetail],
+            `INSERT INTO guest_logs (
+              guest_id, home_id, action, detail, home_address, home_type_name, created_at
+            ) VALUES (NULL, ?, 'add_home', ?, ?, ?, NOW())`,
+            [newHomeId, logDetail, Address, homeType],
             (logErr) => {
               if (logErr) {
                 console.error("Error logging home addition:", logErr);
               }
-              
               res.json({ 
                 success: true, 
                 message: "บันทึกข้อมูลสำเร็จ",
@@ -926,7 +927,7 @@ app.put("/api/homes/:id", (req, res) => {
 
 app.delete("/api/homes/:id", (req, res) => {
   const homeId = req.params.id;
-  
+
   // ดึงข้อมูลบ้านก่อนลบ (รวมข้อมูลแถว)
   const getHomeDataSql = `
     SELECT h.*, ht.name as home_type_name, s.name as status_name,
@@ -939,35 +940,35 @@ app.delete("/api/homes/:id", (req, res) => {
   `;
   
   db.query(getHomeDataSql, [homeId], (err, homeResults) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    
-    if (homeResults.length === 0) {
-      return res.status(404).json({ error: "Home not found" });
-    }
-    
+    if (err) return res.status(500).json({ error: "Database error" });
+    if (homeResults.length === 0) return res.status(404).json({ error: "Home not found" });
+
     const home = homeResults[0];
+    const imageFile = home.image;
     const address = home.Address || "";
     const homeType = home.home_type_name || "";
     const rowInfo = home.row_name || (home.row_number ? `แถว ${home.row_number}` : '');
-    
+
     // ตรวจสอบว่ามีผู้พักอาศัยในบ้านหรือไม่
     db.query("SELECT COUNT(*) as guest_count FROM guest WHERE home_id = ?", [homeId], (countErr, countResults) => {
-      if (countErr) {
-        console.error("Error counting guests:", countErr);
-        return res.status(500).json({ error: "Database error" });
-      }
-      
+      if (countErr) return res.status(500).json({ error: "Database error" });
       const guestCount = countResults[0].guest_count;
-      
       if (guestCount > 0) {
         return res.status(400).json({ 
           message: `ไม่สามารถลบบ้านได้ เนื่องจากมีผู้พักอาศัย ${guestCount} คน` 
         });
       }
-      
+
+      // ลบไฟล์รูปภาพใน uploads ถ้ามี
+      if (imageFile) {
+        const imagePath = path.join(__dirname, "uploads", imageFile);
+        fs.unlink(imagePath, err => {
+          if (err && err.code !== "ENOENT") {
+            console.error("Error deleting image file:", imagePath, err);
+          }
+        });
+      }
+
       // สร้างรายละเอียด log ก่อนลบ
       let detail = "";
       if (homeType === 'บ้านพักเรือนแถว' && rowInfo) {
@@ -975,52 +976,30 @@ app.delete("/api/homes/:id", (req, res) => {
       } else {
         detail = `ลบบ้านเลขที่ ${address} ประเภท ${homeType}`;
       }
-      
-      // บันทึก audit log ก่อนลบบ้าน
+
+      // ✅ บันทึก audit log พร้อม home_type_name และ home_address
       const logSql = `
-        INSERT INTO guest_logs (guest_id, home_id, action, detail, created_at)
-        VALUES (NULL, ?, 'delete_home', ?, NOW())
+        INSERT INTO guest_logs (
+          guest_id, home_id, action, detail, home_address, home_type_name, created_at
+        ) VALUES (NULL, ?, 'delete_home', ?, ?, ?, NOW())
       `;
-      
-      db.query(logSql, [homeId, detail], (logErr) => {
-        if (logErr) {
-          console.error("Error logging home deletion:", logErr);
-          // ถ้า log ไม่ได้ก็ยังลบบ้านได้
-        }
-        
-        // **เปลี่ยนแปลงหลัก: อัปเดต audit logs แทนการลบ**
-        // อัปเดต guest_logs ที่เกี่ยวข้องให้ home_id เป็น NULL แทนการลบ
+      db.query(logSql, [homeId, detail, address, homeType], (logErr) => {
+        // อัปเดต guest_logs ที่เกี่ยวข้องให้ home_id เป็น NULL และเติมข้อความ
         const updateLogsSql = `
           UPDATE guest_logs 
           SET home_id = NULL, 
-              detail = CONCAT('[บ้านถูกลบ] ', detail)
+              detail = CONCAT('[บ้านหลังนี้ถูกลบแล้ว] ', detail)
           WHERE home_id = ?
         `;
-        
         db.query(updateLogsSql, [homeId], (updateLogErr) => {
-          if (updateLogErr) {
-            console.error("Error updating guest logs:", updateLogErr);
-            return res.status(500).json({ error: "Database error" });
-          }
-          
-          console.log(`✅ Updated ${homeId} related logs to preserve history`);
-          
-          // ตอนนี้ลบบ้านได้แล้วเพราะไม่มี Foreign Key constraint
+          // ลบบ้านจริง
           db.query("DELETE FROM home WHERE home_id = ?", [homeId], (deleteErr, result) => {
-            if (deleteErr) {
-              console.error("Database error:", deleteErr);
-              return res.status(500).json({ error: "Database error" });
-            }
-            
-            if (result.affectedRows === 0) {
-              return res.status(404).json({ error: "Home not found" });
-            }
-            
+            if (deleteErr) return res.status(500).json({ error: "Database error" });
+            if (result.affectedRows === 0) return res.status(404).json({ error: "Home not found" });
             res.json({ 
               success: true, 
-              message: "ลบบ้านสำเร็จ (ประวัติ audit log ยังคงอยู่)" 
+              message: "ลบบ้านสำเร็จ (ลบรูปภาพและแจ้งใน audit logs แล้ว)" 
             });
-            console.log("✅ Delete Home: id", homeId, "- Audit logs preserved");
           });
         });
       });
@@ -1510,7 +1489,7 @@ app.post("/api/guests", (req, res) => {
       ], (err, result) => {
         if (err) {
           console.error("Database error:", err);
-          return res.status(500).json({ error: "Database error: " + err.message });
+          return res.status(500).json({ error: "Database error" });
         }
         
         // อัปเดตสถานะบ้านเป็น "มีผู้พักอาศัย" (status_id = 1)
@@ -1946,7 +1925,7 @@ app.post("/api/upload", upload.single('image'), (req, res) => {
   }
 });
 
-// API สำหรับดึงยศที่สามารถเข้าพักได้ตามประเภทบ้าน
+// API สำหรับดึงยศที่สามารถเข้าพได้ตามประเภทบ้าน
 app.get("/api/eligible-ranks/:home_id", (req, res) => {
   const { home_id } = req.params;
   

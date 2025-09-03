@@ -10,6 +10,8 @@ export default function AuditLog() {
     const [actionFilter, setActionFilter] = useState("");
     const [searchUser, setSearchUser] = useState("");
     const [typeFilter, setTypeFilter] = useState("");
+    const itemsPerPage = 15;
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
         fetchLogs();
@@ -49,7 +51,7 @@ export default function AuditLog() {
                     </div>
                     <div style={{ marginBottom: '15px', color: '#666' }}>
                         ต้องการล้างประวัติการบันทึกทั้งหมดหรือไม่?<br/>
-                        <span style={{ color: '#ef4444', fontSize: '14px' }}>การกระทำนี้ไม่สามารถย้อนกลับได้!</span>
+                        
                     </div>
                     <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                         <button
@@ -73,10 +75,7 @@ export default function AuditLog() {
                         <button
                             onClick={() => {
                                 closeToast();
-                                toast.info("ยกเลิกการล้างประวัติ", {
-                                    position: "top-right",
-                                    autoClose: 2000,
-                                });
+                            ;
                             }}
                             style={{
                                 background: '#6b7280',
@@ -114,34 +113,15 @@ export default function AuditLog() {
 
         const performClearLogs = async () => {
             try {
-                fetchLogs();
-                // แจ้งเมื่อล้างสำเร็จ
+                await axios.delete("http://localhost:3001/api/guest_logs"); // เรียก API ลบ log
+                fetchLogs(); // โหลด log ใหม่
                 toast.success("✅ ล้างประวัติทั้งหมดเสร็จแล้ว!", {
                     position: "top-right",
                     autoClose: 3000,
                 });
             } catch (error) {
                 console.error("❌ Error clearing logs:", error);
-                
-                let errorMessage = "เกิดข้อผิดพลาดในการล้างประวัติ";
-                
-                if (error.response) {
-                    console.error('Error response:', error.response.data);
-                    console.error('Error status:', error.response.status);
-                    
-                    if (error.response.data.message) {
-                        errorMessage = error.response.data.message;
-                    } else if (error.response.data.error) {
-                        errorMessage = error.response.data.error;
-                    } else {
-                        errorMessage = `เกิดข้อผิดพลาด: ${error.response.status}`;
-                    }
-                } else if (error.request) {
-                    console.error('No response received:', error.request);
-                    errorMessage = "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้";
-                }
-                
-                toast.error(errorMessage, {
+                toast.error("เกิดข้อผิดพลาดในการล้างประวัติ", {
                     position: "top-right",
                     autoClose: 5000,
                 });
@@ -155,7 +135,6 @@ export default function AuditLog() {
         { value: "add", label: "เพิ่ม", icon: "➕" },
         { value: "edit", label: "แก้ไข", icon: "✏️" },
         { value: "delete", label: "ลบ", icon: "🗑️" },
-        { value: "move", label: "ย้าย", icon: "🔄" }
     ];
 
     // ✅ ปรับปรุง typeOptions
@@ -193,7 +172,6 @@ export default function AuditLog() {
             "add": "เพิ่มผู้พัก",
             "edit": "แก้ไขผู้พัก", 
             "delete": "ลบผู้พัก",
-            "move": "ย้ายผู้พัก",
             "add_home": "เพิ่มบ้าน",
             "edit_home": "แก้ไขบ้าน",
             "delete_home": "ลบบ้าน"
@@ -227,6 +205,13 @@ export default function AuditLog() {
 
         return matchAction && matchUser && matchType;
     });
+
+    // Pagination logic
+    const paginatedLogs = filteredLogs.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+    const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
 
     return (
         <div className="dashboard-container" style={{ background: "#f8fafc", minHeight: "100vh" }}>
@@ -381,6 +366,7 @@ export default function AuditLog() {
                             กำลังโหลดข้อมูล...
                         </div>
                     ) : (
+                        <>
                         <div style={{ overflowX: "auto", borderRadius: 12, border: "1px solid #e5e7eb" }}>
                             <table style={{ 
                                 width: "100%", 
@@ -400,7 +386,7 @@ export default function AuditLog() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredLogs.length === 0 ? (
+                                    {paginatedLogs.length === 0 ? (
                                         <tr>
                                             <td colSpan={5} style={{ 
                                                 textAlign: "center", 
@@ -413,7 +399,7 @@ export default function AuditLog() {
                                             </td>
                                         </tr>
                                     ) : (
-                                        filteredLogs.map((log, idx) => (
+                                        paginatedLogs.map((log, idx) => (
                                             <tr key={idx} style={{ 
                                                 borderBottom: "1px solid #f3f4f6",
                                                 transition: "all 0.2s ease",
@@ -503,6 +489,41 @@ export default function AuditLog() {
                                 </tbody>
                             </table>
                         </div>
+                        {/* Pagination controls */}
+                        <div style={{ display: "flex", justifyContent: "center", marginTop: 24, gap: 8 }}>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #ccc", background: currentPage === 1 ? "#eee" : "#fff", cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
+                            >
+                                ◀
+                            </button>
+                            {Array.from({ length: totalPages }, (_, i) => (
+                                <button
+                                    key={i + 1}
+                                    onClick={() => setCurrentPage(i + 1)}
+                                    style={{
+                                        padding: "6px 14px",
+                                        borderRadius: 6,
+                                        border: "1px solid #ccc",
+                                        background: currentPage === i + 1 ? "#3b82f6" : "#fff",
+                                        color: currentPage === i + 1 ? "#fff" : "#333",
+                                        fontWeight: currentPage === i + 1 ? "bold" : "normal",
+                                        cursor: "pointer"
+                                }}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #ccc", background: currentPage === totalPages ? "#eee" : "#fff", cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
+                            >
+                                ▶
+                            </button>
+                        </div>
+                        </>
                     )}
                 </div>
             </div>

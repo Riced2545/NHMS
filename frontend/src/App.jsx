@@ -16,7 +16,6 @@ import TwinHomeListPage from "./pages/typepage/twinhome/page.jsx";
 import TwinHomeListPage2 from "./pages/typepage/twinhome2/page.jsx";
 import TownhomeListPage from "./pages/typepage/townhome/page.jsx";
 import EmployeeHomeListPage from "./pages/typepage/employee_home/page.jsx";
-import LoobyPage from "./pages/lobby/page.jsx";
 import ViewScore from "./components/form/viewscore.jsx";
 import ViewHome from "./components/viewhome/viewhome.jsx";
 import Search from "./components/Search/Search.jsx";
@@ -29,7 +28,7 @@ import Dashboard from "./pages/Dashboard/Dashboard.jsx";
 import Addtype from "./pages/Addtype/Addtype";
 import TwinHomeAllPage from "./pages/typepage/twinhome/all";
 import GenericHomePage from './pages/GenericHomePage';
-
+import Lobby from "./pages/lobby/lobby.jsx";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(isAuthenticated());
@@ -64,8 +63,6 @@ function App() {
         <Route path="/twin2" element={<TwinHomeListPage2 />} />
         <Route path="/townhome" element={<TownhomeListPage />} />
         <Route path="/emphome" element={<EmployeeHomeListPage />} />
-        <Route path="/d" element={<LoobyPage />} />
-        {/* <Route path="/" element={<LoobyPage2 />} /> */}
         <Route path="/viewhome/:home_id" element={<ViewHome/>} />
         <Route path="/search" element={<Search />} />
         <Route path="/search" element={<Search />} />
@@ -79,6 +76,8 @@ function App() {
         <Route path="/twinhome" element={<TwinHomeAllPage />} />
         <Route path="/homes" element={<GenericHomePage />} />
         <Route path="/viewscore" element={<ViewScore />} />
+        <Route path="/lobby" element={<Lobby />} />
+
       </Routes>
     </BrowserRouter>
   );
