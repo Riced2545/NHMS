@@ -16,7 +16,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-const apiRoutes = require("./API/api");
+const apiRoutes = require("./API/Api");
 app.use("/api", apiRoutes);
 
 // *** multer config ***

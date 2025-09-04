@@ -42,12 +42,12 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* <Route
-          path="/"
+        <Route
+          path="/dashboard"
           element={
-            loggedIn ? <TypeDetailPage onLogout={handleLogout} /> : <Navigate to="/login" />
+            loggedIn ? <Dashboard onLogout={handleLogout} /> : <Navigate to="/login" />
           }
-        /> */}
+        />
         <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
         <Route path="/register" element={<RegisterPage />} />
         {/* <Route path="/" element={<TypePage />} /> */}
@@ -57,7 +57,7 @@ function App() {
         <Route path="/addguest/:home_id" element={<Addguest />} />
         <Route path="/guestview/:home_id" element={<ViewGuest />} />
         <Route path="/type" element={<MainPage />} />
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<Lobby />} />
         <Route path="/flat" element={<FlatListPage />} />
         <Route path="/twin1" element={<TwinHomeListPage />} />
         <Route path="/twin2" element={<TwinHomeListPage2 />} />
@@ -76,7 +76,7 @@ function App() {
         <Route path="/twinhome" element={<TwinHomeAllPage />} />
         <Route path="/homes" element={<GenericHomePage />} />
         <Route path="/viewscore" element={<ViewScore />} />
-        <Route path="/lobby" element={<Lobby />} />
+        <Route path="/dashboard" element={<Dashboard/>} />
 
       </Routes>
     </BrowserRouter>

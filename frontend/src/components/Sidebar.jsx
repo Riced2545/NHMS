@@ -41,7 +41,7 @@ export default function Navbar() {
     localStorage.removeItem("token");
     localStorage.removeItem("role_id");
     localStorage.removeItem("username");
-    navigate("/login");
+    navigate("/");
   };
 
   return (
@@ -74,11 +74,11 @@ export default function Navbar() {
           <li
             style={{
               cursor: "pointer",
-              borderBottom: isActive("/") ? "3px solid #fff" : "none",
-              fontWeight: isActive("/") ? "bold" : "normal",
-              color: isActive("/") ? "#ffe066" : "#fff",
+              borderBottom: isActive("/dashboard") ? "3px solid #fff" : "none",
+              fontWeight: isActive("/dashboard") ? "bold" : "normal",
+              color: isActive("/dashboard") ? "#ffe066" : "#fff",
             }}
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/dashboard")}
           >
             หน้าหลัก
           </li>
@@ -260,114 +260,6 @@ export default function Navbar() {
 
               {/* Menu Items */}
               <div style={{ padding: "8px 0" }}>
-                <div
-                  style={{
-                    padding: "8px 16px",
-                    cursor: "pointer",
-                    fontSize: 14,
-                    transition: "background-color 0.2s",
-                  }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "#f3f4f6"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "transparent"}
-                  onClick={() => {
-                    setShowDropdown(false);
-                    // navigate("/profile");
-                  }}
-                >
-                  Profile
-                </div>
-                
-                <div
-                  style={{
-                    padding: "8px 16px",
-                    cursor: "pointer",
-                    fontSize: 14,
-                    transition: "background-color 0.2s",
-                  }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "#f3f4f6"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "transparent"}
-                  onClick={() => {
-                    setShowDropdown(false);
-                    // navigate("/grades");
-                  }}
-                >
-                  Grades
-                </div>
-
-                <div
-                  style={{
-                    padding: "8px 16px",
-                    cursor: "pointer",
-                    fontSize: 14,
-                    transition: "background-color 0.2s",
-                  }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "#f3f4f6"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "transparent"}
-                  onClick={() => {
-                    setShowDropdown(false);
-                    // navigate("/calendar");
-                  }}
-                >
-                  Calendar
-                </div>
-
-                <div
-                  style={{
-                    padding: "8px 16px",
-                    cursor: "pointer",
-                    fontSize: 14,
-                    transition: "background-color 0.2s",
-                  }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "#f3f4f6"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "transparent"}
-                  onClick={() => {
-                    setShowDropdown(false);
-                    // navigate("/files");
-                  }}
-                >
-                  Private files
-                </div>
-
-                <hr style={{ margin: "8px 0", border: "none", borderTop: "1px solid #e5e7eb" }} />
-
-                <div
-                  style={{
-                    padding: "8px 16px",
-                    cursor: "pointer",
-                    fontSize: 14,
-                    transition: "background-color 0.2s",
-                  }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "#f3f4f6"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "transparent"}
-                  onClick={() => {
-                    setShowDropdown(false);
-                    // navigate("/preferences");
-                  }}
-                >
-                  Preferences
-                </div>
-
-                <div
-                  style={{
-                    padding: "8px 16px",
-                    cursor: "pointer",
-                    fontSize: 14,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    transition: "background-color 0.2s",
-                  }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "#f3f4f6"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "transparent"}
-                  onClick={() => {
-                    setShowDropdown(false);
-                    // navigate("/language");
-                  }}
-                >
-                  Language
-                  <span>▶</span>
-                </div>
-
                 <hr style={{ margin: "8px 0", border: "none", borderTop: "1px solid #e5e7eb" }} />
 
                 <div
