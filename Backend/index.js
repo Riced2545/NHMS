@@ -143,7 +143,7 @@ db.connect((err) => {
     id INT AUTO_INCREMENT PRIMARY KEY,
     row_number INT NOT NULL UNIQUE,
     name VARCHAR(50) NOT NULL,
-    max_capacity INT DEFAULT 10,
+    max_capacity INT DEFAULT 14,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`);
@@ -151,7 +151,8 @@ db.connect((err) => {
   // เพิ่มข้อมูลแถวเริ่มต้น
   db.query(`INSERT IGNORE INTO townhome_rows (row_number, name) VALUES 
     (1, 'แถว 1'), (2, 'แถว 2'), (3, 'แถว 3'), (4, 'แถว 4'), (5, 'แถว 5'),
-    (6, 'แถว 6'), (7, 'แถว 7'), (8, 'แถว 8'), (9, 'แถว 9'), (10, 'แถว 10')
+    (6, 'แถว 6'), (7, 'แถว 7'), (8, 'แถว 8'), (9, 'แถว 9'), (10, 'แถว 10') ,(11, 'แถว 11') ,(12, 'แถว 12'),
+    (13, 'แถว 13'),(14, 'แถว 14')
   `);
 
   // เพิ่มคอลัมน์ row_id ในตาราง home
@@ -296,6 +297,26 @@ db.connect((err) => {
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`);
 });
+
+// สร้างตาราง buildings
+db.query(`
+  CREATE TABLE IF NOT EXISTS buildings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    description TEXT
+  )
+`);
+
+// สร้างตาราง floors
+db.query(`
+  CREATE TABLE IF NOT EXISTS floors (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    building_id INT,
+    floor_number INT NOT NULL,
+    description TEXT,
+    FOREIGN KEY (building_id) REFERENCES buildings(id)
+  )
+`);
 
 // Register (แก้ไขให้รับข้อมูล profile)
 app.post("/api/register", (req, res) => {
@@ -2102,5 +2123,56 @@ app.get("/api/viewscore", (req, res) => {
   db.query("SELECT * FROM guest_scores ORDER BY total_score DESC", (err, results) => {
     if (err) return res.status(500).json({ error: "Database error" });
     res.json(results);
+  });
+});
+
+// เพิ่ม API สำหรับเพิ่มบ้านหลายหลัง
+app.post("/api/homes/bulk", upload.single("image"), (req, res) => {
+  const { home_type_id, status, row_id, twin_area_id, amount, startAddress, endAddress } = req.body;
+  const image = req.file ? req.file.filename : null;
+
+  // แปลง start/end เป็นตัวเลข
+  const start = parseInt(startAddress, 10);
+  const end = parseInt(endAddress, 10);
+
+  if (isNaN(start) || isNaN(end) || start > end || amount < 1) {
+    return res.status(400).json({ message: "ข้อมูลเลขบ้านหรือจำนวนหลังไม่ถูกต้อง" });
+  }
+
+  let homesToAdd = [];
+  for (let i = start; i <= end && homesToAdd.length < amount; i++) {
+    homesToAdd.push(i.toString());
+  }
+
+  // วนเพิ่มบ้านแต่ละหลัง
+  let successCount = 0;
+  let errors = [];
+  let promises = homesToAdd.map(address => {
+    return new Promise((resolve) => {
+      // ตรวจสอบซ้ำก่อน
+      db.query("SELECT home_id FROM home WHERE Address = ? AND home_type_id = ?", [address, home_type_id], (err, results) => {
+        if (err || results.length > 0) {
+          errors.push(address);
+          return resolve();
+        }
+        db.query(
+          "INSERT INTO home (home_type_id, Address, status_id, image, row_id, twin_area_id) VALUES (?, ?, ?, ?, ?, ?)",
+          [home_type_id, address, status, image, row_id || null, twin_area_id || null],
+          (err2) => {
+            if (!err2) successCount++;
+            else errors.push(address);
+            resolve();
+          }
+        );
+      });
+    });
+  });
+
+  Promise.all(promises).then(() => {
+    res.json({
+      success: true,
+      added: successCount,
+      failed: errors
+    });
   });
 });
