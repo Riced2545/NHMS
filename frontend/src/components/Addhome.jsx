@@ -20,6 +20,11 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
   const [twinAreas, setTwinAreas] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // เพิ่ม state ใหม่
+  const [startAddress, setStartAddress] = useState("");
+  const [endAddress, setEndAddress] = useState("");
+  const [amount, setAmount] = useState(1);
+
   // โหลดข้อมูลเริ่มต้น
   useEffect(() => {
     if (isOpen) {
@@ -205,7 +210,15 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
         formData.append("image", image);
       }
 
-      await axios.post("http://localhost:3001/api/homes", formData, {
+      // ส่งข้อมูลไป backend
+      const payload = {
+        ...form,
+        amount,
+        startAddress,
+        endAddress,
+        // ...อื่นๆ
+      };
+      await axios.post("http://localhost:3001/api/homes/bulk", payload, {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
@@ -509,7 +522,93 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
                 />
               </div>
             )}
-            
+
+            {/* แถวที่สาม - จำนวนหลังที่ต้องการเพิ่ม, เลขบ้านเริ่มต้น, เลขบ้านสิ้นสุด */}
+            <div 
+              style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr 1fr', 
+                gap: '20px',
+                marginBottom: '20px' 
+              }}
+            >
+              <div className="form-group">
+                <label 
+                  className="form-label"
+                  style={{ fontSize: '14px', marginBottom: '8px' }}
+                >
+                  จำนวนหลังที่ต้องการเพิ่ม
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={amount}
+                  onChange={e => setAmount(e.target.value)}
+                  placeholder="จำนวนหลังที่ต้องการเพิ่ม"
+                  className="form-input"
+                  required
+                  style={{ 
+                    padding: '12px 16px',
+                    fontSize: '14px',
+                    minHeight: '40px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    width: '100%'
+                  }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label 
+                  className="form-label"
+                  style={{ fontSize: '14px', marginBottom: '8px' }}
+                >
+                  เลขบ้านเริ่มต้น
+                </label>
+                <input
+                  type="text"
+                  value={startAddress}
+                  onChange={e => setStartAddress(e.target.value)}
+                  placeholder="เลขบ้านเริ่มต้น"
+                  className="form-input"
+                  required
+                  style={{ 
+                    padding: '12px 16px',
+                    fontSize: '14px',
+                    minHeight: '40px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    width: '100%'
+                  }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label 
+                  className="form-label"
+                  style={{ fontSize: '14px', marginBottom: '8px' }}
+                >
+                  เลขบ้านสิ้นสุด
+                </label>
+                <input
+                  type="text"
+                  value={endAddress}
+                  onChange={e => setEndAddress(e.target.value)}
+                  placeholder="เลขบ้านสิ้นสุด"
+                  className="form-input"
+                  required
+                  style={{ 
+                    padding: '12px 16px',
+                    fontSize: '14px',
+                    minHeight: '40px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    width: '100%'
+                  }}
+                />
+              </div>
+            </div>
+
             <div 
               className="modal-actions"
               style={{ 

@@ -281,8 +281,8 @@
 /* แก้ไขส่วนของรูปผู้ถือสิทธิ */
 .right-holder-image-container {
   position: absolute;
-  bottom: 12px; /* เพิ่มจาก 8px */
-  left: 12px; /* เพิ่มจาก 8px */
+  bottom: 8px; /* เพิ่มจาก 8px */
+  left: 8px; /* เพิ่มจาก 8px */
   display: flex;
   align-items: center;
   background: rgba(0, 0, 0, 0.8);

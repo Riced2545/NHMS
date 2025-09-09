@@ -150,8 +150,30 @@ export default function Addtype() {
       <Navbar />
       
       <div className="content-container">
+
+        <div className="button-container">
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              background: "#3b82f6",
+              color: "white",
+              border: "none",
+              padding: "12px 24px",
+              borderRadius: "8px",
+              fontSize: "16px",
+              fontWeight: "500",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)"
+            }}
+          >
+            ย้อนกลับ
+          </button>
+        </div>
+        
         <div className="title-container">
           <div className="page-title">
+            
             จัดการประเภทบ้านพัก
           </div>
         </div>

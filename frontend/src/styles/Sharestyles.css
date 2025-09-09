@@ -36,6 +36,13 @@
   margin-bottom: 10px;
 }
 
+.button-container {
+  display: flex;
+  justify-content: left;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
 /* ===== MAIN CONTENT LAYOUT ===== */
 .main-content {
   display: flex;

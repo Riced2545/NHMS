@@ -454,15 +454,31 @@ export default function GenericHomePage() {
                   <div key={home.home_id} className="movie-card">
                     <div className="movie-poster">
                       <div className="house-image-container">
-                        <img
-                          src={
-                            home.image
-                              ? `http://localhost:3001/uploads/${home.image}`
-                              : "/img/house-default.png"
-                          }
-                          alt="บ้าน"
-                          className="house-image"
-                        />
+                        {home.image ? (
+                          <img
+                            src={`http://localhost:3001/uploads/${home.image}`}
+                            alt="บ้าน"
+                            className="house-image"
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: "100%",
+                              height: "220px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              background: "#2c384a", // ปรับสีพื้นหลังให้เหมือน card
+                              color: "#fff",
+                              fontWeight: "bold",
+                              fontSize: "18px",
+                              borderRadius: "8px",
+                              marginBottom: "8px"
+                            }}
+                          >
+                            กรุณาเพิ่มรูปภาพ
+                          </div>
+                        )}
                       </div>
 
                       {/* รูปผู้ถือสิทธิ (ถ้ามี) */}

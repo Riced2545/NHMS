@@ -199,7 +199,6 @@ export default function TypePage() {
               padding: "18px 48px", 
               borderRadius: "8px", 
               border: "6px solid #31c3e7",
-              boxShadow: " 8px 8px 0 #2b2b3d",
               fontFamily: "'Press Start 2P', 'Courier New', monospace",
               letterSpacing: "2px", 
               userSelect: "none",
@@ -235,6 +234,23 @@ export default function TypePage() {
             />
           </div>
           
+          <button
+              onClick={() => navigate("/addtype")}
+              style={{
+            position: "fixed",
+            top: "100px",
+            left: "320px",
+            zIndex: 50,
+            borderRadius: "16px",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+            background: "#3b82f6",
+            border: "1px solid #e5e7eb",
+            color: "#fff",
+            animation: "float 3s ease-in-out infinite"
+          }}>
+              ➕ จัดการประเภทบ้าน
+          </button>
+
           {/* ส่วนการ์ดประเภทบ้าน - Dynamic */}
           <div style={{
             display: "flex",
@@ -359,23 +375,6 @@ export default function TypePage() {
             marginTop: 48,
             gap: 16
           }}>
-            <button
-              onClick={() => navigate("/addtype")}
-              style={{
-                background: "#3b82f6",
-                color: "white",
-                border: "none",
-                padding: "12px 24px",
-                borderRadius: "8px",
-                fontSize: "16px",
-                fontWeight: "500",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)"
-              }}
-            >
-              ➕ จัดการประเภทบ้าน
-            </button>
           </div>
         </div>
       </div>
