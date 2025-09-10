@@ -170,6 +170,21 @@ db.connect((err) => {
     else console.log("✅ Default status created");
   });
 
+  // สร้างข้อมูลอาคารสำหรับบ้านพักลูกจ้าง
+db.query(`INSERT IGNORE INTO buildings (build_number, name, description) VALUES
+  ('1', 'อาคาร 1', 'อาคารบ้านพักลูกจ้าง 1'),
+  ('2', 'อาคาร 2', 'อาคารบ้านพักลูกจ้าง 2')
+`);
+
+
+// สร้างข้อมูลชั้นสำหรับแฟลตสัญญาบัตร
+db.query(`INSERT IGNORE INTO floors (floor_number, name, description) VALUES
+  (1, 'ชั้น 1', 'แฟลตสัญญาบัตร ชั้น 1'),
+  (2, 'ชั้น 2', 'แฟลตสัญญาบัตร ชั้น 2'),
+  (3, 'ชั้น 3', 'แฟลตสัญญาบัตร ชั้น 3'),
+  (4, 'ชั้น 4', 'แฟลตสัญญาบัตร ชั้น 4')
+`);
+
   // เพิ่มข้อมูลเริ่มต้นในตาราง ranks และ home_eligibility
   db.query(`INSERT IGNORE INTO ranks (name) VALUES 
     ('นาวาเอก'), ('นาวาโท'), ('นาวาตรี'), ('เรือเอก'), ('เรือโท'), ('เรือตรี'),('พันจ่าเอก'), ('พันจ่าโท'), ('พันจ่าตรี'),
@@ -302,8 +317,11 @@ db.connect((err) => {
 db.query(`
   CREATE TABLE IF NOT EXISTS buildings (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    description TEXT
+    build_number VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(50),
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )
 `);
 
@@ -311,10 +329,11 @@ db.query(`
 db.query(`
   CREATE TABLE IF NOT EXISTS floors (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    building_id INT,
-    floor_number INT NOT NULL,
+    floor_number INT NOT NULL UNIQUE,
+    name VARCHAR(50),
     description TEXT,
-    FOREIGN KEY (building_id) REFERENCES buildings(id)
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )
 `);
 
@@ -2158,6 +2177,82 @@ app.post("/api/homes/bulk", upload.single("image"), (req, res) => {
         db.query(
           "INSERT INTO home (home_type_id, Address, status_id, image, row_id, twin_area_id) VALUES (?, ?, ?, ?, ?, ?)",
           [home_type_id, address, status, image, row_id || null, twin_area_id || null],
+          (err2) => {
+            if (!err2) successCount++;
+            else errors.push(address);
+            resolve();
+          }
+        );
+      });
+    });
+  });
+
+  Promise.all(promises).then(() => {
+    res.json({
+      success: true,
+      added: successCount,
+      failed: errors
+    });
+  });
+});
+
+// API สำหรับดึงข้อมูล floors (แฟลตสัญญาบัตร)
+app.get("/api/floors", (req, res) => {
+  db.query("SELECT * FROM floors WHERE is_active = TRUE ORDER BY floor_number ASC", (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    res.json(results);
+  });
+});
+
+// API สำหรับดึงข้อมูล buildings (บ้านพักลูกจ้าง)
+app.get("/api/buildings", (req, res) => {
+  db.query("SELECT * FROM buildings WHERE is_active = TRUE ORDER BY build_number ASC", (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    res.json(results);
+  });
+});
+
+// เพิ่ม API สำหรับเพิ่มบ้านหลายหลัง (bulk) พร้อมชั้นและอาคาร
+app.post("/api/homes/bulk", upload.single("image"), (req, res) => {
+  const { home_type_id, status, row_id, twin_area_id, floor_id, building_id, amount, startAddress, endAddress } = req.body;
+  const image = req.file ? req.file.filename : null;
+
+  // แปลง start/end เป็นตัวเลข
+  const start = parseInt(startAddress, 10);
+  const end = parseInt(endAddress, 10);
+
+  if (isNaN(start) || isNaN(end) || start > end || amount < 1) {
+    return res.status(400).json({ message: "ข้อมูลเลขบ้านหรือจำนวนหลังไม่ถูกต้อง" });
+  }
+
+  let homesToAdd = [];
+  for (let i = start; i <= end && homesToAdd.length < amount; i++) {
+    homesToAdd.push(i.toString());
+  }
+
+  // วนเพิ่มบ้านแต่ละหลัง
+  let successCount = 0;
+  let errors = [];
+  let promises = homesToAdd.map(address => {
+    return new Promise((resolve) => {
+      // ตรวจสอบซ้ำก่อน
+      db.query("SELECT home_id FROM home WHERE Address = ? AND home_type_id = ?", [address, home_type_id], (err, results) => {
+        if (err || results.length > 0) {
+          errors.push(address);
+          return resolve();
+        }
+        db.query(
+          "INSERT INTO home (home_type_id, Address, status_id, image, row_id, twin_area_id, floor_id, building_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          [
+            home_type_id,
+            address,
+            status,
+            image,
+            row_id || null,
+            twin_area_id || null,
+            floor_id || null,
+            building_id || null
+          ],
           (err2) => {
             if (!err2) successCount++;
             else errors.push(address);

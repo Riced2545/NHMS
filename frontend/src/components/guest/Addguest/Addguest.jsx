@@ -758,7 +758,6 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
                   value={familyCount}
                   onChange={(e) => setFamilyCount(parseInt(e.target.value) || 0)}
                   min={hasRightHolder ? "1" : "0"}
-                  max="5"
                 />
               </div>
 

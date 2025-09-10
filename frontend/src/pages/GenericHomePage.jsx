@@ -239,14 +239,8 @@ export default function GenericHomePage() {
   };
 
   // ฟังก์ชันตรวจสอบความจุสูงสุด
-  const getMaxCapacity = (home) => {
-    // กำหนดให้ทุกประเภทบ้านมีความจุสูงสุด 6 คน
-    return 6;
-  };
-
   const isHomeFull = (home) => {
-    const maxCapacity = getMaxCapacity(home);
-    return home.guest_count >= maxCapacity;
+    return false; // หรือปรับ logic ตามที่ต้องการ
   };
 
   useEffect(() => {
@@ -323,6 +317,30 @@ export default function GenericHomePage() {
               }
               {homeTypeName === 'บ้านพักเรือนแถว' && selectedRow !== "all" && 
                 ` (${townhomeRows.find(r => r.id == selectedRow)?.name || `แถว ${selectedRow}`})`
+              }
+              {/* เพิ่มสำหรับแฟลตสัญญาบัตร */}
+              {homeTypeName === 'แฟลตสัญญาบัตร' && location.search.includes('floor=') && 
+                (() => {
+                  const floorId = new URLSearchParams(location.search).get('floor');
+                  if (floorId && floorId !== "all") {
+                    // ต้องดึงข้อมูล floors จาก Sidebar หรือสร้าง state floors ใน GenericHomePage
+                    // สมมติว่ามี state floors ใน GenericHomePage
+                    return ` (${window.sidebarFloors?.find(f => f.id == floorId)?.name || `ชั้น ${floorId}`})`;
+                  }
+                  return '';
+                })()
+              }
+              {/* เพิ่มสำหรับบ้านพักลูกจ้าง */}
+              {homeTypeName === 'บ้านพักลูกจ้าง' && location.search.includes('building=') && 
+                (() => {
+                  const buildingId = new URLSearchParams(location.search).get('building');
+                  if (buildingId && buildingId !== "all") {
+                    // ต้องดึงข้อมูล buildings จาก Sidebar หรือสร้าง state buildings ใน GenericHomePage
+                    // สมมติว่ามี state buildings ใน GenericHomePage
+                    return ` (${window.sidebarBuildings?.find(b => b.id == buildingId)?.name || `อาคาร ${buildingId}`})`;
+                  }
+                  return '';
+                })()
               }
             </h2>
           </div>
@@ -548,7 +566,7 @@ export default function GenericHomePage() {
                         )}
                         
                         <div className="detail-item">
-                          <strong>ผู้พักอาศัย:</strong> {home.guest_count || 0}/{getMaxCapacity(home)} คน
+                          <strong>ผู้พักอาศัย:</strong> {home.guest_count || 0} คน
                         </div>
                         <div className="detail-item">
                           <strong>สถานะ:</strong> 
@@ -578,11 +596,6 @@ export default function GenericHomePage() {
                           ✏️ แก้ไข
                         </button>
                       </div>
-                      {isHomeFull(home) && (
-                        <div className="warning-message">
-                          บ้านนี้มีผู้พักอาศัยครบ {getMaxCapacity(home)} คนแล้ว
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))

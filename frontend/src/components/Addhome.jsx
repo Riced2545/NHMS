@@ -7,23 +7,24 @@ import 'react-toastify/dist/ReactToastify.css';
 import styles from '../styles/Addhome.module.css';
 
 export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName }) {
-  const [form, setForm] = useState({ 
-    home_type_id: "", 
-    Address: "",
-    row_id: "",
-    twin_area_id: ""
-  });
-  
   const [image, setImage] = useState(null);
   const [homeTypes, setHomeTypes] = useState([]);
   const [townhomeRows, setTownhomeRows] = useState([]);
   const [twinAreas, setTwinAreas] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  // เพิ่ม state ใหม่
+  const [floors, setFloors] = useState([]);
+  const [buildings, setBuildings] = useState([]);
+  const [form, setForm] = useState({ 
+    home_type_id: "", 
+    Address: "",
+    row_id: "",
+    twin_area_id: "",
+    floor_id: "",
+    building_id: ""
+  });
+  const [amount, setAmount] = useState(1);
   const [startAddress, setStartAddress] = useState("");
   const [endAddress, setEndAddress] = useState("");
-  const [amount, setAmount] = useState(1);
+  const [loading, setLoading] = useState(false);
 
   // โหลดข้อมูลเริ่มต้น
   useEffect(() => {
@@ -49,15 +50,25 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
 
   const loadInitialData = async () => {
     try {
-      const [homeTypesRes, townhomeRowsRes, twinAreasRes] = await Promise.all([
+      const [
+        homeTypesRes,
+        townhomeRowsRes,
+        twinAreasRes,
+        floorsRes,
+        buildingsRes
+      ] = await Promise.all([
         axios.get("http://localhost:3001/api/home-types"),
         axios.get("http://localhost:3001/api/townhome-rows"),
-        axios.get("http://localhost:3001/api/twin-areas")
+        axios.get("http://localhost:3001/api/twin-areas"),
+        axios.get("http://localhost:3001/api/floors"),
+        axios.get("http://localhost:3001/api/buildings")
       ]);
       
       setHomeTypes(homeTypesRes.data);
       setTownhomeRows(townhomeRowsRes.data);
       setTwinAreas(twinAreasRes.data);
+      setFloors(floorsRes.data);
+      setBuildings(buildingsRes.data);
       
     } catch (error) {
       console.error("Error loading initial data:", error);
@@ -129,100 +140,41 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
     }
   };
 
-  // แก้ไขฟังก์ชัน handleSubmit
+  // ปรับ handleSubmit ให้ใช้ bulk add เท่านั้น
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
-    const selectedHomeType = homeTypes.find(ht => ht.id == form.home_type_id);
-    
-    try {
-      // ตรวจสอบเลขบ้านซ้ำก่อน
-      const isDuplicate = await checkDuplicateAddress(form.Address, form.home_type_id);
-      if (isDuplicate) {
-        toast.error(`❌ เลขบ้าน "${form.Address}" มีอยู่แล้วในประเภท ${selectedHomeType?.name}`, {
-          position: "top-right",
-          autoClose: 4000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          style: { 
-            background: 'linear-gradient(135deg, #ef4444, #dc2626)', 
-            color: 'white',
-            fontWeight: 'bold'
-          }
-        });
-        setLoading(false);
-        return;
-      }
 
+    const selectedHomeType = homeTypes.find(ht => ht.id == form.home_type_id);
+
+    try {
       const formData = new FormData();
-      
       formData.append("home_type_id", form.home_type_id);
-      formData.append("Address", form.Address);
-      formData.append("status", "2"); // ไม่มีผู้พักอาศัย
-      
-      // ตรวจสอบประเภทบ้านและข้อมูลที่จำเป็น
+      formData.append("status", "2");
       if (selectedHomeType?.name === 'บ้านพักเรือนแถว') {
-        if (!form.row_id) {
-          toast.error("⚠️ กรุณาเลือกแถวสำหรับบ้านพักเรือนแถว", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            style: { 
-              background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
-              color: 'white',
-              fontWeight: 'bold'
-            }
-          });
-          setLoading(false);
-          return;
-        }
         formData.append("row_id", form.row_id);
       }
-      
       if (selectedHomeType?.name === 'บ้านพักแฝด') {
-        if (!form.twin_area_id) {
-          toast.error("⚠️ กรุณาเลือกพื้นที่สำหรับบ้านพักแฝด", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            style: { 
-              background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
-              color: 'white',
-              fontWeight: 'bold'
-            }
-          });
-          setLoading(false);
-          return;
-        }
         formData.append("twin_area_id", form.twin_area_id);
       }
-      
+      // เพิ่มตรงนี้ สำหรับแฟลตสัญญาบัตรและบ้านพักลูกจ้าง
+      if (selectedHomeType?.name === 'แฟลตสัญญาบัตร') {
+        formData.append("floor_id", form.floor_id);
+      }
+      if (selectedHomeType?.name === 'บ้านพักลูกจ้าง') {
+        formData.append("building_id", form.building_id);
+      }
       if (image) {
         formData.append("image", image);
       }
+      formData.append("amount", amount);
+      formData.append("startAddress", startAddress);
+      formData.append("endAddress", endAddress);
 
-      // ส่งข้อมูลไป backend
-      const payload = {
-        ...form,
-        amount,
-        startAddress,
-        endAddress,
-        // ...อื่นๆ
-      };
-      await axios.post("http://localhost:3001/api/homes/bulk", payload, {
+      await axios.post("http://localhost:3001/api/homes/bulk", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
-      // Toast สำเร็จ
       toast.success("เพิ่มบ้านสำเร็จ", {
         position: "top-right",
         autoClose: 3000,
@@ -235,18 +187,10 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
           fontWeight: 'bold'
         }
       });
-      
-      // รีเซ็ตฟอร์ม
-      setForm({ 
-        home_type_id: homeTypeName ? homeTypes.find(ht => ht.name === homeTypeName)?.id || "" : "", 
-        Address: "",
-        row_id: "",
-        twin_area_id: ""
-      });
+      setForm({ home_type_id: "", row_id: "", twin_area_id: "" });
       setImage(null);
-      
-      onSuccess(); // เรียก callback เพื่อรีเฟรชข้อมูล
-      onClose(); // ปิด modal
+      onSuccess();
+      onClose();
 
     } catch (error) {
       console.error("Error:", error);
@@ -446,82 +390,66 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
                   </select>
                 </div>
               )}
+
+              {/* เลือกชั้นสำหรับแฟลตสัญญาบัตร */}
+              {selectedHomeType?.name === 'แฟลตสัญญาบัตร' && (
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: '14px', marginBottom: '8px' }}>
+                    เลือกชั้น
+                  </label>
+                  <select
+                    name="floor_id"
+                    value={form.floor_id}
+                    onChange={handleChange}
+                    required
+                    className="form-select"
+                    style={{ 
+                      padding: '12px 16px',
+                      fontSize: '14px',
+                      minHeight: '40px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      width: '100%'
+                    }}
+                  >
+                    <option value="">เลือกชั้น</option>
+                    {floors.map(floor => (
+                      <option key={floor.id} value={floor.id}>{floor.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* เลือกอาคารสำหรับบ้านพักลูกจ้าง */}
+              {selectedHomeType?.name === 'บ้านพักลูกจ้าง' && (
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: '14px', marginBottom: '8px' }}>
+                    เลือกอาคาร
+                  </label>
+                  <select
+                    name="building_id"
+                    value={form.building_id}
+                    onChange={handleChange}
+                    required
+                    className="form-select"
+                    style={{ 
+                      padding: '12px 16px',
+                      fontSize: '14px',
+                      minHeight: '40px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      width: '100%'
+                    }}
+                  >
+                    <option value="">เลือกอาคาร</option>
+                    {buildings.map(building => (
+                      <option key={building.id} value={building.id}>{building.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
             
-            {/* แถวที่สอง - หมายเลขบ้านกับรูปภาพ */}
-            <div 
-              style={{ 
-                display: 'grid', 
-                gridTemplateColumns: '1fr 1fr', 
-                gap: '20px',
-                marginBottom: '20px' 
-              }}
-            >
-              <div className="form-group">
-                <label 
-                  className="form-label"
-                  style={{ fontSize: '14px', marginBottom: '8px' }}
-                >
-                  หมายเลขบ้าน
-                </label>
-                <input
-                  type="text"
-                  name="Address"
-                  value={form.Address}
-                  onChange={handleAddressChange}
-                  className="form-input"
-                  required
-                  placeholder="กรอกหมายเลขบ้าน (เช่น 101, 201)"
-                  style={{ 
-                    padding: '12px 16px',
-                    fontSize: '14px',
-                    minHeight: '40px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    width: '100%'
-                  }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label 
-                  className="form-label"
-                  style={{ fontSize: '14px', marginBottom: '8px' }}
-                >
-                  เพิ่มภาพ
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="form-file"
-                  style={{ 
-                    padding: '12px',
-                    fontSize: '14px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    width: '100%'
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* แสดงรูปตัวอย่าง */}
-            {image && (
-              <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-                <img 
-                  src={URL.createObjectURL(image)}
-                  alt="preview"
-                  className="image-preview"
-                  style={{ 
-                    maxWidth: '200px', 
-                    maxHeight: '200px', 
-                    borderRadius: '8px',
-                    border: '2px solid #e5e7eb'
-                  }}
-                />
-              </div>
-            )}
 
             {/* แถวที่สาม - จำนวนหลังที่ต้องการเพิ่ม, เลขบ้านเริ่มต้น, เลขบ้านสิ้นสุด */}
             <div 
@@ -608,6 +536,55 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
                 />
               </div>
             </div>
+
+            {/* แถวที่สอง - รูปภาพ */}
+            <div 
+              style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '20px',
+                marginBottom: '20px' 
+              }}
+            >
+              <div className="form-group">
+                <label 
+                  className="form-label"
+                  style={{ fontSize: '14px', marginBottom: '8px' }}
+                >
+                  เพิ่มภาพ
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="form-file"
+                  style={{ 
+                    padding: '12px',
+                    fontSize: '14px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    width: '100%'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* แสดงรูปตัวอย่าง */}
+            {image && (
+              <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+                <img 
+                  src={URL.createObjectURL(image)}
+                  alt="preview"
+                  className="image-preview"
+                  style={{ 
+                    maxWidth: '200px', 
+                    maxHeight: '200px', 
+                    borderRadius: '8px',
+                    border: '2px solid #e5e7eb'
+                  }}
+                />
+              </div>
+            )}
 
             <div 
               className="modal-actions"

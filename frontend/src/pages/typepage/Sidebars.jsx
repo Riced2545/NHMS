@@ -24,6 +24,12 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
   const [sidebarAreaCounts, setSidebarAreaCounts] = useState({});
   const [sidebarRowCounts, setSidebarRowCounts] = useState({});
 
+  // เพิ่ม state สำหรับ floors และ buildings
+  const [sidebarFloors, setSidebarFloors] = useState([]);
+  const [sidebarBuildings, setSidebarBuildings] = useState([]);
+  const [selectedFloor, setSelectedFloor] = useState("all");
+  const [selectedBuilding, setSelectedBuilding] = useState("all");
+
   // ตรวจสอบหน้าปัจจุบัน
   const currentPage = location.pathname.split('/').pop();
   const searchParams = new URLSearchParams(location.search);
@@ -91,6 +97,14 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
         rowCounts[row.id] = townhomeHomes.filter(h => h.row_id == row.id).length;
       });
       setSidebarRowCounts(rowCounts);
+      
+      // โหลดข้อมูล floors (สำหรับแฟลตสัญญาบัตร)
+      const floorsRes = await axios.get("http://localhost:3001/api/floors");
+      setSidebarFloors(floorsRes.data);
+
+      // โหลดข้อมูล buildings (สำหรับบ้านพักลูกจ้าง)
+      const buildingsRes = await axios.get("http://localhost:3001/api/buildings");
+      setSidebarBuildings(buildingsRes.data);
       
       console.log("✅ Sidebar data loaded:", {
         twinAreas: twinAreasRes.data.length,
@@ -349,6 +363,17 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
     }
   };
 
+  // เพิ่มฟังก์ชันสำหรับเลือกชั้นและอาคาร
+  const handleFloorSelect = (floorId) => {
+    setSelectedFloor(floorId);
+    handleHomeTypeClickWithFilter('แฟลตสัญญาบัตร', 'floor', floorId);
+  };
+
+  const handleBuildingSelect = (buildingId) => {
+    setSelectedBuilding(buildingId);
+    handleHomeTypeClickWithFilter('บ้านพักลูกจ้าง', 'building', buildingId);
+  };
+
   return (
     <div style={{
       width: '280px',
@@ -381,9 +406,12 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
         {allMenuItems.map(item => {
           const isTwinType = item.label === 'บ้านพักแฝด';
           const isTownhomeType = item.label === 'บ้านพักเรือนแถว';
+          const isFlatType = item.label === 'แฟลตสัญญาบัตร';
+          const isBuilderType = item.label === 'บ้านพักลูกจ้าง';
           const hasDropdown = isTwinType || isTownhomeType;
           const isHomeTypeItem = item.homeTypeName !== undefined;
 
+          // บ้านพักแฝด/เรือนแถว dropdown (ของเดิม)
           if (hasDropdown && isHomeTypeItem) {
             return (
               <div 
@@ -636,58 +664,234 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
                 )}
               </div>
             );
-          } else {
-            // สำหรับ menu item ปกติ
+          }
+
+          // เพิ่ม dropdown สำหรับแฟลตสัญญาบัตร (เลือกชั้น)
+          if (isFlatType && isHomeTypeItem) {
             return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (isHomeTypeItem) {
-                    handleHomeTypeClick(item.homeTypeName);
-                  } else {
-                    navigate(item.path);
-                  }
-                }}
-                style={{
-                  width: '100%',
-                  padding: '12px 24px',
-                  border: 'none',
-                  background: item.active ? '#f0f7ff' : 'transparent',
-                  color: item.active ? '#2563eb' : '#6b7280',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  borderLeft: item.active ? '4px solid #2563eb' : '4px solid transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  fontSize: '14px',
-                  fontWeight: item.active ? '600' : '500'
-                }}
-                onMouseEnter={(e) => {
-                  if (!item.active) {
-                    e.target.style.background = '#f9fafb';
-                    e.target.style.color = '#374151';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!item.active) {
-                    e.target.style.background = 'transparent';
-                    e.target.style.color = '#6b7280';
-                  }
-                }}
-              >
-                <FontAwesomeIcon 
-                  icon={item.icon} 
-                  style={{ 
-                    width: '16px',
-                    color: item.active ? '#2563eb' : '#9ca3af'
-                  }} 
-                />
-                {item.label}
-              </button>
+              <div key={item.id} style={{ position: 'relative', marginTop: '8px' }}>
+                <button
+                  onClick={() => handleHomeTypeClick(item.homeTypeName)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 24px',
+                    border: 'none',
+                    background: item.active ? '#f0f7ff' : 'transparent',
+                    color: item.active ? '#2563eb' : '#6b7280',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    borderLeft: item.active ? '4px solid #2563eb' : '4px solid transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    fontSize: '14px',
+                    fontWeight: item.active ? '600' : '500'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <FontAwesomeIcon icon={item.icon} style={{ width: '16px', color: item.active ? '#2563eb' : '#9ca3af' }} />
+                    {item.label}
+                  </div>
+                  <FontAwesomeIcon icon={faChevronDown} style={{ fontSize: '12px', opacity: 0.8 }} />
+                </button>
+                {/* Dropdown ชั้น */}
+                {item.active && (
+                  <div style={{
+                    marginTop: '8px',
+                    marginLeft: '20px',
+                    marginRight: '20px',
+                    background: '#f8f9fa',
+                    borderRadius: '8px',
+                    border: '1px solid #e9ecef',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    overflow: 'hidden',
+                    zIndex: 1000
+                  }}>
+                    <button
+                      onClick={() => handleFloorSelect("all")}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: 'none',
+                        background: selectedFloor === "all" ? '#2563eb' : 'transparent',
+                        color: selectedFloor === "all" ? 'white' : '#6b7280',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        borderBottom: '1px solid #e9ecef',
+                        fontWeight: selectedFloor === "all" ? 'bold' : 'normal',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      ทุกชั้น ({sidebarFloors.length})
+                    </button>
+                    {sidebarFloors.map(floor => (
+                      <button
+                        key={floor.id}
+                        onClick={() => handleFloorSelect(floor.id.toString())}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: 'none',
+                          background: selectedFloor === floor.id.toString() ? '#2563eb' : 'transparent',
+                          color: selectedFloor === floor.id.toString() ? 'white' : '#6b7280',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          borderBottom: floor.id === sidebarFloors[sidebarFloors.length - 1].id ? 'none' : '1px solid #e9ecef',
+                          fontWeight: selectedFloor === floor.id.toString() ? 'bold' : 'normal',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        {floor.name} (0)
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             );
           }
+
+          // เพิ่ม dropdown สำหรับบ้านพักลูกจ้าง (เลือกอาคาร)
+          if (isBuilderType && isHomeTypeItem) {
+            return (
+              <div key={item.id} style={{ position: 'relative', marginTop: '8px' }}>
+                <button
+                  onClick={() => handleHomeTypeClick(item.homeTypeName)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 24px',
+                    border: 'none',
+                    background: item.active ? '#f0f7ff' : 'transparent',
+                    color: item.active ? '#2563eb' : '#6b7280',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    borderLeft: item.active ? '4px solid #2563eb' : '4px solid transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    fontSize: '14px',
+                    fontWeight: item.active ? '600' : '500'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <FontAwesomeIcon icon={item.icon} style={{ width: '16px', color: item.active ? '#2563eb' : '#9ca3af' }} />
+                    {item.label}
+                  </div>
+                  <FontAwesomeIcon icon={faChevronDown} style={{ fontSize: '12px', opacity: 0.8 }} />
+                </button>
+                {/* Dropdown อาคาร */}
+                {item.active && (
+                  <div style={{
+                    marginTop: '8px',
+                    marginLeft: '20px',
+                    marginRight: '20px',
+                    background: '#f8f9fa',
+                    borderRadius: '8px',
+                    border: '1px solid #e9ecef',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    overflow: 'hidden',
+                    zIndex: 1000
+                  }}>
+                    <button
+                      onClick={() => handleBuildingSelect("all")}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: 'none',
+                        background: selectedBuilding === "all" ? '#2563eb' : 'transparent',
+                        color: selectedBuilding === "all" ? 'white' : '#6b7280',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        borderBottom: '1px solid #e9ecef',
+                        fontWeight: selectedBuilding === "all" ? 'bold' : 'normal',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      ทุกอาคาร ({sidebarBuildings.length})
+                    </button>
+                    {sidebarBuildings.map(building => (
+                      <button
+                        key={building.id}
+                        onClick={() => handleBuildingSelect(building.id.toString())}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: 'none',
+                          background: selectedBuilding === building.id.toString() ? '#2563eb' : 'transparent',
+                          color: selectedBuilding === building.id.toString() ? 'white' : '#6b7280',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          borderBottom: building.id === sidebarBuildings[sidebarBuildings.length - 1].id ? 'none' : '1px solid #e9ecef',
+                          fontWeight: selectedBuilding === building.id.toString() ? 'bold' : 'normal',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        {building.name} (0)
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          // สำหรับ menu item ปกติ
+          return (
+            <button
+              key={item.id}
+              onClick={() => {
+                if (isHomeTypeItem) {
+                  handleHomeTypeClick(item.homeTypeName);
+                } else {
+                  navigate(item.path);
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '12px 24px',
+                border: 'none',
+                background: item.active ? '#f0f7ff' : 'transparent',
+                color: item.active ? '#2563eb' : '#6b7280',
+                textAlign: 'left',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                borderLeft: item.active ? '4px solid #2563eb' : '4px solid transparent',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                fontSize: '14px',
+                fontWeight: item.active ? '600' : '500'
+              }}
+              onMouseEnter={(e) => {
+                if (!item.active) {
+                  e.target.style.background = '#f9fafb';
+                  e.target.style.color = '#374151';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!item.active) {
+                  e.target.style.background = 'transparent';
+                  e.target.style.color = '#6b7280';
+                }
+              }}
+            >
+              <FontAwesomeIcon 
+                icon={item.icon} 
+                style={{ 
+                  width: '16px',
+                  color: item.active ? '#2563eb' : '#9ca3af'
+                }} 
+              />
+              {item.label}
+            </button>
+          );
         })}
       </nav>
 
