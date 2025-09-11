@@ -96,19 +96,18 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
   };
 
   // แก้ไขใน Addhome.jsx - เพิ่มฟังก์ชันตรวจสอบเลขบ้านซ้ำ
-  const checkDuplicateAddress = async (address, homeTypeId) => {
-    try {
-      const response = await axios.get(`http://localhost:3001/api/homes/check-address`, {
-        params: { 
-          address: address, 
-          home_type_id: homeTypeId 
-        }
-      });
-      return response.data.exists;
-    } catch (error) {
-      console.error("Error checking duplicate address:", error);
-      return false;
-    }
+  const checkDuplicateAddress = async (address, homeTypeId, twinAreaId, rowId, floorId, buildingId) => {
+    const response = await axios.get(`http://localhost:3001/api/homes/check-address`, {
+      params: { 
+        address,
+        home_type_id: homeTypeId,
+        twin_area_id: twinAreaId,
+        row_id: rowId,
+        floor_id: floorId,
+        building_id: buildingId
+      }
+    });
+    return response.data.exists;
   };
 
   // แก้ไขใน Addhome.jsx - เพิ่มฟังก์ชันตรวจสอบเลขบ้านซ้ำขณะพิมพ์
@@ -120,7 +119,14 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess, homeTypeName 
     if (value && form.home_type_id) {
       clearTimeout(window.addressCheckTimeout);
       window.addressCheckTimeout = setTimeout(async () => {
-        const isDuplicate = await checkDuplicateAddress(value, form.home_type_id);
+        const isDuplicate = await checkDuplicateAddress(
+          value,
+          form.home_type_id,
+          form.twin_area_id,
+          form.row_id,
+          form.floor_id,
+          form.building_id
+        );
         if (isDuplicate) {
           toast.warn(`⚠️ เลขบ้าน "${value}" มีอยู่แล้ว`, {
             position: "top-right",

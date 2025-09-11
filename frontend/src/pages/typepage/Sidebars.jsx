@@ -29,6 +29,7 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
   const [sidebarBuildings, setSidebarBuildings] = useState([]);
   const [selectedFloor, setSelectedFloor] = useState("all");
   const [selectedBuilding, setSelectedBuilding] = useState("all");
+  const [sidebarHomes, setSidebarHomes] = useState([]); // เพิ่ม state homes
 
   // ตรวจสอบหน้าปัจจุบัน
   const currentPage = location.pathname.split('/').pop();
@@ -81,6 +82,7 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
       
       // โหลดข้อมูล homes เพื่อคำนวณ counts
       const homesRes = await axios.get("http://localhost:3001/api/homes");
+      setSidebarHomes(homesRes.data); // เพิ่มบรรทัดนี้
       
       // คำนวณ area counts
       const twinHomes = homesRes.data.filter(h => h.hType === 'บ้านพักแฝด');
@@ -151,6 +153,22 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
       return availableRowCounts.total || 0;
     }
     return availableRowCounts[rowId] || 0;
+  };
+
+  // ฟังก์ชันนับบ้านในแต่ละชั้น
+  const getFloorCount = (floorId) => {
+    if (floorId === "all") {
+      return sidebarHomes.filter(h => h.hType === 'แฟลตสัญญาบัตร').length;
+    }
+    return sidebarHomes.filter(h => h.hType === 'แฟลตสัญญาบัตร' && String(h.floor_id) === String(floorId)).length;
+  };
+
+  // ฟังก์ชันนับบ้านในแต่ละอาคาร
+  const getBuildingCount = (buildingId) => {
+    if (buildingId === "all") {
+      return sidebarHomes.filter(h => h.hType === 'บ้านพักลูกจ้าง').length;
+    }
+    return sidebarHomes.filter(h => h.hType === 'บ้านพักลูกจ้าง' && String(h.building_id) === String(buildingId)).length;
   };
 
   // ✅ สร้าง handleHomeTypeClickWithFilter
@@ -725,7 +743,7 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
                         transition: 'all 0.2s ease'
                       }}
                     >
-                      ทุกชั้น ({sidebarFloors.length})
+                      ทุกชั้น ({getFloorCount("all")})
                     </button>
                     {sidebarFloors.map(floor => (
                       <button
@@ -745,7 +763,7 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
                           transition: 'all 0.2s ease'
                         }}
                       >
-                        {floor.name} (0)
+                        {floor.name} ({getFloorCount(floor.id)})
                       </button>
                     ))}
                   </div>
@@ -833,7 +851,7 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
                           transition: 'all 0.2s ease'
                         }}
                       >
-                        {building.name} (0)
+                        {building.name} ({getBuildingCount(building.id)})
                       </button>
                     ))}
                   </div>

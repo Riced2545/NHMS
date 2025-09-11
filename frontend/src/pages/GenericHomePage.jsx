@@ -20,6 +20,8 @@ export default function GenericHomePage() {
   const [homes, setHomes] = useState([]);
   const [selectedRow, setSelectedRow] = useState("all");
   const [selectedArea, setSelectedArea] = useState("all");
+  const [selectedFloor, setSelectedFloor] = useState("all");
+  const [selectedBuilding, setSelectedBuilding] = useState("all");
   const [townhomeRows, setTownhomeRows] = useState([]);
   const [twinAreas, setTwinAreas] = useState([]);
   const [rowCounts, setRowCounts] = useState({});
@@ -39,24 +41,38 @@ export default function GenericHomePage() {
 
   useEffect(() => {
     if (homeTypeName) {
-      // ✅ อ่าน query parameters และ set state
       const searchParams = new URLSearchParams(location.search);
       const areaParam = searchParams.get('area');
       const rowParam = searchParams.get('row');
-      
-      // ตั้งค่า filter ตาม query parameters
+      const floorParam = searchParams.get('floor');
+      const buildingParam = searchParams.get('building');
+
       if (areaParam && homeTypeName === 'บ้านพักแฝด') {
         setSelectedArea(areaParam);
       } else if (homeTypeName === 'บ้านพักแฝด') {
         setSelectedArea("all");
       }
-      
+
       if (rowParam && homeTypeName === 'บ้านพักเรือนแถว') {
         setSelectedRow(rowParam);
       } else if (homeTypeName === 'บ้านพักเรือนแถว') {
         setSelectedRow("all");
       }
-      
+
+      // เพิ่มสำหรับแฟลตสัญญาบัตร
+      if (floorParam && homeTypeName === 'แฟลตสัญญาบัตร') {
+        setSelectedFloor(floorParam);
+      } else if (homeTypeName === 'แฟลตสัญญาบัตร') {
+        setSelectedFloor("all");
+      }
+
+      // เพิ่มสำหรับบ้านพักลูกจ้าง
+      if (buildingParam && homeTypeName === 'บ้านพักลูกจ้าง') {
+        setSelectedBuilding(buildingParam);
+      } else if (homeTypeName === 'บ้านพักลูกจ้าง') {
+        setSelectedBuilding("all");
+      }
+
       const loadData = async () => {
         try {
           console.log("Loading data for:", homeTypeName);
@@ -88,29 +104,11 @@ export default function GenericHomePage() {
         finalHomes = allFilteredHomes.filter(h => h.twin_area_id == selectedArea);
       } else if (homeTypeName === 'บ้านพักเรือนแถว' && selectedRow !== "all") {
         finalHomes = allFilteredHomes.filter(h => h.row_id == selectedRow);
+      } else if (homeTypeName === 'แฟลตสัญญาบัตร' && selectedFloor !== "all") {
+        finalHomes = allFilteredHomes.filter(h => String(h.floor_id) === String(selectedFloor));
+      } else if (homeTypeName === 'บ้านพักลูกจ้าง' && selectedBuilding !== "all") {
+        finalHomes = allFilteredHomes.filter(h => String(h.building_id) === String(selectedBuilding));
       }
-
-      // เรียงตามพื้นที่/แถว แล้วตามเลขที่บ้าน
-      finalHomes = finalHomes.sort((a, b) => {
-        if (homeTypeName === 'บ้านพักแฝด') {
-          // เรียงตาม twin_area_id ก่อน
-          if (a.twin_area_id !== b.twin_area_id) {
-            return (a.twin_area_id || 0) - (b.twin_area_id || 0);
-          }
-        } else if (homeTypeName === 'บ้านพักเรือนแถว') {
-          // เรียงตาม row_id ก่อน
-          if (a.row_id !== b.row_id) {
-            return (a.row_id || 0) - (b.row_id || 0);
-          }
-        }
-        // จากนั้นเรียงตามเลขที่บ้าน
-        const numA = parseInt(a.Address, 10);
-        const numB = parseInt(b.Address, 10);
-        if (!isNaN(numA) && !isNaN(numB)) {
-          return numA - numB;
-        }
-        return (a.Address || '').localeCompare(b.Address || '');
-      });
 
       setHomes(finalHomes);
 
@@ -119,7 +117,7 @@ export default function GenericHomePage() {
       }
       window.dispatchEvent(new Event('homeDataUpdated'));
     }
-  }, [selectedArea, selectedRow, allFilteredHomes, homeTypeName]);
+  }, [selectedArea, selectedRow, selectedFloor, selectedBuilding, allFilteredHomes, homeTypeName]);
 
   const fetchHomes = async () => {
     try {
@@ -335,8 +333,6 @@ export default function GenericHomePage() {
                 (() => {
                   const buildingId = new URLSearchParams(location.search).get('building');
                   if (buildingId && buildingId !== "all") {
-                    // ต้องดึงข้อมูล buildings จาก Sidebar หรือสร้าง state buildings ใน GenericHomePage
-                    // สมมติว่ามี state buildings ใน GenericHomePage
                     return ` (${window.sidebarBuildings?.find(b => b.id == buildingId)?.name || `อาคาร ${buildingId}`})`;
                   }
                   return '';
