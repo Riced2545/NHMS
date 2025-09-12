@@ -2253,3 +2253,22 @@ app.get("/api/buildings", (req, res) => {
     res.json(results);
   });
 });
+
+app.get("/api/home-types-full", (req, res) => {
+  // ตัวอย่าง mapping filter สำหรับแต่ละประเภทบ้าน
+  const filterMap = {
+    "บ้านพักแฝด": { filterApi: "twin-areas", filterLabel: "พื้นที่", filterParam: "area", icon: "🏠" },
+    "บ้านพักเรือนแถว": { filterApi: "townhome-rows", filterLabel: "แถว", filterParam: "row", icon: "🏘️" },
+    "แฟลตสัญญาบัตร": { filterApi: "floors", filterLabel: "ชั้น", filterParam: "floor", icon: "🏢" },
+    "บ้านพักลูกจ้าง": { filterApi: "buildings", filterLabel: "อาคาร", filterParam: "building", icon: "🏬" }
+  };
+  db.query("SELECT * FROM home_types ORDER BY id ASC", (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    // เพิ่ม filter config ให้แต่ละประเภทบ้าน
+    const mapped = results.map(ht => ({
+      ...ht,
+      ...filterMap[ht.name] || {}
+    }));
+    res.json(mapped);
+  });
+});

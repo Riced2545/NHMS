@@ -309,6 +309,12 @@ input[type="text"] {
   height: fit-content;
 }
 
+.movie-card.vacant {
+  background: #3a5072 !important; /* สีฟ้าอ่อนสายตา */
+  border: 1.5px solid #bae6fd;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.08);
+}
+
 /* เพิ่มใน home.css หรือ Sharestyles.css */
 .modal-overlay {
   position: fixed;

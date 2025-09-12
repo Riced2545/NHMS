@@ -10,7 +10,7 @@ import {
   faChevronDown 
 } from '@fortawesome/free-solid-svg-icons';
 
-export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeRows, selectedArea, onAreaChange, areaCounts, twinAreas }) {
+export default function Sidebar({ selectedRow, onRowChange, rowCounts: propRowCounts, townhomeRows, selectedArea, onAreaChange, areaCounts: propAreaCounts, twinAreas }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isRowDropdownOpen, setIsRowDropdownOpen] = useState(false);
@@ -137,14 +137,13 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
   // ✅ ใช้ข้อมูลจาก Sidebar หรือ props (ใช้ที่มีข้อมูลครบกว่า)
   const availableTwinAreas = sidebarTwinAreas.length > 0 ? sidebarTwinAreas : twinAreas;
   const availableTownhomeRows = sidebarTownhomeRows.length > 0 ? sidebarTownhomeRows : townhomeRows;
-  const availableAreaCounts = Object.keys(sidebarAreaCounts).length > 0 ? sidebarAreaCounts : areaCounts;
-  const availableRowCounts = Object.keys(sidebarRowCounts).length > 0 ? sidebarRowCounts : rowCounts;
+  const availableAreaCounts = Object.keys(sidebarAreaCounts).length > 0 ? sidebarAreaCounts : propAreaCounts;
+  const availableRowCounts = Object.keys(sidebarRowCounts).length > 0 ? sidebarRowCounts : propRowCounts;
 
   // ✅ แก้ไขฟังก์ชัน getAreaCount และ getRowCount
   const getAreaCount = (areaId) => {
-    if (areaId === "total") {
-      return availableAreaCounts.total || 0;
-    }
+    if (!availableAreaCounts) return 0;
+    if (areaId === "all" || areaId === "total") return availableAreaCounts.total || 0;
     return availableAreaCounts[areaId] || 0;
   };
 
@@ -212,10 +211,7 @@ export default function Sidebar({ selectedRow, onRowChange, rowCounts, townhomeR
 
   // ฟังก์ชันสำหรับการนำทางแบบ Dynamic
   const handleHomeTypeClick = (homeTypeName) => {
-    // ใช้ query parameter แทนการสร้าง route ใหม่
-    navigate(`/homes?type=${encodeURIComponent(homeTypeName)}`);
-    
-    // ✅ อัปเดต sidebar หลังการนำทาง
+    navigate(`/select-filter?type=${encodeURIComponent(homeTypeName)}`);
     setTimeout(() => {
       loadSidebarData();
     }, 500);

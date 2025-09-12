@@ -29,6 +29,7 @@ import Addtype from "./pages/Addtype/Addtype";
 import TwinHomeAllPage from "./pages/typepage/twinhome/all";
 import GenericHomePage from './pages/GenericHomePage';
 import Lobby from "./pages/lobby/lobby.jsx";
+import HomeTypeSelectPage from "./pages/typepage/HomeTypeSelectPage.jsx";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(isAuthenticated());
@@ -77,6 +78,7 @@ function App() {
         <Route path="/homes" element={<GenericHomePage />} />
         <Route path="/viewscore" element={<ViewScore />} />
         <Route path="/dashboard" element={<Dashboard/>} />
+        <Route path="/select-filter" element={<HomeTypeSelectPage />} />
 
       </Routes>
     </BrowserRouter>

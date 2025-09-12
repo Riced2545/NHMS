@@ -340,6 +340,25 @@ export default function GenericHomePage() {
               }
             </h2>
           </div>
+          <div className="button-container">
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              background: "#3b82f6",
+              color: "white",
+              border: "none",
+              padding: "12px 24px",
+              borderRadius: "8px",
+              fontSize: "16px",
+              fontWeight: "500",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)"
+            }}
+          >
+            ย้อนกลับ
+          </button>
+        </div>
           
           {/* ปุ่มเพิ่มบ้านอยู่มุมขวาบน */}
           {homes.length > 0 && (
@@ -465,7 +484,10 @@ export default function GenericHomePage() {
                 </div>
               ) : (
                 getPaginatedHomes().map((home) => (
-                  <div key={home.home_id} className="movie-card">
+                  <div
+                    key={home.home_id}
+                    className={`movie-card${home.status === "ว่าง" || !home.right_holder ? " vacant" : ""}`}
+                  >
                     <div className="movie-poster">
                       <div className="house-image-container">
                         {home.image ? (

@@ -207,7 +207,15 @@ export default function Addtype() {
                 />
               </div>
               
-              
+                <div className="form-group">
+                <label className="form-label">ลักษณะบ้าน</label>
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  className="form-textarea"
+                />
+              </div>
               
               <div className={styles.buttonGroup}>
                 <button type="submit" className={styles.btnPrimary}>
