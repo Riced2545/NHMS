@@ -60,22 +60,35 @@ db.connect((err) => {
     name VARCHAR(50) UNIQUE
   )`);
 
-  db.query(`
-    CREATE TABLE IF NOT EXISTS home_types (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      name VARCHAR(255) NOT NULL UNIQUE,
-      description TEXT,
-      max_capacity INT,
-      is_row_type BOOLEAN DEFAULT FALSE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `, (err) => {
-    if (err) {
-      console.error("Error creating home_types table:", err);
-    } else {
-      console.log("✅ home_types table ready");
-    }
-  });
+    // สร้างตาราง home_types
+db.query(`
+  CREATE TABLE IF NOT EXISTS home_types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
+    max_capacity INT,
+    subunit_type VARCHAR(50),
+    subunit_label VARCHAR(50),
+    icon VARCHAR(10),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`, (err) => {
+  if (err) {
+    console.error("Error creating home_types table:", err);
+  } else {
+    console.log("✅ home_types table ready");
+  }
+});
+
+db.query(`
+  INSERT IGNORE INTO home_types (name, description, max_capacity, subunit_type, subunit_label, icon)
+  VALUES
+    ('บ้านพักแฝด', 'บ้านพักแฝด', 6, 'area', 'พื้นที่', '🏠'),
+    ('บ้านพักเรือนแถว', 'บ้านพักเรือนแถว', 14, 'row', 'แถว', '🏘️'),
+    ('แฟลตสัญญาบัตร', 'แฟลตสัญญาบัตร', 4, 'floor', 'ชั้น', '🏢'),
+    ('บ้านพักลูกจ้าง', 'บ้านพักลูกจ้าง', 2, 'building', 'อาคาร', '🏬')
+`);
+
 
   db.query(`CREATE TABLE IF NOT EXISTS home_eligibility (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -347,6 +360,29 @@ db.query(`
   )
 `);
 
+// สร้างตาราง home_types2
+
+db.query(`
+  CREATE TABLE IF NOT EXISTS home_types2 (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    subunit_type VARCHAR(50) NOT NULL,     -- เช่น area, building, floor, row
+    subunit_label VARCHAR(50) NOT NULL,    -- ชื่อที่ใช้แสดงผล เช่น พื้นที่, อาคาร
+    icon VARCHAR(10),
+    max_capacity INT
+  )
+`);
+
+
+db.query(`
+  INSERT IGNORE INTO home_types2 (name, subunit_type, subunit_label, icon, max_capacity)
+  VALUES
+    ('บ้านพักแฝด', 'area', 'พื้นที่', '🏠', 6),
+    ('บ้านพักเรือนแถว', 'row', 'แถว', '🏘️', 14),
+    ('แฟลตสัญญาบัตร', 'floor', 'ชั้น', '🏢', 4),
+    ('บ้านพักลูกจ้าง', 'building', 'อาคาร', '🏬', 2)
+`);
+
 // Register (แก้ไขให้รับข้อมูล profile)
 app.post("/api/register", (req, res) => {
   const { username, password, firstName, lastName, gender } = req.body;
@@ -429,12 +465,8 @@ function authMiddleware(req, res, next) {
 
 // API endpoints
 app.get("/api/home-types", (req, res) => {
-  const sql = "SELECT * FROM home_types ORDER BY name";
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
+  db.query("SELECT * FROM home_types ORDER BY id ASC", (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
     res.json(results);
   });
 });
@@ -1234,7 +1266,7 @@ app.put("/api/guests/:id", (req, res) => {
 });
 
 app.get("/api/hometypes", (req, res) => {
-  db.query("SELECT name FROM home_types", (err, results) => {
+  db.query("SELECT name FROM home_types ORDER BY id ASC", (err, results) => {
     if (err) return res.status(500).json({ error: "Database error" });
     res.json(results.map(r => r.name));
   });
@@ -1820,31 +1852,35 @@ app.delete("/api/guests/:id", (req, res) => {
 
 // เพิ่ม API สำหรับประเภทบ้าน
 app.post("/api/home_types", (req, res) => {
-  const { name, description, max_capacity, is_row_type } = req.body;
-  
+  const { name, description, max_capacity, subunit_type, subunit_label, icon } = req.body;
+
   if (!name || !name.trim()) {
     return res.status(400).json({ message: "กรุณากรอกชื่อประเภทบ้าน" });
   }
-  
-  // ตรวจสอบความซ้ำ
+
   db.query("SELECT id FROM home_types WHERE name = ?", [name.trim()], (err, results) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).json({ error: "Database error" });
     }
-    
+
     if (results.length > 0) {
       return res.status(400).json({ message: "ประเภทบ้านนี้มีอยู่แล้ว" });
     }
-    
-    // เพิ่มประเภทบ้านใหม่ - แก้ไขส่วนนี้
-    const sql = "INSERT INTO home_types (name, description, max_capacity, is_row_type) VALUES (?, ?, ?, ?)";
-    
+
+    // เพิ่มประเภทบ้านใหม่ (รับทุก field)
+    const sql = `
+      INSERT INTO home_types 
+        (name, description, max_capacity, subunit_type, subunit_label, icon) 
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
     db.query(sql, [
       name.trim(),
       description || null,
-      max_capacity || null, 
-      is_row_type || false
+      max_capacity || null,
+      subunit_type || null,
+      subunit_label || null,
+      icon || null
     ], (insertErr, result) => {
       if (insertErr) {
         console.error("Database error:", insertErr);
@@ -1878,6 +1914,7 @@ app.get("/api/twin-areas", (req, res) => {
     SELECT 
       ta.*,
       COUNT(h.home_id) as home_count
+   
     FROM twin_areas ta
     LEFT JOIN home h ON ta.id = h.twin_area_id 
     WHERE ta.is_active = TRUE

@@ -24,8 +24,8 @@ export default function HomeTypeSelectPage() {
 
   // ดึง filter
   useEffect(() => {
-    if (!homeTypeConfig || !homeTypeConfig.filterApi) return;
-    axios.get(`http://localhost:3001/api/${homeTypeConfig.filterApi}`).then(res => setFilters(res.data));
+    if (!homeTypeConfig || !homeTypeConfig.subunit_type) return;
+    axios.get(`http://localhost:3001/api/${homeTypeConfig.subunit_type}s`).then(res => setFilters(res.data));
   }, [homeTypeConfig]);
 
   // ดึงบ้านและคำนวณจำนวนบ้านในแต่ละ filter
@@ -34,12 +34,8 @@ export default function HomeTypeSelectPage() {
     axios.get("http://localhost:3001/api/homes").then(res => {
       const homes = res.data.filter(h => h.hType === homeTypeName);
       const filterCounts = {};
-      // Map filterParam ให้ตรงกับ key ใน homes
-      let key = "";
-      if (homeTypeName === "บ้านพักแฝด") key = "twin_area_id";
-      else if (homeTypeName === "บ้านพักเรือนแถว") key = "row_id";
-      else if (homeTypeName === "แฟลตสัญญาบัตร") key = "floor_id";
-      else if (homeTypeName === "บ้านพักลูกจ้าง") key = "building_id";
+      // ใช้ key dynamic จาก subunit_type
+      let key = homeTypeConfig.subunit_type ? `${homeTypeConfig.subunit_type}_id` : "";
       filters.forEach(f => {
         filterCounts[f.id] = homes.filter(h => String(h[key]) === String(f.id)).length;
       });
@@ -74,37 +70,31 @@ export default function HomeTypeSelectPage() {
   }
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "#fafbff",
-      width: "100vw",
-      margin: 0,
-      overflow: "hidden"
-    }}>
+    <div style={{ minHeight: "100vh", background: "#fafbff", width: "100vw", margin: 0, overflow: "hidden" }}>
       <Navbar />
       <div style={{ display: "flex" }}>
-        <Sidebar
-          areaCounts={{}} // หรือ areaCounts ที่คุณเตรียมไว้
-          rowCounts={{}}
-          twinAreas={[]}
-          townhomeRows={[]}
-        />
+        <Sidebar />
         <div style={{ flex: 1, padding: "0 0 64px 0" }}>
-          <div style={{
-            textAlign: "center",
-            padding: "32px 32px 24px 32px",
-            marginBottom: 0
-          }}>
+          <div style={{ textAlign: "center", padding: "32px 32px 24px 32px", marginBottom: 0 }}>
             <h2 style={{
               color: "#3b2566",
               fontSize: "28px",
               fontWeight: "bold",
               margin: 0
             }}>
-              {homeTypeConfig.filterLabel
-                ? `เลือก${homeTypeConfig.filterLabel} ${homeTypeName}`
+              {homeTypeConfig?.subunit_label
+                ? `เลือก${homeTypeConfig.subunit_label} ${homeTypeName}`
                 : homeTypeName}
             </h2>
+            {/* แสดงจำนวน subunit และชื่อ subunit */}
+            {homeTypeConfig && (
+              <div style={{ fontSize: "16px", color: "#2563eb", marginTop: "8px" }}>
+                {homeTypeConfig.subunit_label}ทั้งหมด: <b>{homeTypeConfig.subunit_count}</b>
+                {homeTypeConfig.subunit_names && homeTypeConfig.subunit_names.length > 0 &&
+                  <span> ({homeTypeConfig.subunit_names.join(", ")})</span>
+                }
+              </div>
+            )}
           </div>
           {/* ถ้ามี filter ให้เลือก filter, ถ้าไม่มีให้แสดงจำนวนบ้านทั้งหมด */}
           {filters.length > 0 ? (
@@ -133,7 +123,7 @@ export default function HomeTypeSelectPage() {
                     marginBottom: "24px",
                     transition: "box-shadow 0.2s",
                   }}
-                  onClick={() => navigate(`/homes?type=${encodeURIComponent(homeTypeName)}&${homeTypeConfig.filterParam}=${f.id}`)}
+                  onClick={() => navigate(`/homes?type=${encodeURIComponent(homeTypeName)}&${homeTypeConfig.subunit_type}=${f.id}`)}
                   onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 16px rgba(56,189,248,0.15)"}
                   onMouseLeave={e => e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)"}
                 >
@@ -144,7 +134,7 @@ export default function HomeTypeSelectPage() {
                     color: "#2563eb",
                     marginBottom: "8px"
                   }}>
-                    {f.name || `${homeTypeConfig.filterLabel} ${f.id}`}
+                    {f.name || `${homeTypeConfig.subunit_label} ${f.id}`}
                   </div>
                   <div style={{
                     fontSize: "16px",
@@ -168,7 +158,7 @@ export default function HomeTypeSelectPage() {
                       transition: "all 0.3s ease"
                     }}
                   >
-                    ดูบ้านใน{homeTypeConfig.filterLabel}
+                    ดูบ้านใน{homeTypeConfig.subunit_label}
                   </button>
                   <div style={{
                     fontSize: "13px",
