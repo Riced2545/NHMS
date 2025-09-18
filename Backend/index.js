@@ -66,11 +66,8 @@ db.query(`
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     description TEXT,
-    max_capacity INT,
-    subunit_type VARCHAR(50),
-    subunit_label VARCHAR(50),
-    icon VARCHAR(10),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    
   )
 `, (err) => {
   if (err) {
@@ -81,12 +78,27 @@ db.query(`
 });
 
 db.query(`
-  INSERT IGNORE INTO home_types (name, description, max_capacity, subunit_type, subunit_label, icon)
+  CREATE TABLE IF NOT EXISTS subunit_home (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    subunit_type VARCHAR(50) NOT NULL,
+    max_capacity INT
+  )
+`);
+
+db.query(`ALTER TABLE home_types ADD COLUMN IF NOT EXISTS subunit_type VARCHAR(50)`, (err) => {
+  if (err && !err.message.includes('Duplicate column')) {
+    console.error("Error adding subunit_type column:", err);
+  }
+});
+
+db.query(`
+  INSERT IGNORE INTO subunit_home (name, subunit_type, max_capacity)
   VALUES
-    ('บ้านพักแฝด', 'บ้านพักแฝด', 6, 'area', 'พื้นที่', '🏠'),
-    ('บ้านพักเรือนแถว', 'บ้านพักเรือนแถว', 14, 'row', 'แถว', '🏘️'),
-    ('แฟลตสัญญาบัตร', 'แฟลตสัญญาบัตร', 4, 'floor', 'ชั้น', '🏢'),
-    ('บ้านพักลูกจ้าง', 'บ้านพักลูกจ้าง', 2, 'building', 'อาคาร', '🏬')
+    ('พื้นที่', 'area', 6),
+    ('แถว', 'row', 14),
+    ('ชั้น', 'floor', 4),
+    ('อาคาร', 'building', 2)
 `);
 
 
@@ -118,10 +130,12 @@ db.query(`
     home_type_id INT,
     Address VARCHAR(255),
     status_id INT,
+    subunit_id INT,
     image VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (home_type_id) REFERENCES home_types(id),
-    FOREIGN KEY (status_id) REFERENCES status(id)
+    FOREIGN KEY (status_id) REFERENCES status(id),
+    FOREIGN KEY (subunit_id) REFERENCES subunit_home(id)
   )`);
 
   db.query(`CREATE TABLE IF NOT EXISTS guest (
@@ -150,28 +164,6 @@ db.query(`
     FOREIGN KEY (guest_id) REFERENCES guest(id),
     FOREIGN KEY (home_id) REFERENCES home(home_id)
   )`);
-
-  // เพิ่มตารางใหม่สำหรับแถว
-  db.query(`CREATE TABLE IF NOT EXISTS townhome_rows (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    row_number INT NOT NULL UNIQUE,
-    name VARCHAR(50) NOT NULL,
-    max_capacity INT DEFAULT 14,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )`);
-
-  // เพิ่มข้อมูลแถวเริ่มต้น
-  db.query(`INSERT IGNORE INTO townhome_rows (row_number, name) VALUES 
-    (1, 'แถว 1'), (2, 'แถว 2'), (3, 'แถว 3'), (4, 'แถว 4'), (5, 'แถว 5'),
-    (6, 'แถว 6'), (7, 'แถว 7'), (8, 'แถว 8'), (9, 'แถว 9'), (10, 'แถว 10') ,(11, 'แถว 11') ,(12, 'แถว 12'),
-    (13, 'แถว 13'),(14, 'แถว 14')
-  `);
-
-  // เพิ่มคอลัมน์ row_id ในตาราง home
-  db.query(`ALTER TABLE home ADD COLUMN IF NOT EXISTS row_id INT`);
-  db.query(`ALTER TABLE home ADD FOREIGN KEY IF NOT EXISTS (row_id) REFERENCES townhome_rows(id)`);
-
   // ---------- ข้อมูลเริ่มต้น ----------
   db.query("INSERT IGNORE INTO home_types (name) VALUES ('บ้านพักแฝด'), ('บ้านพักเรือนแถว'),('แฟลตสัญญาบัตร'),('บ้านพักลูกจ้าง')", (err) => {
     if (err) console.log("Warning: Failed to insert default home_types");
@@ -182,21 +174,6 @@ db.query(`
     if (err) console.log("Warning: Failed to insert default status");
     else console.log("✅ Default status created");
   });
-
-  // สร้างข้อมูลอาคารสำหรับบ้านพักลูกจ้าง
-db.query(`INSERT IGNORE INTO buildings (build_number, name, description) VALUES
-  ('1', 'อาคาร 1', 'อาคารบ้านพักลูกจ้าง 1'),
-  ('2', 'อาคาร 2', 'อาคารบ้านพักลูกจ้าง 2')
-`);
-
-
-// สร้างข้อมูลชั้นสำหรับแฟลตสัญญาบัตร
-db.query(`INSERT IGNORE INTO floors (floor_number, name, description) VALUES
-  (1, 'ชั้น 1', 'แฟลตสัญญาบัตร ชั้น 1'),
-  (2, 'ชั้น 2', 'แฟลตสัญญาบัตร ชั้น 2'),
-  (3, 'ชั้น 3', 'แฟลตสัญญาบัตร ชั้น 3'),
-  (4, 'ชั้น 4', 'แฟลตสัญญาบัตร ชั้น 4')
-`);
 
   // เพิ่มข้อมูลเริ่มต้นในตาราง ranks และ home_eligibility
   db.query(`INSERT IGNORE INTO ranks (name) VALUES 
@@ -224,17 +201,6 @@ db.query(`INSERT IGNORE INTO floors (floor_number, name, description) VALUES
     }
   });
 
-  db.query(`ALTER TABLE home_types ADD COLUMN IF NOT EXISTS max_capacity INT`, (err) => {
-    if (err && !err.message.includes('Duplicate column')) {
-      console.error("Error adding max_capacity column:", err);
-    }
-  });
-
-  db.query(`ALTER TABLE home_types ADD COLUMN IF NOT EXISTS is_row_type BOOLEAN DEFAULT FALSE`, (err) => {
-    if (err && !err.message.includes('Duplicate column')) {
-      console.error("Error adding is_row_type column:", err);
-    }
-  });
 
   // เพิ่มหลังบรรทัด 130 (หลังสร้างตาราง guest)
   db.query(`ALTER TABLE guest ADD COLUMN IF NOT EXISTS is_right_holder BOOLEAN DEFAULT FALSE`, (err) => {
@@ -287,33 +253,8 @@ db.query(`INSERT IGNORE INTO floors (floor_number, name, description) VALUES
     }
   });
 
-  db.query(`CREATE TABLE IF NOT EXISTS twin_areas (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    max_capacity INT DEFAULT 1,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )`);
 
-  // เพิ่มข้อมูลเริ่มต้น
-  db.query(`INSERT IGNORE INTO twin_areas (id, name) VALUES 
-    (1, 'พื้นที่ 1'), 
-    (2, 'พื้นที่ 2')
-  `);
 
-  // เพิ่มคอลัมน์ twin_area_id ในตาราง home
-  db.query(`ALTER TABLE home ADD COLUMN IF NOT EXISTS twin_area_id INT`);
-  db.query(`ALTER TABLE home ADD FOREIGN KEY IF NOT EXISTS (twin_area_id) REFERENCES twin_areas(id)`);
-  db.query("ALTER TABLE home ADD COLUMN floor_id INT NULL", (err) => {
-  if (err && !err.message.includes('Duplicate column')) {
-    console.error("Error adding floor_id column:", err);
-  }
-});
-db.query("ALTER TABLE home ADD COLUMN building_id INT NULL", (err) => {
-  if (err && !err.message.includes('Duplicate column')) {
-    console.error("Error adding building_id column:", err);
-  }
-});
 
   // เพิ่มคอลัมน์ image_url ในตาราง guest (หลังบรรทัด ~180)
   db.query(`ALTER TABLE guest ADD COLUMN IF NOT EXISTS image_url VARCHAR(255)`, (err) => {
@@ -336,51 +277,26 @@ db.query("ALTER TABLE home ADD COLUMN building_id INT NULL", (err) => {
   )`);
 });
 
-// สร้างตาราง buildings
-db.query(`
-  CREATE TABLE IF NOT EXISTS buildings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    build_number VARCHAR(50) NOT NULL UNIQUE,
-    name VARCHAR(50),
-    description TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )
-`);
-
-// สร้างตาราง floors
-db.query(`
-  CREATE TABLE IF NOT EXISTS floors (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    floor_number INT NOT NULL UNIQUE,
-    name VARCHAR(50),
-    description TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )
-`);
 
 // สร้างตาราง home_types2
 
 db.query(`
-  CREATE TABLE IF NOT EXISTS home_types2 (
+  CREATE TABLE IF NOT EXISTS subunit_home (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    subunit_type VARCHAR(50) NOT NULL,     -- เช่น area, building, floor, row
-    subunit_label VARCHAR(50) NOT NULL,    -- ชื่อที่ใช้แสดงผล เช่น พื้นที่, อาคาร
-    icon VARCHAR(10),
+    subunit_type VARCHAR(50) NOT NULL,   -- ชื่อที่ใช้แสดงผล เช่น พื้นที่, อาคาร
     max_capacity INT
   )
 `);
 
 
 db.query(`
-  INSERT IGNORE INTO home_types2 (name, subunit_type, subunit_label, icon, max_capacity)
+  INSERT IGNORE INTO subunit_home (name, subunit_type, max_capacity)
   VALUES
-    ('บ้านพักแฝด', 'area', 'พื้นที่', '🏠', 6),
-    ('บ้านพักเรือนแถว', 'row', 'แถว', '🏘️', 14),
-    ('แฟลตสัญญาบัตร', 'floor', 'ชั้น', '🏢', 4),
-    ('บ้านพักลูกจ้าง', 'building', 'อาคาร', '🏬', 2)
+    ('พื้นที่', 'area', 6),
+    ('แถว', 'row', 14),
+    ('ชั้น', 'floor', 4),
+    ('อาคาร', 'building', 2)
 `);
 
 // Register (แก้ไขให้รับข้อมูล profile)
@@ -657,174 +573,27 @@ app.put("/api/homes/:id", upload.single('image'), (req, res) => {
 
 // เก็บแค่ตัวนี้ - ลบตัวที่ซ้ำออก
 app.post("/api/homes", upload.single("image"), (req, res) => {
-  const { home_type_id, Address, status, row_id, twin_area_id } = req.body;
+  const { home_type_id, Address, status_id, subunit_id } = req.body;
   const image = req.file ? req.file.filename : null;
 
-  console.log("Received data:", { home_type_id, Address, status, row_id, twin_area_id });
-
-  // ตรวจสอบประเภทบ้าน
-  db.query("SELECT name FROM home_types WHERE id = ?", [home_type_id], (err, typeResults) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    
-    const homeType = typeResults.length > 0 ? typeResults[0].name : '';
-    const isRowHouse = homeType === 'บ้านพักเรือนแถว';
-    const isTwinHouse = homeType === 'บ้านพักแฝด';
-    
-    // ตรวจสอบข้อมูลที่จำเป็น
-    if (isRowHouse && !row_id) {
-      return res.status(400).json({ message: "กรุณาเลือกแถวสำหรับบ้านพักเรือนแถว" });
-    }
-    
-    if (isTwinHouse && !twin_area_id) {
-      return res.status(400).json({ message: "กรุณาเลือกพื้นที่สำหรับบ้านพักแฝด" });
-    }
-
-    // ตรวจสอบความซ้ำ
-    function checkDuplicateAndInsert() {
-      let checkSql = "SELECT home_id FROM home WHERE Address = ? AND home_type_id = ?";
-      let checkParams = [Address, home_type_id];
-
-      // เพิ่มเงื่อนไข twin_area_id, row_id, floor_id, building_id ตามประเภทบ้าน
-      if (twin_area_id) {
-        checkSql += " AND twin_area_id = ?";
-        checkParams.push(twin_area_id);
+  db.query(
+    "SELECT home_id FROM home WHERE Address = ? AND home_type_id = ? AND subunit_id = ?",
+    [Address, home_type_id, subunit_id],
+    (err, duplicateResults) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      if (duplicateResults.length > 0) {
+        return res.status(400).json({ message: `หมายเลขบ้าน "${Address}" มีอยู่แล้วในหน่วยย่อยนี้ กรุณาใช้หมายเลขอื่น` });
       }
-      if (row_id) {
-        checkSql += " AND row_id = ?";
-        checkParams.push(row_id);
-      }
-      if (floor_id) {
-        checkSql += " AND floor_id = ?";
-        checkParams.push(floor_id);
-      }
-      if (building_id) {
-        checkSql += " AND building_id = ?";
-        checkParams.push(building_id);
-      }
-
-      db.query(checkSql, checkParams, (err, duplicateResults) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ error: "Database error" });
+      db.query(
+        "INSERT INTO home (home_type_id, Address, status_id, image, subunit_id) VALUES (?, ?, ?, ?, ?)",
+        [home_type_id, Address, status_id, image, subunit_id || null],
+        (err2, result) => {
+          if (err2) return res.status(500).json({ error: "Database error" });
+          res.json({ success: true, home_id: result.insertId });
         }
-        
-        if (duplicateResults.length > 0) {
-          let errorMessage = `หมายเลขบ้าน "${Address}" มีอยู่แล้ว`;
-          if (isTwinHouse) {
-            errorMessage += ` ในพื้นที่นี้`;
-          } else if (isRowHouse) {
-            errorMessage += ` ในแถวนี้`;
-          }
-          errorMessage += ` กรุณาใช้หมายเลขอื่น`;
-          
-          return res.status(400).json({ message: errorMessage });
-        }
-        
-        // ตรวจสอบความจุ (ถ้าจำเป็น)
-        if (isRowHouse) {
-          checkRowCapacityAndInsert();
-        } else {
-          insertHome();
-        }
-      });
+      );
     }
-
-    function checkRowCapacityAndInsert() {
-      const checkCapacitySQL = `
-        SELECT 
-          tr.max_capacity,
-          COUNT(h.home_id) as current_count
-        FROM townhome_rows tr
-        LEFT JOIN home h ON tr.id = h.row_id
-        WHERE tr.id = ?
-        GROUP BY tr.id
-      `;
-      
-      db.query(checkCapacitySQL, [row_id], (err, capacityResults) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ error: "Database error" });
-        }
-        
-        if (capacityResults.length > 0) {
-          const { max_capacity, current_count } = capacityResults[0];
-          if (current_count >= max_capacity) {
-            return res.status(400).json({ 
-              message: `แถวนี้เต็มแล้ว (${current_count}/${max_capacity})` 
-            });
-          }
-        }
-        
-        insertHome();
-      });
-    }
-
-    function insertHome() {
-      const insertSQL = `
-        INSERT INTO home (home_type_id, Address, status_id, image, row_id, twin_area_id) 
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
-      
-      db.query(insertSQL, [
-        home_type_id, 
-        Address, 
-        status, 
-        image, 
-        row_id || null, 
-        twin_area_id || null
-      ], (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({ error: "Database error" });
-        }
-        
-        // สร้าง log detail
-        const newHomeId = result.insertId;
-        let logDetail = `เพิ่มบ้านเลขที่ ${Address}`;
-        
-        if (isTwinHouse && twin_area_id) {
-          db.query("SELECT name FROM twin_areas WHERE id = ?", [twin_area_id], (err, areaResults) => {
-            const areaName = areaResults.length > 0 ? areaResults[0].name : '';
-            logDetail = `เพิ่มบ้านเลขที่ ${Address} ประเภท ${homeType} ${areaName}`;
-            saveLog();
-          });
-        } else if (isRowHouse && row_id) {
-          db.query("SELECT name FROM townhome_rows WHERE id = ?", [row_id], (err, rowResults) => {
-            const rowName = rowResults.length > 0 ? rowResults[0].name : '';
-            logDetail = `เพิ่มบ้านเลขที่ ${Address} ประเภท ${homeType} ${rowName}`;
-            saveLog();
-          });
-        } else {
-          logDetail = `เพิ่มบ้านเลขที่ ${Address} ประเภท ${homeType}`;
-          saveLog();
-        }
-
-        function saveLog() {
-          db.query(
-            `INSERT INTO guest_logs (
-              guest_id, home_id, action, detail, home_address, home_type_name, created_at
-            ) VALUES (NULL, ?, 'add_home', ?, ?, ?, ?, NOW())`,
-            [newHomeId, logDetail, Address, homeType],
-            (logErr) => {
-              if (logErr) {
-                console.error("Error logging home addition:", logErr);
-              }
-              res.json({ 
-                success: true, 
-                message: "บันทึกข้อมูลสำเร็จ",
-                home_id: newHomeId 
-              });
-            }
-          );
-        }
-      });
-    }
-
-    checkDuplicateAndInsert();
-  });
+  );
 });
 
 // ดึง guest ทั้งหมด (JOIN ranks) - แก้ไขให้รองรับ filter ผู้ถือสิทธิ
@@ -910,48 +679,19 @@ app.get("/api/homes", (req, res) => {
     SELECT 
       home.*, 
       home_types.name as hType, 
+      home_types.subunit_label,
+      home_types.icon,
       status.name as status,
-      twin_areas.name as twin_area_name,
-      twin_areas.id as twin_area_id,
-      townhome_rows.name as row_name,
-      townhome_rows.row_number,
-      (SELECT COUNT(*) FROM guest WHERE guest.home_id = home.home_id) AS guest_count,
-      -- ข้อมูลผู้ถือสิทธิ
-      (
-        SELECT JSON_OBJECT(
-          'id', g.id,
-          'name', g.name,
-          'lname', g.lname,
-          'rank', COALESCE(ranks.name, g.title),
-          'image_url', g.image_url
-        )
-        FROM guest g
-        LEFT JOIN ranks ON g.rank_id = ranks.id
-        WHERE g.home_id = home.home_id AND g.is_right_holder = TRUE
-        LIMIT 1
-      ) AS right_holder
+      subunit_home.name as subunit_name,
+      subunit_home.subunit_type
     FROM home
     LEFT JOIN home_types ON home.home_type_id = home_types.id
     LEFT JOIN status ON home.status_id = status.id
-    LEFT JOIN twin_areas ON home.twin_area_id = twin_areas.id
-    LEFT JOIN townhome_rows ON home.row_id = townhome_rows.id
+    LEFT JOIN subunit_home ON home.subunit_id = subunit_home.id
     ORDER BY home.home_id ASC
   `;
   db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    // แปลง right_holder จาก string เป็น object
-    results.forEach(h => {
-      if (h.right_holder) {
-        try {
-          h.right_holder = JSON.parse(h.right_holder);
-        } catch {
-          h.right_holder = null;
-        }
-      }
-    });
+    if (err) return res.status(500).json({ error: "Database error" });
     res.json(results);
   });
 });
@@ -1093,68 +833,6 @@ app.delete("/api/homes/:id", (req, res) => {
   });
 });
 
-// API ดึงข้อมูลแถว - แก้ไขให้ใช้ข้อมูลสำรองถ้าไม่มีข้อมูล
-app.get("/api/townhome-rows", (req, res) => {
-  const sql = `
-    SELECT 
-      tr.*,
-      COUNT(h.home_id) as home_count
-    FROM townhome_rows tr
-    LEFT JOIN home h ON tr.id = h.row_id 
-    WHERE tr.is_active = TRUE
-    GROUP BY tr.id
-    ORDER BY tr.row_number
-  `;
-  
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      // ส่งข้อมูลสำรองถ้า error
-      const fallbackRows = [];
-      for (let i = 1; i <= 10; i++) {
-        fallbackRows.push({
-          id: i,
-          row_number: i,
-          name: `แถว ${i}`,
-          max_capacity: 10,
-          home_count: 0
-        });
-      }
-      return res.json(fallbackRows);
-    }
-    
-    res.json(results);
-  });
-});
-
-// API ดึงบ้านตามแถว
-app.get("/api/homes/row/:row_id", (req, res) => {
-  const sql = `
-    SELECT 
-      h.*,
-      ht.name as hType,
-      s.name as status,
-      tr.name as row_name,
-      tr.row_number,
-      COUNT(g.id) as guest_count
-    FROM home h
-    LEFT JOIN home_types ht ON h.home_type_id = ht.id
-    LEFT JOIN status s ON h.status_id = s.id
-    LEFT JOIN townhome_rows tr ON h.row_id = tr.id
-    LEFT JOIN guest g ON h.home_id = g.home_id
-    WHERE h.row_id = ?
-    GROUP BY h.home_id
-    ORDER BY h.Address
-  `;
-  
-  db.query(sql, [req.params.row_id], (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.json(results);
-  });
-});
 
 // ดึง guest เฉพาะบ้านพัก (JOIN ranks และ home_types)
 app.get("/api/guests/home/:home_id", (req, res) => {
@@ -1300,17 +978,21 @@ app.post("/api/upload", upload.single("image"), (req, res) => {
 app.get("/api/home_types", (req, res) => {
   const sql = `
     SELECT 
-      ht.*,
-      COUNT(h.home_id) as current_count
+      ht.id,
+      ht.name,
+      ht.description,
+      ht.subunit_type,
+      IFNULL(COUNT(sh.id), 0) AS subunit_count,
+      GROUP_CONCAT(sh.name) AS subunit_names,
+      GROUP_CONCAT(sh.max_capacity) AS max_capacities
     FROM home_types ht
-    LEFT JOIN home h ON ht.id = h.home_type_id
+    LEFT JOIN subunit_home sh ON ht.subunit_type = sh.subunit_type
     GROUP BY ht.id
     ORDER BY ht.id ASC
   `;
-  
   db.query(sql, (err, results) => {
     if (err) {
-      console.error("Database error:", err);
+      console.error("Error in /api/home_types:", err);
       return res.status(500).json({ error: "Database error" });
     }
     res.json(results);
@@ -1852,90 +1534,30 @@ app.delete("/api/guests/:id", (req, res) => {
 
 // เพิ่ม API สำหรับประเภทบ้าน
 app.post("/api/home_types", (req, res) => {
-  const { name, description, max_capacity, subunit_type, subunit_label, icon } = req.body;
+  const { name, description } = req.body;
 
   if (!name || !name.trim()) {
     return res.status(400).json({ message: "กรุณากรอกชื่อประเภทบ้าน" });
   }
 
   db.query("SELECT id FROM home_types WHERE name = ?", [name.trim()], (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-
+    if (err) return res.status(500).json({ error: "Database error" });
     if (results.length > 0) {
       return res.status(400).json({ message: "ประเภทบ้านนี้มีอยู่แล้ว" });
     }
 
-    // เพิ่มประเภทบ้านใหม่ (รับทุก field)
-    const sql = `
-      INSERT INTO home_types 
-        (name, description, max_capacity, subunit_type, subunit_label, icon) 
-      VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    db.query(sql, [
-      name.trim(),
-      description || null,
-      max_capacity || null,
-      subunit_type || null,
-      subunit_label || null,
-      icon || null
-    ], (insertErr, result) => {
-      if (insertErr) {
-        console.error("Database error:", insertErr);
-        return res.status(500).json({ error: "Database error" });
+    db.query(
+      "INSERT INTO home_types (name, description) VALUES (?, ?)",
+      [name.trim(), description || null],
+      (insertErr, result) => {
+        if (insertErr) return res.status(500).json({ error: "Database error" });
+        res.json({ success: true, id: result.insertId });
       }
-      
-      // บันทึก audit log
-      const logDetail = `เพิ่มประเภทบ้านใหม่: ${name.trim()}`;
-      db.query(
-        "INSERT INTO guest_logs (guest_id, home_id, action, detail, created_at) VALUES (NULL, NULL, 'add_home_type', ?, NOW())",
-        [logDetail],
-        (logErr) => {
-          if (logErr) {
-            console.error("Error logging home type addition:", logErr);
-          }
-        }
-      );
-      
-      res.json({ 
-        success: true, 
-        message: "เพิ่มประเภทบ้านสำเร็จ",
-        id: result.insertId 
-      });
-      console.log("✅ Home type added:", name.trim());
-    });
+    );
   });
 });
 
-app.get("/api/twin-areas", (req, res) => {
-  const sql = `
-    SELECT 
-      ta.*,
-      COUNT(h.home_id) as home_count
-   
-    FROM twin_areas ta
-    LEFT JOIN home h ON ta.id = h.twin_area_id 
-    WHERE ta.is_active = TRUE
-    GROUP BY ta.id
-    ORDER BY ta.id
-  `;
-  
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      // ส่งข้อมูลสำรองถ้า error
-      const fallbackAreas = [
-        { id: 1, name: 'พื้นที่ 1', max_capacity: 1, home_count: 0 },
-        { id: 2, name: 'พื้นที่ 2', max_capacity: 1, home_count: 0 }
-      ];
-      return res.json(fallbackAreas);
-    }
-    
-    res.json(results);
-  });
-});
+
 
 app.delete("/api/home_types/:id", (req, res) => {
   const { id } = req.params;
@@ -2198,10 +1820,9 @@ app.get("/api/viewscore", (req, res) => {
 
 // เพิ่ม API สำหรับเพิ่มบ้านหลายหลัง
 app.post("/api/homes/bulk", upload.single("image"), (req, res) => {
-  const { home_type_id, status, row_id, twin_area_id, floor_id, building_id, amount, startAddress, endAddress } = req.body;
+  const { home_type_id, status_id, amount, startAddress, endAddress, subunit_id } = req.body;
   const image = req.file ? req.file.filename : null;
 
-  // แปลง start/end เป็นตัวเลข
   const start = parseInt(startAddress, 10);
   const end = parseInt(endAddress, 10);
 
@@ -2218,51 +1839,26 @@ app.post("/api/homes/bulk", upload.single("image"), (req, res) => {
   let errors = [];
   let promises = homesToAdd.map(address => {
     return new Promise((resolve) => {
-      // --- แก้ตรงนี้ ---
-      let checkSql = "SELECT home_id FROM home WHERE Address = ? AND home_type_id = ?";
-      let checkParams = [address, home_type_id];
-
-      if (twin_area_id) {
-        checkSql += " AND twin_area_id = ?";
-        checkParams.push(twin_area_id);
-      }
-      if (row_id) {
-        checkSql += " AND row_id = ?";
-        checkParams.push(row_id);
-      }
-      if (floor_id) {
-        checkSql += " AND floor_id = ?";
-        checkParams.push(floor_id);
-      }
-      if (building_id) {
-        checkSql += " AND building_id = ?";
-        checkParams.push(building_id);
-      }
-
-      db.query(checkSql, checkParams, (err, results) => {
-        if (err || results.length > 0) {
-          errors.push(address);
-          return resolve();
-        }
-        db.query(
-          "INSERT INTO home (home_type_id, Address, status_id, image, row_id, twin_area_id, floor_id, building_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-          [
-            home_type_id,
-            address,
-            status,
-            image,
-            row_id || null,
-            twin_area_id || null,
-            floor_id || null,
-            building_id || null
-          ],
-          (err2) => {
-            if (!err2) successCount++;
-            else errors.push(address);
-            resolve();
+      db.query(
+        "SELECT home_id FROM home WHERE Address = ? AND home_type_id = ? AND subunit_id = ?",
+        [address, home_type_id, subunit_id],
+        (err, results) => {
+          if (err) return resolve();
+          if (results.length > 0) {
+            errors.push(address);
+            return resolve();
           }
-        );
-      });
+          db.query(
+            "INSERT INTO home (home_type_id, Address, status_id, image, subunit_id) VALUES (?, ?, ?, ?, ?)",
+            [home_type_id, address, status_id, image, subunit_id || null],
+            (err2) => {
+              if (!err2) successCount++;
+              else errors.push(address);
+              resolve();
+            }
+          );
+        }
+      );
     });
   });
 
@@ -2275,37 +1871,45 @@ app.post("/api/homes/bulk", upload.single("image"), (req, res) => {
   });
 });
 
-// API สำหรับดึงข้อมูล floors (แฟลตสัญญาบัตร)
-app.get("/api/floors", (req, res) => {
-  db.query("SELECT * FROM floors WHERE is_active = TRUE ORDER BY floor_number ASC", (err, results) => {
-    if (err) return res.status(500).json({ error: "Database error" });
-    res.json(results);
-  });
-});
-
-// API สำหรับดึงข้อมูล buildings (บ้านพักลูกจ้าง)
-app.get("/api/buildings", (req, res) => {
-  db.query("SELECT * FROM buildings WHERE is_active = TRUE ORDER BY build_number ASC", (err, results) => {
-    if (err) return res.status(500).json({ error: "Database error" });
-    res.json(results);
-  });
-});
 
 app.get("/api/home-types-full", (req, res) => {
-  // ตัวอย่าง mapping filter สำหรับแต่ละประเภทบ้าน
-  const filterMap = {
-    "บ้านพักแฝด": { filterApi: "twin-areas", filterLabel: "พื้นที่", filterParam: "area", icon: "🏠" },
-    "บ้านพักเรือนแถว": { filterApi: "townhome-rows", filterLabel: "แถว", filterParam: "row", icon: "🏘️" },
-    "แฟลตสัญญาบัตร": { filterApi: "floors", filterLabel: "ชั้น", filterParam: "floor", icon: "🏢" },
-    "บ้านพักลูกจ้าง": { filterApi: "buildings", filterLabel: "อาคาร", filterParam: "building", icon: "🏬" }
-  };
   db.query("SELECT * FROM home_types ORDER BY id ASC", (err, results) => {
     if (err) return res.status(500).json({ error: "Database error" });
-    // เพิ่ม filter config ให้แต่ละประเภทบ้าน
-    const mapped = results.map(ht => ({
-      ...ht,
-      ...filterMap[ht.name] || {}
-    }));
-    res.json(mapped);
+    res.json(results);
+  });
+});
+
+app.get("/api/subunits/:type", (req, res) => {
+  db.query(
+    "SELECT * FROM subunit_home WHERE subunit_type = ? ORDER BY id ASC",
+    [req.params.type],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json(results);
+    }
+  );
+});
+
+app.post("/api/subunit_home", (req, res) => {
+  const { name, subunit_type, max_capacity } = req.body;
+
+  if (!name || !subunit_type) {
+    return res.status(400).json({ message: "กรุณากรอกข้อมูลให้ครบ" });
+  }
+
+  db.query("SELECT id FROM subunit_home WHERE name = ? AND subunit_type = ?", [name.trim(), subunit_type], (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    if (results.length > 0) {
+      return res.status(400).json({ message: "subunit นี้มีอยู่แล้ว" });
+    }
+
+    db.query(
+      "INSERT INTO subunit_home (name, subunit_type, max_capacity) VALUES (?, ?, ?)",
+      [name.trim(), subunit_type, max_capacity || null],
+      (insertErr, result) => {
+        if (insertErr) return res.status(500).json({ error: "Database error" });
+        res.json({ success: true, id: result.insertId });
+      }
+    );
   });
 });

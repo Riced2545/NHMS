@@ -79,14 +79,20 @@ export default function Addtype() {
     }
 
     try {
+      // เพิ่มประเภทบ้าน
       await axios.post("http://localhost:3001/api/home_types", {
         name: form.name.trim(),
         description: form.description.trim(),
-        max_capacity: parseInt(form.max_capacity),
-        subunit_type: form.subunit_type,
-        subunit_label: form.subunit_label,
-        icon: form.icon
       });
+
+      // ถ้าเลือก subunit_type ให้เพิ่ม subunit_home ด้วย
+      if (form.subunit_type) {
+        await axios.post("http://localhost:3001/api/subunit_home", {
+          name: form.subunit_label,
+          subunit_type: form.subunit_type,
+          max_capacity: form.max_capacity
+        });
+      }
 
       toast.success("เพิ่มประเภทบ้านสำเร็จ!");
       setForm({
