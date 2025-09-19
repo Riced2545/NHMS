@@ -79,19 +79,28 @@ export default function Addtype() {
     }
 
     try {
-      // เพิ่มประเภทบ้าน
+      // เพิ่มประเภทบ้าน (home_types) พร้อม subunit_type และ icon
       await axios.post("http://localhost:3001/api/home_types", {
         name: form.name.trim(),
         description: form.description.trim(),
+        subunit_type: form.subunit_type || null,
+        icon: form.icon || null
       });
 
-      // ถ้าเลือก subunit_type ให้เพิ่ม subunit_home ด้วย
-      if (form.subunit_type) {
-        await axios.post("http://localhost:3001/api/subunit_home", {
-          name: form.subunit_label,
-          subunit_type: form.subunit_type,
-          max_capacity: form.max_capacity
-        });
+      // ถ้าเลือก subunit_type (ไม่ใช่ค่าว่าง) ให้เพิ่ม subunit_home ด้วย (เก็บ max_capacity)
+      if (form.subunit_type && form.subunit_type !== "") {
+        // เช็คก่อนว่ามี subunit นี้อยู่แล้วหรือยัง
+        const subunitExists = await axios.get(`http://localhost:3001/api/subunits/${form.subunit_type}`);
+        const found = subunitExists.data.find(
+          su => su.name === form.subunit_label
+        );
+        if (!found) {
+          await axios.post("http://localhost:3001/api/subunit_home", {
+            name: form.subunit_label,
+            subunit_type: form.subunit_type,
+            max_capacity: form.max_capacity
+          });
+        }
       }
 
       toast.success("เพิ่มประเภทบ้านสำเร็จ!");
@@ -258,21 +267,17 @@ export default function Addtype() {
                   >
                     <div className="list-item-content">
                       <div className="list-item-title">
-                        {type.icon} {type.name}
+                        {type.name}
                       </div>
-                      {type.description && (
-                        <div className="list-item-description">
-                          {type.description}
+                      {/* แสดงชื่อ subunit และ max_capacity */}
+                      {type.subunit_names && (
+                        <div className="list-item-meta">
+                          หน่วยย่อย: {type.subunit_names}
                         </div>
                       )}
-                      {type.max_capacity && (
+                      {type.max_capacities && (
                         <div className="list-item-meta">
-                          ความจุสูงสุด: {type.max_capacity} หน่วย
-                        </div>
-                      )}
-                      {type.subunit_label && (
-                        <div className="list-item-meta">
-                          หน่วยย่อย: {type.subunit_label}
+                          ความจุสูงสุด: {type.max_capacities} หน่วย
                         </div>
                       )}
                     </div>

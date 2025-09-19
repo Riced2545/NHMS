@@ -93,12 +93,24 @@ db.query(`ALTER TABLE home_types ADD COLUMN IF NOT EXISTS subunit_type VARCHAR(5
 });
 
 db.query(`
+  INSERT IGNORE INTO home_types (name, description, subunit_type)
+  VALUES
+    ('บ้านพักแฝด', 'บ้านพักแฝด', 'พื้นที่'),
+    ('บ้านพักเรือนแถว', 'บ้านพักเรือนแถว', 'แถว'),
+    ('แฟลตสัญญาบัตร', 'แฟลตสัญญาบัตร', 'ชั้น'),
+    ('บ้านพักลูกจ้าง', 'บ้านพักลูกจ้าง', 'อาคาร')
+`, (err) => {
+  if (err) console.log("Warning: Failed to insert default home_types with subunit_type");
+  else console.log("✅ Default home_types with subunit_type created");
+});
+
+db.query(`
   INSERT IGNORE INTO subunit_home (name, subunit_type, max_capacity)
   VALUES
-    ('พื้นที่', 'area', 6),
-    ('แถว', 'row', 14),
-    ('ชั้น', 'floor', 4),
-    ('อาคาร', 'building', 2)
+    ('พื้นที่', 'พื้นที่', 6),
+    ('แถว', 'แถว', 14),
+    ('ชั้น', 'ชั้น', 4),
+    ('อาคาร', 'อาคาร', 2)
 `);
 
 
@@ -1912,4 +1924,16 @@ app.post("/api/subunit_home", (req, res) => {
       }
     );
   });
+});
+
+app.put("/api/subunit_home/:id", (req, res) => {
+  const { max_capacity } = req.body;
+  db.query(
+    "UPDATE subunit_home SET max_capacity = ? WHERE id = ?",
+    [max_capacity, req.params.id],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json({ success: true });
+    }
+  );
 });
