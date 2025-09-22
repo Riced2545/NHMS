@@ -301,6 +301,18 @@ db.query(`
   )
 `);
 
+db.query(`
+  CREATE TABLE IF NOT EXISTS home_units (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    subunit_home_id INT,
+    unit_number INT,
+    unit_name VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'ว่าง',
+    home_id INT,
+    FOREIGN KEY (subunit_home_id) REFERENCES subunit_home(id),
+    FOREIGN KEY (home_id) REFERENCES home(home_id)
+  )
+`);
 
 db.query(`
   INSERT IGNORE INTO subunit_home (name, subunit_type, max_capacity)
