@@ -9,10 +9,10 @@ import "../../styles/Sharestyles.css";
 import styles from '../../styles/Addhome.module.css';
 
 const subunitOptions = [
-  { value: "area", label: "พื้นที่" },
-  { value: "row", label: "แถว" },
-  { value: "floor", label: "ชั้น" },
-  { value: "building", label: "อาคาร" },
+  { value: "พื้นที่", label: "พื้นที่" },
+  { value: "แถว", label: "แถว" },
+  { value: "ชั้น", label: "ชั้น" },
+  { value: "อาคาร", label: "อาคาร" },
   { value: "", label: "ไม่มี (เช่น บ้านเดี่ยว/คอนโด)" }
 ];
 
@@ -22,7 +22,6 @@ export default function Addtype() {
     description: "",
     max_capacity: "",
     subunit_type: "",
-    subunit_label: "",
     icon: ""
   });
   const [homeTypes, setHomeTypes] = useState([]);
@@ -48,9 +47,15 @@ export default function Addtype() {
       toast.error("กรุณากรอกชื่อประเภทบ้าน");
       return;
     }
-    if (form.subunit_type && form.subunit_type !== "" && (!form.max_capacity || isNaN(form.max_capacity))) {
-      toast.error("กรุณากรอกจำนวนหน่วยย่อยเป็นตัวเลข");
-      return;
+
+    // ถ้าเลือก subunit_type ให้กรอกจำนวน
+    let maxCapacity = 1;
+    if (form.subunit_type && form.subunit_type !== "") {
+      if (!form.max_capacity || isNaN(form.max_capacity) || parseInt(form.max_capacity, 10) < 1) {
+        toast.error("กรุณากรอกจำนวนหน่วยย่อยเป็นตัวเลขมากกว่า 0");
+        return;
+      }
+      maxCapacity = parseInt(form.max_capacity, 10);
     }
 
     try {
@@ -58,8 +63,7 @@ export default function Addtype() {
         name: form.name.trim(),
         description: form.description.trim(),
         subunit_type: form.subunit_type || null,
-        subunit_label: form.subunit_type || null, // ส่งเป็นภาษาไทย
-        max_capacity: form.subunit_type ? parseInt(form.max_capacity, 10) : null,
+        max_capacity: maxCapacity,
         icon: form.icon || null
       });
 
@@ -69,7 +73,6 @@ export default function Addtype() {
         description: "",
         max_capacity: "",
         subunit_type: "",
-        subunit_label: "",
         icon: ""
       });
       loadHomeTypes();
@@ -79,33 +82,25 @@ export default function Addtype() {
   };
 
   const handleDelete = async (id, name) => {
+    // ถามรอบแรก
     if (!window.confirm(`ต้องการลบประเภทบ้าน "${name}" หรือไม่?`)) {
+      return;
+    }
+    // ถามรอบสอง
+    if (!window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบประเภทบ้าน "${name}"?\nการลบนี้จะลบข้อมูลบ้านและหน่วยย่อยทั้งหมดที่เกี่ยวข้อง!`)) {
       return;
     }
 
     try {
       await axios.delete(`http://localhost:3001/api/home_types/${id}`);
-      
-      toast.success("ลบประเภทบ้านสำเร็จ!", {
-        position: "top-right",
-        autoClose: 3000,
-        style: { background: '#ffffffff', color: 'grey' }
-      });
-      
+      toast.success("ลบประเภทบ้านสำเร็จ!");
       loadHomeTypes();
     } catch (error) {
-      console.error("Error deleting home type:", error);
-      
       let errorMessage = "ไม่สามารถลบประเภทบ้านได้";
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       }
-      
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 5000,
-        style: { background: '#ef4444', color: 'white' }
-      });
+      toast.error(errorMessage);
     }
   };
 
@@ -178,7 +173,7 @@ export default function Addtype() {
               </div>
               {form.subunit_type && form.subunit_type !== "" && (
                 <div className="form-group">
-                  <label className="form-label">จำนวนหน่วยย่อย (เช่น อาคาร 6 หลัง)</label>
+                  <label className="form-label">จำนวน (ใส่ตัวเลข)</label>
                   <input
                     name="max_capacity"
                     value={form.max_capacity}
@@ -230,32 +225,11 @@ export default function Addtype() {
                       <div className="list-item-title">
                         {type.name}
                       </div>
-                      {/* แสดงชื่อ subunit และ max_capacity แบบแยกรายการ */}
                       <div className="list-item-meta">
-                        {type.subunit_names
-                          ? (
-                            <>
-                              ลักษณะอาคาร:
-                              {type.subunit_names.split(',').map((unit, i) => (
-                                <span key={i}> {unit.trim()}{i < type.subunit_names.split(',').length - 1 ? ',' : ''}</span>
-                              ))}
-                            </>
-                          )
-                          : <>ลักษณะอาคาร: ไม่มี</>
-                        }
+                        ลักษณะอาคาร : {type.subunit_name || "ไม่มี"}
                       </div>
                       <div className="list-item-meta">
-                        {type.max_capacities
-                          ? (
-                            <>
-                              จำนวนทั้งหมด:
-                              {type.max_capacities.split(',').map((cap, i) => (
-                                <span key={i}> {cap.trim()} หน่วย{i < type.max_capacities.split(',').length - 1 ? ',' : ''}</span>
-                              ))}
-                            </>
-                          )
-                          : <>จำนวนทั้งหมด: -</>
-                        }
+                        จำนวนทั้งหมด : {type.max_capacity ? type.max_capacity : "-"}
                       </div>
                     </div>
                     <button
