@@ -79,6 +79,7 @@ function App() {
         <Route path="/viewscore" element={<ViewScore />} />
         <Route path="/dashboard" element={<Dashboard/>} />
         <Route path="/select-filter" element={<HomeTypeSelectPage />} />
+        <Route path="/hometype" element={<HomeTypeSelectPage />} />
 
       </Routes>
     </BrowserRouter>

@@ -1036,9 +1036,8 @@ app.get("/api/home_types", (req, res) => {
       ht.description,
       ht.subunit_type,
       ht.max_capacity,
-      sh.name AS subunit_name
+      (SELECT sh.name FROM subunit_home sh WHERE sh.subunit_type = ht.subunit_type LIMIT 1) AS subunit_name
     FROM home_types ht
-    LEFT JOIN subunit_home sh ON ht.subunit_type = sh.subunit_type
     ORDER BY ht.id ASC
   `;
   db.query(sql, (err, results) => {
@@ -1603,76 +1602,43 @@ app.post("/api/home_types", (req, res) => {
       (err, result) => {
         if (err) return res.status(500).json({ error: "Database error" });
 
-        // สร้าง subunit_home และ home_units
+        // สร้าง subunit_home ใหม่สำหรับ home_type นี้
         if (subunit_type && subunit_type !== "") {
+          const subunitName = `${subunit_type}_${name.trim()}`; // เช่น "พื้นที่_dd"
           db.query(
-            "SELECT id FROM subunit_home WHERE name = ? AND subunit_type = ?",
-            [subunit_type, subunit_type],
-            (suErr, suResults) => {
-              if (suErr) return res.status(500).json({ error: "Database error" });
-
-              let subunitId;
-              if (suResults.length > 0) {
-                subunitId = suResults[0].id;
-                createUnitsAndHomes(subunitId);
-              } else {
-                db.query(
-                  "INSERT INTO subunit_home (name, subunit_type) VALUES (?, ?)",
-                  [subunit_type, subunit_type],
-                  (suInsertErr, suInsertResult) => {
-                    if (suInsertErr) return res.status(500).json({ error: "Database error" });
-                    subunitId = suInsertResult.insertId;
-                    createUnitsAndHomes(subunitId);
-                  }
-                );
-              }
+            "INSERT INTO subunit_home (name, subunit_type) VALUES (?, ?)",
+            [subunitName, subunit_type],
+            (suInsertErr, suInsertResult) => {
+              if (suInsertErr) return res.status(500).json({ error: "Database error" });
+              const subunitId = suInsertResult.insertId;
 
               // สร้าง home_units และบ้านอัตโนมัติ
-              function createUnitsAndHomes(subunitHomeId) {
-                db.query(
-                  "SELECT unit_number FROM home_units WHERE subunit_home_id = ?",
-                  [subunitHomeId],
-                  (countErr, unitResults) => {
-                    if (countErr) return res.status(500).json({ error: "Database error" });
-                    const existingNumbers = unitResults.map(u => u.unit_number);
-                    let unitInserts = [];
-                    let homeInserts = [];
-                    // สร้าง home_units ใหม่สำหรับ home_type นี้ (unit_number ไม่ซ้ำ)
-                    for (let i = 1; i <= max_capacity; i++) {
-                      // เพิ่ม home_units ใหม่ทุกครั้งที่เพิ่มประเภทบ้านใหม่
-                      // ถ้า unit_number ซ้ำ ให้สร้าง unit_number ถัดไป (เช่น 1,2,3,...)
-                      let nextUnitNumber = i;
-                      while (existingNumbers.includes(nextUnitNumber)) {
-                        nextUnitNumber++;
-                      }
-                      const unitName = `${subunit_type} ${nextUnitNumber}`;
-                      unitInserts.push([subunitHomeId, nextUnitNumber, unitName]);
-                      homeInserts.push([result.insertId, unitName, null, null, subunitHomeId, null]);
-                      existingNumbers.push(nextUnitNumber); // ป้องกันซ้ำ
-                    }
-                    db.query(
-                      "INSERT INTO home_units (subunit_home_id, unit_number, unit_name) VALUES ?",
-                      [unitInserts],
-                      (unitErr) => {
-                        if (unitErr) return res.status(500).json({ error: "Database error" });
-                        db.query(
-                          "INSERT INTO home (home_type_id, Address, status_id, image, subunit_id, created_at) VALUES ?",
-                          [homeInserts],
-                          (homeErr) => {
-                            if (homeErr) return res.status(500).json({ error: "Database error" });
-                            return res.json({ success: true, id: result.insertId });
-                          }
-                        );
-                      }
-                    );
-                  }
-                );
+              let unitInserts = [];
+              let homeInserts = [];
+              for (let i = 1; i <= max_capacity; i++) {
+                const unitName = `${subunit_type} ${i}`;
+                unitInserts.push([subunitId, i, unitName]);
+                homeInserts.push([result.insertId, unitName, null, null, subunitId, null]);
               }
+              db.query(
+                "INSERT INTO home_units (subunit_home_id, unit_number, unit_name) VALUES ?",
+                [unitInserts],
+                (unitErr) => {
+                  if (unitErr) return res.status(500).json({ error: "Database error" });
+                  db.query(
+                    "INSERT INTO home (home_type_id, Address, status_id, image, subunit_id, created_at) VALUES ?",
+                    [homeInserts],
+                    (homeErr) => {
+                      if (homeErr) return res.status(500).json({ error: "Database error" });
+                      return res.json({ success: true, id: result.insertId });
+                    }
+                  );
+                }
+              );
             }
           );
         } else {
           // ถ้าไม่มี subunit_type (บ้านเดี่ยว/คอนโด)
-          // สร้างบ้านอัตโนมัติ (ตามจำนวน max_capacity)
           let homeInserts = [];
           for (let i = 1; i <= max_capacity; i++) {
             homeInserts.push([result.insertId, `บ้านเดี่ยว ${i}`, null, null, null, null]);
@@ -1696,15 +1662,16 @@ app.post("/api/home_types", (req, res) => {
 app.delete("/api/home_types/:id", (req, res) => {
   const { id } = req.params;
 
-  // ดึง subunit_type ของประเภทบ้านนี้
-  db.query("SELECT subunit_type FROM home_types WHERE id = ?", [id], (typeErr, typeResults) => {
+  // ดึงข้อมูลประเภทบ้าน
+  db.query("SELECT name, subunit_type FROM home_types WHERE id = ?", [id], (typeErr, typeResults) => {
     if (typeErr) return res.status(500).json({ error: "Database error" });
     if (typeResults.length === 0) return res.status(404).json({ error: "ไม่พบประเภทบ้าน" });
 
-    const subunitType = typeResults[0].subunit_type;
+    const { name, subunit_type } = typeResults[0];
+    const subunitHomeName = `${subunit_type}_${name}`;
 
     // ดึง subunit_home ที่เกี่ยวข้องกับประเภทนี้
-    db.query("SELECT id FROM subunit_home WHERE subunit_type = ?", [subunitType], (suErr, suResults) => {
+    db.query("SELECT id FROM subunit_home WHERE name = ?", [subunitHomeName], (suErr, suResults) => {
       if (suErr) return res.status(500).json({ error: "Database error" });
 
       const subunitIds = suResults.map(su => su.id);
@@ -1713,16 +1680,21 @@ app.delete("/api/home_types/:id", (req, res) => {
       db.query("DELETE FROM home WHERE home_type_id = ?", [id], (delHomeErr) => {
         if (delHomeErr) return res.status(500).json({ error: "Database error" });
 
-        // ลบ home_units เฉพาะที่เกี่ยวข้องกับประเภทนี้
+        // ลบ home_units ที่เกี่ยวข้อง
         if (subunitIds.length > 0) {
           db.query("DELETE FROM home_units WHERE subunit_home_id IN (?)", [subunitIds], (delUnitErr) => {
             if (delUnitErr) return res.status(500).json({ error: "Database error" });
 
-            // ลบประเภทบ้าน
-            db.query("DELETE FROM home_types WHERE id = ?", [id], (deleteErr, result) => {
-              if (deleteErr) return res.status(500).json({ error: "Database error" });
-              if (result.affectedRows === 0) return res.status(404).json({ error: "ไม่พบประเภทบ้าน" });
-              res.json({ success: true, message: "ลบประเภทบ้านและบ้านที่เกี่ยวข้องสำเร็จ" });
+            // ลบ subunit_home ที่เกี่ยวข้อง
+            db.query("DELETE FROM subunit_home WHERE id IN (?)", [subunitIds], (delSubunitErr) => {
+              if (delSubunitErr) return res.status(500).json({ error: "Database error" });
+
+              // ลบประเภทบ้าน
+              db.query("DELETE FROM home_types WHERE id = ?", [id], (deleteErr, result) => {
+                if (deleteErr) return res.status(500).json({ error: "Database error" });
+                if (result.affectedRows === 0) return res.status(404).json({ error: "ไม่พบประเภทบ้าน" });
+                res.json({ success: true, message: "ลบประเภทบ้าน, home_units, subunit_home และบ้านที่เกี่ยวข้องสำเร็จ" });
+              });
             });
           });
         } else {
@@ -1865,6 +1837,7 @@ app.post("/api/guests", (req, res) => {
 
   const sql = `INSERT INTO guest (
     home_id, name, lname, rank_id, title, phone, id_card, is_right_holder, dob, pos, income, job_phone, image_url
+ 
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   const values = [

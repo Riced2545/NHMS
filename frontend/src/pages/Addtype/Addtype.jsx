@@ -204,6 +204,7 @@ export default function Addtype() {
               </div>
             </form>
           </div>
+          
           {/* รายการประเภทบ้านที่มีอยู่ */}
           <div className="form-card">
             <h3 className="form-section-title">
@@ -231,13 +232,15 @@ export default function Addtype() {
                       <div className="list-item-meta">
                         จำนวนทั้งหมด : {type.max_capacity ? type.max_capacity : "-"}
                       </div>
+                      <div className="delete-btn-center">
+                        <button
+                          onClick={() => handleDelete(type.id, type.name)}
+                          className="btn-danger btn-small"
+                        >
+                          ลบ
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => handleDelete(type.id, type.name)}
-                      className="btn-danger btn-small"
-                    >
-                      ลบ
-                    </button>
                   </div>
                 ))
               )}
