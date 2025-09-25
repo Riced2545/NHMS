@@ -9,6 +9,7 @@ export default function HomeTypeSelectPage() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const homeTypeName = searchParams.get('type');
+  const subunitId = searchParams.get('subunit_id');
 
   const [homeTypeConfig, setHomeTypeConfig] = useState(null);
   const [filters, setFilters] = useState([]);
@@ -24,9 +25,14 @@ export default function HomeTypeSelectPage() {
 
   // ดึง filter
   useEffect(() => {
-    if (!homeTypeConfig || !homeTypeConfig.subunit_type) return;
-    axios.get(`http://localhost:3001/api/${homeTypeConfig.subunit_type}s`).then(res => setFilters(res.data));
-  }, [homeTypeConfig]);
+    if (subunitId) {
+      axios.get(`http://localhost:3001/api/home_units/${subunitId}`)
+        .then(res => setFilters(res.data)); // filters จะเป็น home_unit ของ subunit นี้
+    } else if (homeTypeConfig && homeTypeConfig.subunit_type) {
+      axios.get(`http://localhost:3001/api/${homeTypeConfig.subunit_type}s`)
+        .then(res => setFilters(res.data));
+    }
+  }, [homeTypeConfig, subunitId]);
 
   // ดึงบ้านและคำนวณจำนวนบ้านในแต่ละ filter
   useEffect(() => {
@@ -83,7 +89,7 @@ export default function HomeTypeSelectPage() {
               margin: 0
             }}>
               {homeTypeConfig?.subunit_label
-                ? `เลือก${homeTypeConfig.subunit_label} ${homeTypeName}`
+                ? `เลือก${homeTypeConfig.subunit_label} เพื่อดูบ้านในประเภท "${homeTypeName}"`
                 : homeTypeName}
             </h2>
             {/* แสดงจำนวน subunit และชื่อ subunit */}

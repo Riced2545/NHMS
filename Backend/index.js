@@ -2025,4 +2025,16 @@ app.put("/api/subunit_home/:id", (req, res) => {
   );
 });
 
+app.get("/api/home_units/:subunit_id", (req, res) => {
+  const subunitId = req.params.subunit_id;
+  db.query(
+    "SELECT * FROM home_units WHERE subunit_home_id = ? ORDER BY unit_number ASC",
+    [subunitId],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json(results);
+    }
+  );
+});
+
 
