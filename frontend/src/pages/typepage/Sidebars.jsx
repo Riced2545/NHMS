@@ -10,7 +10,9 @@ export default function Sidebar() {
   const [homeTypes, setHomeTypes] = useState([]);
   const [subunits, setSubunits] = useState({});
   const [homeUnits, setHomeUnits] = useState({});
+  const [homeTypeUnits, setHomeTypeUnits] = useState({});
   const [openTypeId, setOpenTypeId] = useState(null);
+  const [homeUnitsByType, setHomeUnitsByType] = useState({});
 
   useEffect(() => {
     axios.get("http://localhost:3001/api/home_types")
@@ -42,6 +44,18 @@ export default function Sidebar() {
     if (homeTypes.length > 0) fetchSubunitsAndUnits();
   }, [homeTypes]);
 
+  useEffect(() => {
+    async function fetchUnits() {
+      let typeUnitMap = {};
+      for (const type of homeTypes) {
+        const res = await axios.get(`http://localhost:3001/api/home_units/${type.id}`);
+        typeUnitMap[type.id] = res.data; // เก็บ array home_units ของแต่ละประเภท
+      }
+      setHomeUnitsByType(typeUnitMap);
+    }
+    if (homeTypes.length > 0) fetchUnits();
+  }, [homeTypes]);
+
   const getHomeTypeIcon = (homeTypeName) => {
     switch(homeTypeName) {
       case 'บ้านพักแฝด':
@@ -62,13 +76,7 @@ export default function Sidebar() {
   const currentPage = location.pathname.split('/').pop();
 
   return (
-    <div style={{
-      width: '260px',
-      background: 'white',
-      borderRight: '1px solid #e5e7eb',
-      padding: '24px 0',
-      minHeight: '100%'
-    }}>
+    <div style={{ width: '260px', background: 'white', borderRight: '1px solid #e5e7eb', padding: '24px 0', minHeight: '100%' }}>
       <div style={{
         padding: '0 24px',
         marginBottom: '32px',
@@ -130,23 +138,35 @@ export default function Sidebar() {
                 alignItems: 'center',
                 gap: '12px',
                 fontSize: '14px',
-                fontWeight: currentHomeType === type.name ? '600' : '500'
+                fontWeight: currentHomeType === type.name ? '600' : '500',
+                position: 'relative'
               }}
             >
               <FontAwesomeIcon icon={getHomeTypeIcon(type.name)} style={{ width: '16px', color: currentHomeType === type.name ? '#2563eb' : '#9ca3af' }} />
               {type.name}
-              <FontAwesomeIcon icon={faChevronDown} style={{ marginLeft: 'auto', fontSize: 12, transform: openTypeId === type.id ? 'rotate(180deg)' : 'none' }} />
+              <span style={{
+                background: '#e0e7ef',
+                borderRadius: '8px',
+                padding: '2px 10px',
+                marginLeft: 'auto',
+                color: '#64748b',
+                fontWeight: 500,
+                fontSize: 13
+              }}>
+                {(homeUnitsByType[type.id]?.length || 0)} {type.subunit_type || "พื้นที่"}
+              </span>
+              <FontAwesomeIcon icon={faChevronDown} style={{ marginLeft: 8, fontSize: 12, transform: openTypeId === type.id ? 'rotate(180deg)' : 'none' }} />
             </button>
-            {/* แสดง subunit_home และจำนวนบ้าน */}
-            {openTypeId === type.id && subunits[type.id] && (
+            {/* แสดงพื้นที่ 1 2 3 ... */}
+            {openTypeId === type.id && homeUnitsByType[type.id] && (
               <div style={{ paddingLeft: 32, paddingTop: 4 }}>
-                {subunits[type.id].length === 0 ? (
-                  <div style={{ color: "#9ca3af", fontSize: 13 }}>ไม่มีหน่วยย่อย</div>
+                {homeUnitsByType[type.id].length === 0 ? (
+                  <div style={{ color: "#9ca3af", fontSize: 13 }}>ไม่มีพื้นที่</div>
                 ) : (
-                  subunits[type.id].map(subunit => (
+                  homeUnitsByType[type.id].map(unit => (
                     <button
-                      key={subunit.id}
-                      onClick={() => navigate(`/homes?subunit=${subunit.id}`)}
+                      key={unit.id}
+                      onClick={() => navigate(`/homes?type=${type.name}&unit=${unit.id}`)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -160,17 +180,7 @@ export default function Sidebar() {
                         justifyContent: 'space-between'
                       }}
                     >
-                      <span>{subunit.name}</span>
-                      <span style={{
-                        background: '#f1f5f9',
-                        borderRadius: '8px',
-                        padding: '2px 10px',
-                        marginLeft: 8,
-                        color: '#64748b',
-                        fontWeight: 500
-                      }}>
-                        {homeUnits[subunit.id] || 0} หลัง
-                      </span>
+                      <span>{unit.unit_name}</span>
                     </button>
                   ))
                 )}

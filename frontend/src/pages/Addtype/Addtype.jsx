@@ -25,11 +25,20 @@ export default function Addtype() {
     icon: ""
   });
   const [homeTypes, setHomeTypes] = useState([]);
+  const [customSubunit, setCustomSubunit] = useState("");
+  const [subunitList, setSubunitList] = useState([]);
+  const [showInput, setShowInput] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
+    loadSubunitList();
     loadHomeTypes();
   }, []);
+
+  const loadSubunitList = async () => {
+    const res = await axios.get("http://localhost:3001/api/subunit_home");
+    setSubunitList(res.data);
+  };
 
   const loadHomeTypes = async () => {
     const res = await axios.get("http://localhost:3001/api/home_types");
@@ -48,7 +57,6 @@ export default function Addtype() {
       return;
     }
 
-    // ถ้าเลือก subunit_type ให้กรอกจำนวน
     let maxCapacity = 1;
     if (form.subunit_type && form.subunit_type !== "") {
       if (!form.max_capacity || isNaN(form.max_capacity) || parseInt(form.max_capacity, 10) < 1) {
@@ -59,7 +67,8 @@ export default function Addtype() {
     }
 
     try {
-      await axios.post("http://localhost:3001/api/home_types", {
+      // สร้างประเภทบ้านใหม่
+      const res = await axios.post("http://localhost:3001/api/home_types", {
         name: form.name.trim(),
         description: form.description.trim(),
         subunit_type: form.subunit_type || null,
@@ -82,14 +91,8 @@ export default function Addtype() {
   };
 
   const handleDelete = async (id, name) => {
-    // ถามรอบแรก
-    if (!window.confirm(`ต้องการลบประเภทบ้าน "${name}" หรือไม่?`)) {
-      return;
-    }
-    // ถามรอบสอง
-    if (!window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบประเภทบ้าน "${name}"?\nการลบนี้จะลบข้อมูลบ้านและหน่วยย่อยทั้งหมดที่เกี่ยวข้อง!`)) {
-      return;
-    }
+    if (!window.confirm(`ต้องการลบประเภทบ้าน "${name}" หรือไม่?`)) return;
+    if (!window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบประเภทบ้าน "${name}"?\nการลบนี้จะลบข้อมูลบ้านและหน่วยย่อยทั้งหมดที่เกี่ยวข้อง!`)) return;
 
     try {
       await axios.delete(`http://localhost:3001/api/home_types/${id}`);
@@ -101,6 +104,22 @@ export default function Addtype() {
         errorMessage = error.response.data.message;
       }
       toast.error(errorMessage);
+    }
+  };
+
+  const handleAddSubunit = async () => {
+    if (!customSubunit.trim()) return;
+    try {
+      await axios.post("http://localhost:3001/api/subunit_home", {
+        name: customSubunit.trim(),
+        subunit_type: customSubunit.trim()
+      });
+      setCustomSubunit("");
+      setShowInput(false);
+      loadSubunitList();
+      toast.success("เพิ่มชื่อ subunit ใหม่สำเร็จ!");
+    } catch (error) {
+      toast.error("เกิดข้อผิดพลาดในการเพิ่มชื่อ subunit");
     }
   };
 
@@ -160,16 +179,61 @@ export default function Addtype() {
               </div>
               <div className="form-group">
                 <label className="form-label">เลือกหน่วยย่อย (subunit)</label>
-                <select
-                  name="subunit_type"
-                  value={form.subunit_type}
-                  onChange={handleChange}
-                  className="form-input"
-                >
-                  {subunitOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <select
+                    name="subunit_type"
+                    value={form.subunit_type}
+                    onChange={handleChange}
+                    className="form-input"
+                    style={{ flex: 1 }}
+                  >
+                    <option value="">ไม่มี (เช่น บ้านเดี่ยว/คอนโด)</option>
+                    {subunitList.map(opt => (
+                      <option key={opt.id} value={opt.subunit_type}>{opt.subunit_type}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowInput(!showInput)}
+                    style={{
+                      padding: "6px 12px",
+                      background: "#e0e7ef",
+                      border: "none",
+                      borderRadius: "6px",
+                      color: "#2563eb",
+                      fontWeight: 500,
+                      cursor: "pointer"
+                    }}
+                  >
+                    เพิ่มชื่อใหม่
+                  </button>
+                </div>
+                {showInput && (
+                  <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+                    <input
+                      type="text"
+                      value={customSubunit}
+                      onChange={e => setCustomSubunit(e.target.value)}
+                      placeholder="ชื่อ subunit ใหม่ เช่น โซน, ตึก, บล็อก"
+                      style={{ flex: 1, padding: "4px 8px" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddSubunit}
+                      style={{
+                        padding: "6px 12px",
+                        background: "#3b82f6",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        fontWeight: 500,
+                        cursor: "pointer"
+                      }}
+                    >
+                      บันทึก
+                    </button>
+                  </div>
+                )}
               </div>
               {form.subunit_type && form.subunit_type !== "" && (
                 <div className="form-group">
@@ -227,7 +291,7 @@ export default function Addtype() {
                         {type.name}
                       </div>
                       <div className="list-item-meta">
-                        ลักษณะอาคาร : {type.subunit_name || "ไม่มี"}
+                        ลักษณะอาคาร : {type.subunit_type || "ไม่มี"}
                       </div>
                       <div className="list-item-meta">
                         จำนวนทั้งหมด : {type.max_capacity ? type.max_capacity : "-"}
