@@ -4,7 +4,7 @@ import axios from "axios";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome, faBuilding, faHouseChimney, faUsers, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 
-export default function Sidebar() {
+export default function Sidebar({ reloadTrigger }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [homeTypes, setHomeTypes] = useState([]);
@@ -13,6 +13,7 @@ export default function Sidebar() {
   const [homeTypeUnits, setHomeTypeUnits] = useState({});
   const [openTypeId, setOpenTypeId] = useState(null);
   const [homeUnitsByType, setHomeUnitsByType] = useState({});
+  const [unitHomeStats, setUnitHomeStats] = useState({});
 
   useEffect(() => {
     axios.get("http://localhost:3001/api/home_types")
@@ -74,6 +75,36 @@ export default function Sidebar() {
   const searchParams = new URLSearchParams(location.search);
   const currentHomeType = searchParams.get('type');
   const currentPage = location.pathname.split('/').pop();
+
+  useEffect(() => {
+    async function fetchUnitStats() {
+      let stats = {};
+      for (const type of homeTypes) {
+        if (homeUnitsByType[type.id]) {
+          for (const unit of homeUnitsByType[type.id]) {
+            const res = await axios.get(`http://localhost:3001/api/homes?unit=${unit.id}`);
+            const homes = res.data || [];
+            const total = homes.length;
+            const vacant = homes.filter(h => !h.guest_count || h.guest_count === 0).length;
+            stats[unit.id] = { total, vacant };
+          }
+        }
+      }
+      setUnitHomeStats(stats);
+    }
+    fetchUnitStats();
+  }, [homeTypes, homeUnitsByType, reloadTrigger]);
+
+  const renderUnitStats = (unitId) => {
+    const stats = unitHomeStats[unitId];
+    if (!stats) return null;
+    return (
+      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+        <div>ทั้งหมด: {stats.total} บ้าน</div>
+        <div>ว่าง: {stats.vacant} บ้าน</div>
+      </div>
+    );
+  };
 
   return (
     <div style={{ width: '260px', background: 'white', borderRight: '1px solid #e5e7eb', padding: '24px 0', minHeight: '100%' }}>
@@ -181,6 +212,19 @@ export default function Sidebar() {
                       }}
                     >
                       <span>{unit.unit_name}</span>
+                      <span style={{
+                        background: '#e0e7ef',
+                        borderRadius: '8px',
+                        padding: '2px 10px',
+                        marginLeft: '8px',
+                        color: '#2563eb',
+                        fontWeight: 600,
+                        fontSize: 13
+                      }}>
+                        {unitHomeStats[unit.id]
+                          ? `${unitHomeStats[unit.id].total - unitHomeStats[unit.id].vacant}/${unitHomeStats[unit.id].total} ว่าง ${unitHomeStats[unit.id].vacant} หลัง`
+                          : "-"}
+                      </span>
                     </button>
                   ))
                 )}

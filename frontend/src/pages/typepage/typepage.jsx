@@ -76,7 +76,7 @@ export default function TypePage() {
               textAlign: "center",
               maxWidth: "90%",
             }}>
-              ระบบจัดการบ้านพักกรมแพทย์ทหารเรือ
+              ระบบจัดการบ้านพักกรมแพทย์ทหารเรือ (พื้นที่บุคคโล)
             </div>
           </div>
 

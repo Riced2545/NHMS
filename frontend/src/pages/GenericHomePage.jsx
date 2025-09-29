@@ -25,32 +25,53 @@ export default function GenericHomePage() {
   const [homeTypeIdFromSidebar, setHomeTypeIdFromSidebar] = useState(null); // เพิ่ม state สำหรับ homeTypeId
   const [showAddGuestHomeId, setShowAddGuestHomeId] = useState(null);
   const [showEditHomeId, setShowEditHomeId] = useState(null);
+  const [guestsByHome, setGuestsByHome] = useState({});
+  const [sidebarReload, setSidebarReload] = useState(Date.now());
 
-  // โหลดข้อมูลบ้านใน unit ที่เลือก
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      try {
-        if (unitId) {
-          const unitRes = await axios.get(`http://localhost:3001/api/home_unit/${unitId}`);
-          setUnitName(unitRes.data?.unit_name || "");
-        }
-        const homeRes = await axios.get("http://localhost:3001/api/homes");
-        let filtered = homeRes.data;
-        if (homeTypeName) {
-          filtered = filtered.filter(h => h.hType === homeTypeName);
-        }
-        if (unitId) {
-          filtered = filtered.filter(h => String(h.unit_id) === String(unitId));
-        }
-        setHomes(filtered);
-      } catch {
-        setHomes([]);
+  // ย้ายฟังก์ชัน fetchData ออกมาไว้ตรงนี้
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      if (unitId) {
+        const unitRes = await axios.get(`http://localhost:3001/api/home_unit/${unitId}`);
+        setUnitName(unitRes.data?.unit_name || "");
       }
-      setLoading(false);
+      const homeRes = await axios.get("http://localhost:3001/api/homes");
+      let filtered = homeRes.data;
+      if (homeTypeName) {
+        filtered = filtered.filter(h => h.hType === homeTypeName);
+      }
+      if (unitId) {
+        filtered = filtered.filter(h => String(h.unit_id) === String(unitId));
+      }
+      setHomes(filtered);
+    } catch {
+      setHomes([]);
     }
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchData();
   }, [homeTypeName, unitId]);
+
+  useEffect(() => {
+    // โหลด guest ของแต่ละบ้าน
+    async function fetchGuests() {
+      if (homes.length === 0) return;
+      const all = {};
+      await Promise.all(homes.map(async (home) => {
+        try {
+          const res = await axios.get(`http://localhost:3001/api/guests/home/${home.home_id}`);
+          all[home.home_id] = res.data;
+        } catch {
+          all[home.home_id] = [];
+        }
+      }));
+      setGuestsByHome(all);
+    }
+    fetchGuests();
+  }, [homes]);
 
   return (
     <div style={{ 
@@ -63,7 +84,7 @@ export default function GenericHomePage() {
     }}>
       <Navbar />
       <div style={{ display: "flex", minHeight: "calc(100vh - 84px)" }}>
-        <Sidebar setHomeTypeId={setHomeTypeIdFromSidebar} /> {/* ส่ง down function สำหรับ set homeTypeId */}
+        <Sidebar reloadTrigger={sidebarReload} />
         <div style={{ flex: 1, padding: "32px" }}>
           {/* ปุ่มเพิ่มบ้านขวาบน */}
           <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: 16 }}>
@@ -96,10 +117,10 @@ export default function GenericHomePage() {
             onClose={() => setShowAddHome(false)}
             onSuccess={() => {
               setShowAddHome(false);
-              // reload homes
-              // fetchData(); // ถ้าอยาก reload อัตโนมัติหลังเพิ่มบ้าน
+              fetchData();
+              setSidebarReload(Date.now()); // trigger sidebar reload
             }}
-            homeTypeId={homeTypeIdFromSidebar} // ส่ง homeTypeId ไปยัง modal
+            homeTypeId={homeTypeIdFromSidebar}
           />
           {loading ? (
             <div style={{ color: "#19b0d9", fontWeight: "bold", fontSize: 18 }}>
@@ -111,67 +132,139 @@ export default function GenericHomePage() {
             </div>
           ) : (
             <div className="home-list" style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
-      gap: "32px",
-      justifyItems: "center"
-    }}>
-              {homes.map(home => (
-                <div key={home.home_id} className="home-card" style={{
+  display: "grid",
+  gridTemplateColumns: "repeat(4, 1fr)", // 4 อันต่อแถว
+  gap: "32px",
+  justifyContent: "start"
+}}>
+              {homes.map(home => {
+  const guests = guestsByHome[home.home_id] || [];
+  const rightHolder = guests.find(g => g.is_right_holder === 1);
+  const guestCount = guests.length;
+
+  return (
+    <div key={home.home_id} className="home-card" style={{
       background: "linear-gradient(180deg, #23293b 80%, #23293b 100%)",
       borderRadius: "18px",
       boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
       padding: "0 0 24px 0",
-      minHeight: "420px",
-      maxWidth: "380px", // ฟิกขนาด card
+      minHeight: "520px", // ปรับความสูงให้สูงขึ้น
+      maxWidth: "380px",
       width: "100%",
       display: "flex",
       flexDirection: "column",
       alignItems: "stretch",
       position: "relative"
     }}>
-                  {/* รูปภาพ */}
+      {/* ส่วนบน: รูปบ้าน */}
       <div style={{
-        height: "160px",
-        background: "#23293b",
-        borderTopLeftRadius: "18px",
-        borderTopRightRadius: "18px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#fff",
-        fontWeight: "bold",
-        fontSize: "18px"
-      }}>
-        {home.image
-          ? <img src={`http://localhost:3001/uploads/${home.image}`} alt="บ้าน" style={{ maxHeight: "100%", maxWidth: "100%", borderRadius: "12px" }} />
-          : "กรุณาเพิ่มรูปภาพ"
-        }
-      </div>
-      {/* Badge สถานะ */}
-      <div style={{
-        position: "absolute",
-        top: 16,
-        right: 16,
-        background: "#111827",
-        color: "#fff",
-        borderRadius: "8px",
-        padding: "4px 14px",
-        fontSize: "14px",
-        fontWeight: 500
-      }}>
-        {home.status === "มีผู้พักอาศัย" ? "มีผู้พักอาศัย" : "ไม่มีผู้พักอาศัย"}
-      </div>
+  width: "100%",
+  height: "160px",
+  background: "#23293b",
+  borderTopLeftRadius: "18px",
+  borderTopRightRadius: "18px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  overflow: "hidden"
+}}>
+  {home.image ? (
+    <img
+      src={`http://localhost:3001/uploads/${home.image}`}
+      alt="บ้าน"
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "cover"
+      }}
+    />
+  ) : (
+    <div style={{
+      color: "#fff",
+      fontWeight: "bold",
+      fontSize: "22px",
+      textAlign: "center",
+      padding: "0 12px",
+      width: "auto",
+      height: "auto",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}>
+      กรุณาเพิ่มรูปภาพ
+    </div>
+  )}
+</div>
+
       {/* ข้อมูลบ้าน */}
       <div style={{ padding: "24px 24px 0 24px", flex: 1 }}>
-        <div style={{ fontSize: "22px", fontWeight: "bold", color: "#fff", marginBottom: 8 }}>
+        {/* กล่องผู้ถือสิทธิ์ ด้านบน */}
+        {rightHolder && (
+          <div style={{
+            background: "#111827",
+            borderRadius: "10px",
+            padding: "12px 20px",
+            color: "#fff",
+            marginBottom: 14,
+            display: "flex",
+            alignItems: "center",
+            gap: 18,
+            border: "2px solid #38bdf8"
+          }}>
+            {rightHolder.image_url ? (
+              <img  
+                src={`http://localhost:3001${rightHolder.image_url}`}
+                alt="ผู้ถือสิทธิ"
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  border: "2px solid #38bdf8",
+                  marginRight: 12
+                }}
+              />
+            ) : (
+              <div style={{
+                width: 56,
+                height: 56,
+                borderRadius: "50%",
+                background: "#374151",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 32,
+                fontWeight: "bold",
+                border: "2px solid #38bdf8",
+                marginRight: 12
+              }}>
+                👤
+              </div>
+            )}
+            <div>
+              <div style={{ fontWeight: "bold", fontSize: "20px" }}>
+                {rightHolder.name} {rightHolder.lname}
+              </div>
+              <div style={{ fontSize: "15px", opacity: 0.85 }}>ผู้ถือสิทธิ</div>
+            </div>
+          </div>
+        )}
+        {/* เลขที่บ้าน ด้านล่าง */}
+        <div style={{
+          fontSize: "28px",
+          fontWeight: "bold",
+          color: "#fff",
+          marginBottom: 16,
+          letterSpacing: "1px"
+        }}>
           เลขที่: {home.Address}
         </div>
         <div style={{ fontSize: "16px", color: "#fff", marginBottom: 6 }}>
-          ผู้พักอาศัย: 0 คน
+          ผู้พักอาศัย: {guestCount} คน
         </div>
-        <div style={{ fontSize: "16px", color: home.status === "มีผู้พักอาศัย" ? "#22c55e" : "#ef4444", marginBottom: 6 }}>
-          สถานะ: {home.status === "มีผู้พักอาศัย" ? "มีผู้พักอาศัย" : "ไม่มีผู้พักอาศัย"}
+        <div style={{ fontSize: "16px", color: guestCount > 0 ? "#22c55e" : "#ef4444", marginBottom: 6 }}>
+          สถานะ: {guestCount > 0 ? "มีผู้พักอาศัย" : "ไม่มีผู้พักอาศัย"}
         </div>
       </div>
       {/* ปุ่ม */}
@@ -230,8 +323,9 @@ export default function GenericHomePage() {
           แก้ไข
         </button>
       </div>
-                </div>
-              ))}
+    </div>
+  );
+})}
             </div>
           )}
         </div>
@@ -244,20 +338,18 @@ export default function GenericHomePage() {
           homeId={showAddGuestHomeId}
           onUpdate={() => {
             setShowAddGuestHomeId(null);
-            // fetchData(); // reload homes ถ้าต้องการ
+            fetchData();
+            setSidebarReload(Date.now()); // trigger sidebar reload
           }}
         />
       )}
       {/* Modal แก้ไขบ้าน */}
       {showEditHomeId && (
         <EditHomeModal
-          isOpen={true}
+          isOpen={showEditHomeId !== null}
           onClose={() => setShowEditHomeId(null)}
           homeId={showEditHomeId}
-          onUpdate={() => {
-            setShowEditHomeId(null);
-            // fetchData(); // reload homes ถ้าต้องการ
-          }}
+          onUpdate={fetchData} // ส่งฟังก์ชัน fetchData มาด้วย
         />
       )}
     </div>

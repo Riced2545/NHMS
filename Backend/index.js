@@ -78,6 +78,7 @@ db.query(`
     home_type_id INT,
     unit_number INT,
     unit_name VARCHAR(255),
+    subunit_id INT,  -- เพิ่มตรงนี้
     UNIQUE KEY unique_unit (home_type_id, unit_number),
     FOREIGN KEY (home_type_id) REFERENCES home_types(id)
   )
@@ -290,6 +291,7 @@ db.query(`
     home_type_id INT,
     unit_number INT,
     unit_name VARCHAR(255),
+    subunit_id INT,  -- เพิ่มตรงนี้
     UNIQUE KEY unique_unit (home_type_id, unit_number),
     FOREIGN KEY (home_type_id) REFERENCES home_types(id)
   )
@@ -488,152 +490,24 @@ app.get("/api/homes/:id", (req, res) => {
 
 // API สำหรับอัพเดทบ้าน
 app.put("/api/homes/:id", upload.single('image'), (req, res) => {
-  const { id } = req.params;
-  const { Address, home_type_id, status_id, row_id } = req.body;
-  
-  console.log("Updating home:", { id, Address, home_type_id, status_id, row_id });
-  console.log("File:", req.file);
-  
-  // ดึงข้อมูลบ้านเดิมก่อนอัพเดท (รวมข้อมูลแถว)
-  const getOldDataSql = `
-    SELECT h.*, ht.name as hType, s.name as status, 
-           tr.name as row_name, tr.row_number
-    FROM home h
-    LEFT JOIN home_types ht ON h.home_type_id = ht.id
-    LEFT JOIN status s ON h.status_id = s.id
-    LEFT JOIN townhome_rows tr ON h.row_id = tr.id
-    WHERE h.home_id = ?
-  `;
-  
-  db.query(getOldDataSql, [id], (err, oldData) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Database error: " + err.message });
-    }
-    
-    if (oldData.length === 0) {
-      return res.status(404).json({ error: "Home not found" });
-    }
-    
-    const oldHome = oldData[0];
-    
-    // อัพเดทข้อมูลบ้าน
-    let sql = "UPDATE home SET Address = ?, home_type_id = ?, status_id = ?";
-    let params = [Address, home_type_id, status_id];
-    
-    // เพิ่ม row_id ถ้ามีการส่งมา
-    if (row_id !== undefined) {
-      sql += ", row_id = ?";
-      params.push(row_id || null);
-    }
-    
-    if (req.file) {
-      sql += ", image = ?";
-      params.push(req.file.filename);
-    }
-    
-    sql += " WHERE home_id = ?";
-    params.push(id);
-    
-    console.log("SQL:", sql);
-    console.log("Params:", params);
-    
-    db.query(sql, params, (err, results) => {
-      if (err) {
-        console.error("Database error:", err);
-        return res.status(500).json({ error: "Database error: " + err.message });
-      }
-      
-      if (results.affectedRows === 0) {
-        return res.status(404).json({ error: "Home not found" });
-      }
-      
-      // ดึงข้อมูลใหม่หลังอัพเดท (รวมข้อมูลแถว)
-      const getNewDataSql = `
-        SELECT h.*, ht.name as hType, s.name as status,
-               tr.name as row_name, tr.row_number
-        FROM home h
-        LEFT JOIN home_types ht ON h.home_type_id = ht.id
-        LEFT JOIN status s ON h.status_id = s.id
-        LEFT JOIN townhome_rows tr ON h.row_id = tr.id
-        WHERE h.home_id = ?
-      `;
-      
-      db.query(getNewDataSql, [id], (err, newData) => {
-        if (err) {
-          console.error("Error fetching new data:", err);
-          return res.json({ message: "Home updated successfully, but failed to log" });
-        }
-        
-        const newHome = newData[0];
-        
-        // สร้างรายละเอียดการเปลี่ยนแปลง
-        let changes = [];
-        
-        if (oldHome.Address !== newHome.Address) {
-          changes.push(`หมายเลขบ้าน: ${oldHome.Address} → ${newHome.Address}`);
-        }
-        
-        if (oldHome.hType !== newHome.hType) {
-          changes.push(`ประเภทบ้าน: ${oldHome.hType} → ${newHome.hType}`);
-        }
-        
-        if (oldHome.status !== newHome.status) {
-          changes.push(`สถานะ: ${oldHome.status} → ${newHome.status}`);
-        }
-        
-        // ตรวจสอบการเปลี่ยนแปลงแถว (สำหรับบ้านพักเรือนแถว)
-        const oldRowInfo = oldHome.row_name || (oldHome.row_number ? `แถว ${oldHome.row_number}` : '');
-        const newRowInfo = newHome.row_name || (newHome.row_number ? `แถว ${newHome.row_number}` : '');
-        
-        if (oldRowInfo !== newRowInfo) {
-          if (oldRowInfo && newRowInfo) {
-            changes.push(`แถว: ${oldRowInfo} → ${newRowInfo}`);
-          } else if (newRowInfo) {
-            changes.push(`เพิ่มแถว: ${newRowInfo}`);
-          } else if (oldRowInfo) {
-            changes.push(`ลบแถว: ${oldRowInfo}`);
-          }
-        }
-        
-        if (req.file) {
-          changes.push(`อัพโหลดรูปภาพใหม่: ${req.file.filename}`);
-        }
-        
-        // สร้างรายละเอียด log
-        let detail = "";
-        if (newHome.hType === 'บ้านพักเรือนแถว' && newRowInfo) {
-          detail = changes.length > 0 
-            ? `แก้ไขบ้านเลขที่ ${newHome.Address} ${newRowInfo}: ${changes.join(', ')}`
-            : `แก้ไขบ้านเลขที่ ${newHome.Address} ${newRowInfo} (ไม่มีการเปลี่ยนแปลง)`;
-        } else {
-          detail = changes.length > 0 
-            ? `แก้ไขบ้านเลขที่ ${newHome.Address}: ${changes.join(', ')}`
-            : `แก้ไขบ้านเลขที่ ${newHome.Address} (ไม่มีการเปลี่ยนแปลง)`;
-        }
-        
-        // บันทึก audit log
-        const logSql = `
-          INSERT INTO guest_logs (guest_id, home_id, action, detail, created_at)
-          VALUES (NULL, ?, 'edit_home', ?, NOW())
-        `;
-        
-        db.query(logSql, [id, detail], (logErr) => {
-          if (logErr) {
-            console.error("Error logging audit:", logErr);
-          } else {
-            console.log("✅ Home edit audit log saved successfully");
-          }
-          
-          console.log("Update successful:", results);
-          res.json({ 
-            message: "Home updated successfully", 
-            affectedRows: results.affectedRows,
-            changes: changes
-          });
-        });
-      });
-    });
+  const { Address, home_type_id, status_id } = req.body;
+  const image = req.file ? req.file.filename : null;
+
+  let sql = "UPDATE home SET Address = ?, home_type_id = ?, status_id = ?";
+  let params = [Address, home_type_id, status_id];
+
+  if (image) {
+    sql += ", image = ?";
+    params.push(image);
+  }
+
+  sql += " WHERE home_id = ?";
+  params.push(req.params.id);
+
+  db.query(sql, params, (err, result) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    if (result.affectedRows === 0) return res.status(404).json({ error: "Home not found" });
+    res.json({ success: true });
   });
 });
 
@@ -742,21 +616,30 @@ app.get("/api/guests/search", (req, res) => {
 
 // Home management APIs
 app.get("/api/homes", (req, res) => {
-  const sql = `
+  const { unit } = req.query;
+  let sql = `
     SELECT 
       home.*, 
       home_types.name as hType, 
       home_types.subunit_type,
       status.name as status,
       home_units.unit_name as unit_name,
-      home.subunit_id as unit_id
+      home.subunit_id as unit_id,
+      (
+        SELECT COUNT(*) FROM guest WHERE guest.home_id = home.home_id
+      ) AS guest_count
     FROM home
     LEFT JOIN home_types ON home.home_type_id = home_types.id
     LEFT JOIN status ON home.status_id = status.id
     LEFT JOIN home_units ON home.subunit_id = home_units.id
-    ORDER BY home.home_id ASC
   `;
-  db.query(sql, (err, results) => {
+  let params = [];
+  if (unit) {
+    sql += " WHERE home.subunit_id = ?";
+    params.push(unit);
+  }
+  sql += " ORDER BY home.home_id ASC";
+  db.query(sql, params, (err, results) => {
     if (err) return res.status(500).json({ error: "Database error" });
     res.json(results);
   });
@@ -819,82 +702,16 @@ app.put("/api/homes/:id", (req, res) => {
 
 app.delete("/api/homes/:id", (req, res) => {
   const homeId = req.params.id;
-
-  // ดึงข้อมูลบ้านก่อนลบ (รวมข้อมูลแถว)
-  const getHomeDataSql = `
-    SELECT h.*, ht.name as home_type_name, s.name as status_name,
-           tr.name as row_name, tr.row_number
-    FROM home h
-    LEFT JOIN home_types ht ON h.home_type_id = ht.id
-    LEFT JOIN status s ON h.status_id = s.id
-    LEFT JOIN townhome_rows tr ON h.row_id = tr.id
-    WHERE h.home_id = ?
-  `;
-  
-  db.query(getHomeDataSql, [homeId], (err, homeResults) => {
+  // เช็คว่ามีผู้พักอาศัยอยู่หรือไม่
+  db.query("SELECT * FROM guest WHERE home_id = ?", [homeId], (err, guests) => {
     if (err) return res.status(500).json({ error: "Database error" });
-    if (homeResults.length === 0) return res.status(404).json({ error: "Home not found" });
-
-    const home = homeResults[0];
-    const imageFile = home.image;
-    const address = home.Address || "";
-    const homeType = home.home_type_name || "";
-    const rowInfo = home.row_name || (home.row_number ? `แถว ${home.row_number}` : '');
-
-    // ตรวจสอบว่ามีผู้พักอาศัยในบ้านหรือไม่
-    db.query("SELECT COUNT(*) as guest_count FROM guest WHERE home_id = ?", [homeId], (countErr, countResults) => {
-      if (countErr) return res.status(500).json({ error: "Database error" });
-      const guestCount = countResults[0].guest_count;
-      if (guestCount > 0) {
-        return res.status(400).json({ 
-          message: `ไม่สามารถลบบ้านได้ เนื่องจากมีผู้พักอาศัย ${guestCount} คน` 
-        });
-      }
-
-      // ลบไฟล์รูปภาพใน uploads ถ้ามี
-      if (imageFile) {
-        const imagePath = path.join(__dirname, "uploads", imageFile);
-        fs.unlink(imagePath, err => {
-          if (err && err.code !== "ENOENT") {
-            console.error("Error deleting image file:", imagePath, err);
-          }
-        });
-      }
-
-      // สร้างรายละเอียด log ก่อนลบ
-      let detail = "";
-      if (homeType === 'บ้านพักเรือนแถว' && rowInfo) {
-        detail = `ลบบ้านเลขที่ ${address} ประเภท ${homeType} ${rowInfo}`;
-      } else {
-        detail = `ลบบ้านเลขที่ ${address} ประเภท ${homeType}`;
-      }
-
-      // ✅ บันทึก audit log พร้อม home_type_name และ home_address
-      const logSql = `
-        INSERT INTO guest_logs (
-          guest_id, home_id, action, detail, home_address, home_type_name, created_at
-        ) VALUES (NULL, ?, 'delete_home', ?, ?, ?, NOW())
-      `;
-      db.query(logSql, [homeId, detail, address, homeType], (logErr) => {
-        // อัปเดต guest_logs ที่เกี่ยวข้องให้ home_id เป็น NULL และเติมข้อความ
-        const updateLogsSql = `
-          UPDATE guest_logs 
-          SET home_id = NULL, 
-              detail = CONCAT('[บ้านหลังนี้ถูกลบแล้ว] ', detail)
-          WHERE home_id = ?
-        `;
-        db.query(updateLogsSql, [homeId], (updateLogErr) => {
-          // ลบบ้านจริง
-          db.query("DELETE FROM home WHERE home_id = ?", [homeId], (deleteErr, result) => {
-            if (deleteErr) return res.status(500).json({ error: "Database error" });
-            if (result.affectedRows === 0) return res.status(404).json({ error: "Home not found" });
-            res.json({ 
-              success: true, 
-              message: "ลบบ้านสำเร็จ (ลบรูปภาพและแจ้งใน audit logs แล้ว)" 
-            });
-          });
-        });
-      });
+    if (guests.length > 0) {
+      return res.status(400).json({ message: "ไม่สามารถลบได้: มีผู้พักอาศัยอยู่ในบ้านนี้" });
+    }
+    // ถ้าไม่มีผู้พักอาศัย ให้ลบบ้าน
+    db.query("DELETE FROM home WHERE home_id = ?", [homeId], (err2, result) => {
+      if (err2) return res.status(500).json({ error: "Database error" });
+      res.json({ success: true });
     });
   });
 });
@@ -1599,10 +1416,6 @@ app.delete("/api/guests/:id", (req, res) => {
 app.post("/api/home_types", (req, res) => {
   const { name, description, subunit_type, max_capacity } = req.body;
 
-  if (!name || !name.trim()) {
-    return res.status(400).json({ message: "กรุณากรอกชื่อประเภทบ้าน" });
-  }
-
   db.query(
     "INSERT INTO home_types (name, description, subunit_type, max_capacity) VALUES (?, ?, ?, ?)",
     [name.trim(), description || null, subunit_type || null, max_capacity || null],
@@ -1611,18 +1424,27 @@ app.post("/api/home_types", (req, res) => {
 
       const homeTypeId = result.insertId;
 
-      // สร้าง home_units ตามจำนวน max_capacity
-      let unitInserts = [];
-      for (let i = 1; i <= max_capacity; i++) {
-        const unitName = `${subunit_type} ${i}`;
-        unitInserts.push([homeTypeId, i, unitName]);
-      }
+      // หา subunit_home ที่ตรงกับ subunit_type
       db.query(
-        "INSERT INTO home_units (home_type_id, unit_number, unit_name) VALUES ?",
-        [unitInserts],
-        (unitErr) => {
-          if (unitErr) return res.status(500).json({ error: "Database error" });
-          return res.json({ success: true, id: homeTypeId });
+        "SELECT id FROM subunit_home WHERE subunit_type = ?",
+        [subunit_type],
+        (subErr, subResults) => {
+          if (subErr || subResults.length === 0) return res.status(500).json({ error: "ไม่พบ subunit_home" });
+
+          const subunitId = subResults[0].id;
+          let unitInserts = [];
+          for (let i = 1; i <= max_capacity; i++) {
+            const unitName = `${subunit_type} ${i}`;
+            unitInserts.push([homeTypeId, i, unitName, subunitId]);
+          }
+          db.query(
+            "INSERT INTO home_units (home_type_id, unit_number, unit_name, subunit_id) VALUES ?",
+            [unitInserts],
+            (unitErr) => {
+              if (unitErr) return res.status(500).json({ error: "Database error" });
+              return res.json({ success: true, id: homeTypeId });
+            }
+          );
         }
       );
     }

@@ -229,9 +229,6 @@ export default function EditHomeModal({ isOpen, onClose, homeId, onUpdate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form submitted!");
-    console.log("Form data:", formData);
-    
     setLoading(true);
 
     try {
@@ -269,7 +266,7 @@ export default function EditHomeModal({ isOpen, onClose, homeId, onUpdate }) {
         }
       });
       
-      onUpdate();
+      if (onUpdate) onUpdate();
       
       setTimeout(() => {
         onClose();
