@@ -7,8 +7,7 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess }) {
   const [units, setUnits] = useState([]);
   const [form, setForm] = useState({
     home_type_id: "",
-    subunit_id: "",
-    status_id: ""
+    home_unit_id: ""
   });
   const [addressStart, setAddressStart] = useState("");
   const [addressEnd, setAddressEnd] = useState("");
@@ -59,7 +58,7 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess }) {
 
       const formData = new FormData();
       formData.append("home_type_id", form.home_type_id);
-      formData.append("subunit_id", form.subunit_id);
+      formData.append("home_unit_id", form.home_unit_id); // ส่ง home_unit_id ไป backend
       formData.append("status_id", statusId);
       if (image) formData.append("image", image);
       formData.append("addresses", JSON.stringify(addresses));
@@ -69,7 +68,7 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess }) {
       });
 
       toast.success("เพิ่มบ้านสำเร็จ!");
-      setForm({ home_type_id: "", subunit_id: "" });
+      setForm({ home_type_id: "", home_unit_id: "" });
       setAddressStart("");
       setAddressEnd("");
       setImage(null);
@@ -131,9 +130,9 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess }) {
           </div>
           <div style={{ display: "flex", gap: 18, marginBottom: 18 }}>
             <label style={{ width: 140, fontWeight: 500, alignSelf: "center" }}>
-              พื้นที่/แถว/ชั้น/อาคาร <span style={{ color: "#ef4444" }}>*</span>
+              หน่วยบ้าน <span style={{ color: "#ef4444" }}>*</span>
             </label>
-            <select name="subunit_id" value={form.subunit_id} onChange={handleChange} required
+            <select name="home_unit_id" value={form.home_unit_id} onChange={handleChange} required
               style={{
                 flex: 1,
                 padding: "10px 14px",
@@ -141,7 +140,7 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess }) {
                 border: "1px solid #e5e7eb",
                 fontSize: "16px"
               }}>
-              <option value="">เลือกพื้นที่</option>
+              <option value="">เลือกหน่วยบ้าน</option>
               {units.map(u => (
                 <option key={u.id} value={u.id}>{u.unit_name}</option>
               ))}

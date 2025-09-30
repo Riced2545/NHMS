@@ -21,8 +21,7 @@ export default function Addtype() {
     name: "",
     description: "",
     max_capacity: "",
-    subunit_type: "",
-    icon: ""
+    subunit_type: ""
   });
   const [homeTypes, setHomeTypes] = useState([]);
   const [customSubunit, setCustomSubunit] = useState("");
@@ -67,13 +66,12 @@ export default function Addtype() {
     }
 
     try {
-      // สร้างประเภทบ้านใหม่
+      // สร้างประเภทบ้านใหม่ (ไม่ส่ง icon)
       const res = await axios.post("http://localhost:3001/api/home_types", {
         name: form.name.trim(),
         description: form.description.trim(),
         subunit_type: form.subunit_type || null,
-        max_capacity: maxCapacity,
-        icon: form.icon || null
+        max_capacity: maxCapacity
       });
 
       toast.success("เพิ่มประเภทบ้านสำเร็จ!");
@@ -81,8 +79,7 @@ export default function Addtype() {
         name: "",
         description: "",
         max_capacity: "",
-        subunit_type: "",
-        icon: ""
+        subunit_type: ""
       });
       loadHomeTypes();
     } catch (error) {
@@ -249,7 +246,8 @@ export default function Addtype() {
                   />
                 </div>
               )}
-              <div className="form-group">
+              {/* ลบฟิลด์ไอคอนออก */}
+              {/* <div className="form-group">
                 <label className="form-label">ไอคอน (emoji)</label>
                 <input
                   type="text"
@@ -260,7 +258,7 @@ export default function Addtype() {
                   placeholder="เช่น 🏠"
                   maxLength={2}
                 />
-              </div>
+              </div> */}
               <div className={styles.buttonGroup}>
                 <button type="submit" className={styles.btnPrimary}>
                   เพิ่มประเภทบ้าน

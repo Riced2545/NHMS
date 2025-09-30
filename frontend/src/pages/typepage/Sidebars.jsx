@@ -49,13 +49,34 @@ export default function Sidebar({ reloadTrigger }) {
     async function fetchUnits() {
       let typeUnitMap = {};
       for (const type of homeTypes) {
+        // ดึง home_units ของแต่ละประเภท
         const res = await axios.get(`http://localhost:3001/api/home_units/${type.id}`);
-        typeUnitMap[type.id] = res.data; // เก็บ array home_units ของแต่ละประเภท
+        typeUnitMap[type.id] = res.data; // [{id, unit_name, ...}]
       }
       setHomeUnitsByType(typeUnitMap);
     }
     if (homeTypes.length > 0) fetchUnits();
   }, [homeTypes]);
+
+  useEffect(() => {
+    async function fetchUnitStats() {
+      let stats = {};
+      for (const type of homeTypes) {
+        if (homeUnitsByType[type.id]) {
+          for (const unit of homeUnitsByType[type.id]) {
+            // ใช้ home_unit_id ในการดึงบ้านแต่ละ unit
+            const res = await axios.get(`http://localhost:3001/api/homes?unit=${unit.id}`);
+            const homes = res.data || [];
+            const total = homes.length;
+            const vacant = homes.filter(h => !h.guest_count || h.guest_count === 0).length;
+            stats[unit.id] = { total, vacant };
+          }
+        }
+      }
+      setUnitHomeStats(stats);
+    }
+    fetchUnitStats();
+  }, [homeTypes, homeUnitsByType, reloadTrigger]);
 
   const getHomeTypeIcon = (homeTypeName) => {
     switch(homeTypeName) {
@@ -75,25 +96,6 @@ export default function Sidebar({ reloadTrigger }) {
   const searchParams = new URLSearchParams(location.search);
   const currentHomeType = searchParams.get('type');
   const currentPage = location.pathname.split('/').pop();
-
-  useEffect(() => {
-    async function fetchUnitStats() {
-      let stats = {};
-      for (const type of homeTypes) {
-        if (homeUnitsByType[type.id]) {
-          for (const unit of homeUnitsByType[type.id]) {
-            const res = await axios.get(`http://localhost:3001/api/homes?unit=${unit.id}`);
-            const homes = res.data || [];
-            const total = homes.length;
-            const vacant = homes.filter(h => !h.guest_count || h.guest_count === 0).length;
-            stats[unit.id] = { total, vacant };
-          }
-        }
-      }
-      setUnitHomeStats(stats);
-    }
-    fetchUnitStats();
-  }, [homeTypes, homeUnitsByType, reloadTrigger]);
 
   const renderUnitStats = (unitId) => {
     const stats = unitHomeStats[unitId];
@@ -192,7 +194,7 @@ export default function Sidebar({ reloadTrigger }) {
             {openTypeId === type.id && homeUnitsByType[type.id] && (
               <div style={{ paddingLeft: 32, paddingTop: 4 }}>
                 {homeUnitsByType[type.id].length === 0 ? (
-                  <div style={{ color: "#9ca3af", fontSize: 13 }}>ไม่มีพื้นที่</div>
+                  <div style={{ color: "#9ca3af", fontSize: 13 }}>ไม่มีหน่วยบ้าน</div>
                 ) : (
                   homeUnitsByType[type.id].map(unit => (
                     <button

@@ -32,17 +32,21 @@ export default function GenericHomePage() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      let filtered = [];
       if (unitId) {
+        // ดึงชื่อ unit
         const unitRes = await axios.get(`http://localhost:3001/api/home_unit/${unitId}`);
         setUnitName(unitRes.data?.unit_name || "");
+        // ดึงบ้านเฉพาะ unit นี้
+        const homeRes = await axios.get(`http://localhost:3001/api/homes?unit=${unitId}`);
+        filtered = homeRes.data;
+      } else {
+        // ดึงบ้านทั้งหมด
+        const homeRes = await axios.get("http://localhost:3001/api/homes");
+        filtered = homeRes.data;
       }
-      const homeRes = await axios.get("http://localhost:3001/api/homes");
-      let filtered = homeRes.data;
       if (homeTypeName) {
         filtered = filtered.filter(h => h.hType === homeTypeName);
-      }
-      if (unitId) {
-        filtered = filtered.filter(h => String(h.unit_id) === String(unitId));
       }
       setHomes(filtered);
     } catch {
@@ -302,7 +306,7 @@ export default function GenericHomePage() {
             flex: 1,
             cursor: "pointer"
           }}
-          onClick={() => navigate(`/home-detail/${home.home_id}`)}
+          onClick={() => navigate(`/guestview/${home.home_id}`)}
         >
           รายละเอียด
         </button>
