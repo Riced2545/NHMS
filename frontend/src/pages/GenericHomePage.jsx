@@ -90,30 +90,35 @@ export default function GenericHomePage() {
       <div style={{ display: "flex", minHeight: "calc(100vh - 84px)" }}>
         <Sidebar reloadTrigger={sidebarReload} />
         <div style={{ flex: 1, padding: "32px" }}>
-          {/* ปุ่มเพิ่มบ้านขวาบน */}
-          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: 16 }}>
-            <button
-              onClick={() => setShowAddHome(true)}
-              style={{
-                background: "#2563eb",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                padding: "10px 24px",
-                fontWeight: 500,
-                fontSize: 16,
-                cursor: "pointer",
-                boxShadow: "0 2px 8px rgba(59,130,246,0.12)"
-              }}
-            >
-              + เพิ่มบ้าน
-            </button>
-          </div>
-          <h2 style={{ fontSize: 28, fontWeight: "bold", marginBottom: 24 }}>
-            {(homeTypeName && unitName)
-              ? `${homeTypeName} ${unitName}`
-              : (homeTypeName || unitName || "เลือกประเภทบ้าน")}
-          </h2>
+          {/* ส่วนหัว: ชื่อประเภทบ้าน + ปุ่มเพิ่มบ้าน */}
+<div style={{
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginBottom: 24
+}}>
+  <h2 style={{ fontSize: 28, fontWeight: "bold", margin: 0 }}>
+    {(homeTypeName && unitName)
+      ? `${homeTypeName} ${unitName}`
+      : (homeTypeName || unitName || "เลือกประเภทบ้าน")}
+  </h2>
+  <button
+    onClick={() => setShowAddHome(true)}
+    style={{
+      background: "#2563eb",
+      color: "white",
+      border: "none",
+      borderRadius: "8px",
+      padding: "10px 24px",
+      fontWeight: 500,
+      fontSize: 16,
+      cursor: "pointer",
+      boxShadow: "0 2px 8px rgba(59,130,246,0.12)"
+    }}
+  >
+    + เพิ่มบ้าน
+  </button>
+</div>
           <ToastContainer />
           {/* Modal เพิ่มบ้าน */}
           <AddHomeModal
@@ -262,7 +267,7 @@ export default function GenericHomePage() {
           marginBottom: 16,
           letterSpacing: "1px"
         }}>
-          เลขที่: {home.Address}
+          หมายเลข: {home.Address}
         </div>
         <div style={{ fontSize: "16px", color: "#fff", marginBottom: 6 }}>
           ผู้พักอาศัย: {guestCount} คน

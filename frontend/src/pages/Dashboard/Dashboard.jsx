@@ -373,7 +373,7 @@ const pieColors = filteredRankStats.map(() => getRandomColorFromBase());
         boxShadow: "0 1px 2px #e5e7eb"
       }}
     >
-      {homeTypes.map(type => (
+      {ALL_HOME_TYPES.map(type => (
         <option key={type} value={type}>{type}</option>
       ))}
     </select>
@@ -394,7 +394,7 @@ const pieColors = filteredRankStats.map(() => getRandomColorFromBase());
         boxShadow: "0 1px 2px #e5e7eb"
       }}
     >
-      {titles.map(title => (
+      {ALL_TITLES.map(title => (
         <option key={title} value={title}>{title}</option>
       ))}
     </select>
@@ -415,7 +415,7 @@ const pieColors = filteredRankStats.map(() => getRandomColorFromBase());
         boxShadow: "0 1px 2px #e5e7eb"
       }}
     >
-      {ranks.map(rank => (
+      {ALL_RANKS.map(rank => (
         <option key={rank} value={rank}>{rank}</option>
       ))}
     </select>
@@ -801,8 +801,71 @@ const pieColors = filteredRankStats.map(() => getRandomColorFromBase());
 
         {/* แถวที่ 3: กิจกรรมล่าสุด (เต็มความกว้าง) */}
           {/* กิจกรรมล่าสุดจาก Database */}
+          <div style={{
+            backgroundColor: "#fff",
+            borderRadius: "18px",
+            padding: "24px",
+            boxShadow: "0 4px 24px #e5e7eb",
+            gridColumn: "1 / -1"
+          }}>
+            <h3 style={{ marginBottom: "16px", color: "#1f2937" }}>📋 กิจกรรมล่าสุด</h3>
+            <div style={{ 
+              maxHeight: "400px",
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px"
+            }}>
+              {recentActivities.map(activity => (
+                <div key={activity.id} style={{
+                  padding: "12px",
+                  borderRadius: "8px",
+                  backgroundColor: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  position: "relative",
+                  overflow: "hidden",
+                  transition: "transform 0.2s"
+                }}>
+                  {/* ไอคอนกิจกรรม */}
+                  <div style={{
+                    position: "absolute",
+                    top: "12px",
+                    right: "12px",
+                    fontSize: "24px",
+                    lineHeight: "1",
+                    color: pieColors[Math.floor(Math.random() * pieColors.length)]
+                  }}>
+                    {getActivityIcon(activity.type)}
+                  </div>
+                  
+                  {/* ข้อความกิจกรรม */}
+                  <div style={{ 
+                    fontSize: "14px",
+                    color: "#374151",
+                    fontWeight: "500",
+                    lineHeight: "1.4"
+                  }}>
+                    <span style={{ fontWeight: "bold", color: "#1f2937" }}>{activity.user}</span> {activity.action} {activity.location}
+                  </div>
+                  
+                  {/* เวลา */}
+                  <div style={{ 
+                    fontSize: "12px",
+                    color: "#6b7280",
+                    marginTop: "4px",
+                    lineHeight: "1.4"
+                  }}>
+                    {activity.time}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
+        </div>
+      </div>
   );
 }
 
@@ -843,3 +906,35 @@ function getActivityIcon(type) {
 function getRandomColor() {
   return "#" + Math.floor(Math.random()*16777215).toString(16).padStart(6, "0");
 }
+
+// ตัวเลือก fix สำหรับ dropdown
+const ALL_HOME_TYPES = [
+  "ทั้งหมด",
+  "บ้านพักแฝด",
+  "บ้านพักเรือนแถว",
+  "แฟลตสัญญาบัตร",
+  "บ้านพักลูกจ้าง",
+  "คอนโด"
+];
+const ALL_TITLES = [
+  "ทั้งหมด",
+  "นาวาเอก",
+  "นาวาโท",
+  "นาวาตรี",
+  "พันจ่าเอก",
+  "พันจ่าโท",
+  "พันจ่าตรี",
+  "จ่าเอก",
+  "จ่าโท",
+  "จ่าตรี",
+  "อื่นๆ"
+];
+const ALL_RANKS = [
+  "ทั้งหมด",
+  "นายทหาร",
+  "นายสิบ",
+  "พลทหาร",
+  "ข้าราชการ",
+  "ลูกจ้าง",
+  "อื่นๆ"
+];

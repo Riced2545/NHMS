@@ -224,7 +224,7 @@ export default function Sidebar({ reloadTrigger }) {
                         fontSize: 13
                       }}>
                         {unitHomeStats[unit.id]
-                          ? `${unitHomeStats[unit.id].total - unitHomeStats[unit.id].vacant}/${unitHomeStats[unit.id].total} ว่าง ${unitHomeStats[unit.id].vacant} หลัง`
+                          ? `จำนวน ${unitHomeStats[unit.id].total} หลัง ว่าง ${unitHomeStats[unit.id].vacant} หลัง`
                           : "-"}
                       </span>
                     </button>

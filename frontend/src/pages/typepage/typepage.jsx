@@ -32,15 +32,37 @@ const getCardColor = (homeTypeName, index) => {
 export default function TypePage() {
   const [homeTypes, setHomeTypes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [homes, setHomes] = useState([]);
+  const [homeUnits, setHomeUnits] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
     setLoading(true);
-    axios.get("http://localhost:3001/api/home_types")
-      .then(res => {
-        setHomeTypes(res.data);
+    Promise.all([
+      axios.get("http://localhost:3001/api/home_types"),
+      axios.get("http://localhost:3001/api/homes")
+    ])
+      .then(([typeRes, homeRes]) => {
+        setHomeTypes(typeRes.data);
+        setHomes(homeRes.data);
+        // ดึง home_units ของแต่ละประเภทบ้านพัก
+        Promise.all(
+          typeRes.data.map(type =>
+            axios.get(`http://localhost:3001/api/home_units/${type.id}`)
+          )
+        ).then(unitResArr => {
+          const unitsMap = {};
+          typeRes.data.forEach((type, idx) => {
+            unitsMap[type.id] = unitResArr[idx].data;
+          });
+          setHomeUnits(unitsMap);
+        });
       })
-      .catch(() => setHomeTypes([]))
+      .catch(() => {
+        setHomeTypes([]);
+        setHomes([]);
+        setHomeUnits({});
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -81,7 +103,14 @@ export default function TypePage() {
           </div>
 
           {/* ปุ่มเข้าหน้าจัดการประเภทบ้านพัก */}
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+          <div
+            style={{
+              position: "fixed",
+              top: 100,
+              right: 24,
+              zIndex: 1000
+            }}
+          >
             <button
               onClick={() => navigate("/addtype")}
               style={{
@@ -123,6 +152,8 @@ export default function TypePage() {
             ) : (
               homeTypes.map((type, index) => {
                 const cardColors = getCardColor(type.name, index);
+                const units = homeUnits[type.id] || [];
+
                 return (
                   <div
                     key={type.id}
@@ -141,7 +172,7 @@ export default function TypePage() {
                       transition: "transform 0.2s cubic-bezier(.4,2,.6,1), box-shadow 0.2s",
                       animationDelay: `${index * 0.1}s`
                     }}
-                    onClick={() => navigate(`/homes?type=${encodeURIComponent(type.name)}`)}
+                 
                   >
                     <div className="home-icon" style={{ fontSize: 64, marginBottom: 20 }}>
                       {getHomeTypeIcon(type.name)}
@@ -178,7 +209,65 @@ export default function TypePage() {
                       marginBottom: 8,
                       color: "#374151"
                     }}>
-                      จำนวนสูงสุด: <b style={{ color: cardColors.text }}>{type.max_capacity || "-"} {type.subunit_name || "-"}</b>
+                      จำนวน: <b style={{ color: cardColors.text }}>{type.max_capacity || "-"} {type.subunit_name || "-"}</b>
+                    </div>
+                    {/* แสดงจำนวนบ้านแต่ละ home_unit */}
+                    <div style={{
+                      fontSize: 14,
+                      marginBottom: 8,
+                      color: "#374151",
+                      width: "100%"
+                    }}>
+                      <b style={{ color: cardColors.text }}>บ้านแต่ละหน่วย:</b>
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: "4px 16px",
+                        margin: "8px 0 0 0",
+                        padding: 0,
+                        width: "100%",
+                        maxHeight: 120, // ปรับความสูงให้ scroll ได้
+                        overflowY: units.length > 4 ? "auto" : "visible"
+                      }}>
+                        {units.length === 0 ? (
+                          <div style={{ color: "#ef4444", width: "100%" }}>ไม่มีหน่วยบ้าน</div>
+                        ) : (
+                          units.map((unit, idx) => {
+                            const homesInUnit = homes.filter(h => h.home_unit_id === unit.id);
+                            const totalHomes = homesInUnit.length;
+                            const vacantHomes = homesInUnit.filter(h => h.status_id === 2).length;
+                            return (
+                              <div
+                                key={unit.id}
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "row",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  width: "100%",
+                                  marginBottom: 2
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    color: "#2563eb",
+                                    fontWeight: 600,
+                                    textDecoration: "underline",
+                                    cursor: "pointer"
+                                  }}
+                                  onClick={() => navigate(`/homes?type=${encodeURIComponent(type.name)}&unit=${unit.id}`)}
+                                  title={`ดูบ้านใน ${unit.unit_name}`}
+                                >
+                                  {unit.unit_name} : {totalHomes} หลัง
+                                </span>
+                                <span style={{ color: "#22c55e", fontWeight: 600 }}>
+                                  ว่าง {vacantHomes} หลัง
+                                </span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
