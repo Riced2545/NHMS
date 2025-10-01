@@ -88,7 +88,6 @@ export default function TypePage() {
               fontSize: "35px",
               padding: "18px 48px",
               borderRadius: "8px",
-              border: "6px solid #31c3e7",
               fontFamily: "'Press Start 2P', 'Courier New', monospace",
               letterSpacing: "2px",
               userSelect: "none",
@@ -98,7 +97,7 @@ export default function TypePage() {
               textAlign: "center",
               maxWidth: "90%",
             }}>
-              ระบบจัดการบ้านพักกรมแพทย์ทหารเรือ (พื้นที่บุคคโล)
+              จัดการบ้านพักกรมแพทย์ทหารเรือ
             </div>
           </div>
 

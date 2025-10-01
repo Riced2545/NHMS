@@ -19,10 +19,10 @@ export default function LoginForm({ onLogin }) {
         onLogin();
         window.location.href = "/dashboard"; // หรือ window.location.reload();
       } else {
-        setError("Login failed: " + (res.data.error || "Server error"));
+        setError("Login failed: " + (res.data.error || "รหัสไม่ถูกต้อง"));
       }
     } catch (err) {
-      setError("Login failed: " + (err.response?.data?.error || "Server error"));
+      setError("Login failed: " + (err.response?.data?.error || "รหัสไม่ถูกต้อง"));
     }
   };
 

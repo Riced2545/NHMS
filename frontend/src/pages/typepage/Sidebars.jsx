@@ -109,7 +109,7 @@ export default function Sidebar({ reloadTrigger }) {
   };
 
   return (
-    <div style={{ width: '320px', background: 'white', borderRight: '1px solid #e5e7eb', padding: '24px 0', minHeight: '100%' }}>
+    <div style={{ width: '305px', background: 'white', borderRight: '1px solid #e5e7eb', padding: '24px 0', minHeight: '100%' }}>
       <div style={{
         padding: '0 24px',
         marginBottom: '32px',
