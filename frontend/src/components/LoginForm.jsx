@@ -64,24 +64,12 @@ export default function LoginForm({ onLogin }) {
               required
             />
           </div>
-          <div className="mb-3 text-end">
-            <a href="#" className="text-decoration-none" style={{ color: "#7c3aed" }}>ลืมรหัสผ่าน?</a>
-          </div>
           {error && <div className="text-danger text-center mb-2">{error}</div>}
           <button type="submit" className="btn w-100" style={{ background: "#a78bfa", color: "#fff", fontWeight: "bold" }}>
             เข้าสู่ระบบ
           </button>
         </form>
         <div className="text-center mt-3">
-          <span>ยังไม่มีบัญชี? </span>
-          <button
-            type="button"
-            className="btn btn-link p-0"
-            style={{ color: "#7c3aed", textDecoration: "underline" }}
-            onClick={() => navigate("/register")}
-          >
-            สมัครสมาชิกที่นี่
-          </button>
         </div>
       </div>
     </div>

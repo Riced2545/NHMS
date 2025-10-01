@@ -109,7 +109,7 @@ export default function Sidebar({ reloadTrigger }) {
   };
 
   return (
-    <div style={{ width: '260px', background: 'white', borderRight: '1px solid #e5e7eb', padding: '24px 0', minHeight: '100%' }}>
+    <div style={{ width: '320px', background: 'white', borderRight: '1px solid #e5e7eb', padding: '24px 0', minHeight: '100%' }}>
       <div style={{
         padding: '0 24px',
         marginBottom: '32px',
@@ -146,7 +146,7 @@ export default function Sidebar({ reloadTrigger }) {
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            fontSize: '14px',
+            fontSize: '16px',
             fontWeight: currentPage === 'home' ? '600' : '500'
           }}
         >
@@ -170,7 +170,7 @@ export default function Sidebar({ reloadTrigger }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
-                fontSize: '14px',
+                fontSize: '16px',
                 fontWeight: currentHomeType === type.name ? '600' : '500',
                 position: 'relative'
               }}
@@ -184,7 +184,7 @@ export default function Sidebar({ reloadTrigger }) {
                 marginLeft: 'auto',
                 color: '#64748b',
                 fontWeight: 500,
-                fontSize: 13
+                fontSize: 16
               }}>
                 {(homeUnitsByType[type.id]?.length || 0)} {type.subunit_type || "พื้นที่"}
               </span>
@@ -207,7 +207,7 @@ export default function Sidebar({ reloadTrigger }) {
                         background: 'transparent',
                         border: 'none',
                         color: '#374151',
-                        fontSize: 13,
+                        fontSize: 16,
                         padding: '6px 0 6px 8px',
                         cursor: 'pointer',
                         justifyContent: 'space-between'
@@ -221,7 +221,7 @@ export default function Sidebar({ reloadTrigger }) {
                         marginLeft: '8px',
                         color: '#2563eb',
                         fontWeight: 600,
-                        fontSize: 13
+                        fontSize: 15
                       }}>
                         {unitHomeStats[unit.id]
                           ? `จำนวน ${unitHomeStats[unit.id].total} หลัง ว่าง ${unitHomeStats[unit.id].vacant} หลัง`

@@ -136,7 +136,7 @@ export default function TypePage() {
             flexWrap: "wrap",
             justifyContent: "center",
             gap: 32,
-            marginTop: 64,
+            marginTop: 44,
             width: "100%",
             marginLeft: 0,
             marginRight: 0,
@@ -162,7 +162,7 @@ export default function TypePage() {
                       border: `2px solid ${cardColors.border}`,
                       borderRadius: 18,
                       boxShadow: "0 4px 24px #e5e7eb",
-                      width: 550,
+                      width: 350,
                       padding: "46px 32px",
                       display: "flex",
                       flexDirection: "column",
@@ -180,7 +180,7 @@ export default function TypePage() {
                     <h3 style={{
                       color: cardColors.text,
                       margin: "0 0 16px 0",
-                      fontSize: 20,
+                      fontSize: 26,
                       fontWeight: "600",
                       textAlign: "center"
                     }}>

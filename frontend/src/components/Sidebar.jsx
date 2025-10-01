@@ -65,7 +65,7 @@ export default function Navbar() {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <img src="/anchor.png" alt="logo" style={{ width: 36, height: 36 }} />
-        <span style={{ fontWeight: "bold", fontSize: 22 }}>Medicine Smart House ( MSH )</span>
+        <span style={{ fontWeight: "bold", fontSize: 22 }}>ระบบจัดการบ้านพักกรมแพทย์ทหารเรือ (พื้นที่บุคคโล)</span>
       </div>
       
       <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
@@ -246,6 +246,23 @@ export default function Navbar() {
               {/* Menu Items */}
               <div style={{ padding: "8px 0" }}>
                 <hr style={{ margin: "8px 0", border: "none", borderTop: "1px solid #e5e7eb" }} />
+
+
+                {role_id === "1" && (
+                  <div
+                    style={{
+                      padding: "8px 16px",
+                      cursor: "pointer",
+                      fontSize: 14,
+                      transition: "background-color 0.2s",
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = "#fef2f2"}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = "transparent"}
+                    onClick={() => navigate("/manageuser")}
+                  >
+                    จัดการบัญชี
+                  </div>
+                )}
 
                 <div
                   style={{

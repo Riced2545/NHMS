@@ -173,8 +173,8 @@ db.query(`
     dob DATE,
     pos VARCHAR(255),
     income INT,
-    phone VARCHAR(12),
-    job_phone VARCHAR(11),
+    phone INT(10),
+    job_phone INT(10),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (home_id) REFERENCES home(home_id),
     FOREIGN KEY (rank_id) REFERENCES ranks(id)
@@ -359,7 +359,7 @@ db.query("SELECT * FROM home_types", (err, types) => {
     title VARCHAR(50),
     name VARCHAR(255),
     lname VARCHAR(255),
-    phone VARCHAR(20),
+    phone INT(10),
     total_score INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`);
@@ -381,11 +381,11 @@ db.query(`
 
 // Register (แก้ไขให้รับข้อมูล profile)
 app.post("/api/register", (req, res) => {
-  const { username, password, firstName, lastName, gender } = req.body;
+  const { username, password, role_id } = req.body;
   const hash = bcrypt.hashSync(password, 10);
   db.query(
-    "INSERT INTO users (username, password, role_id) VALUES (?, ?, 2)", // role_id = 2 สำหรับ user ทั่วไป
-    [username, hash],
+    "INSERT INTO users (username, password, role_id) VALUES (?, ?, ?)",
+    [username, hash, role_id],
     (err, result) => {
       if (err) {
         if (err.code === "ER_DUP_ENTRY") return res.status(400).json({ error: "Username already exists" });
@@ -730,9 +730,12 @@ app.delete("/api/homes/:id", (req, res) => {
       return res.status(400).json({ message: "ไม่สามารถลบได้: มีผู้พักอาศัยอยู่ในบ้านนี้" });
     }
     // ถ้าไม่มีผู้พักอาศัย ให้ลบบ้าน
-    db.query("DELETE FROM home WHERE home_id = ?", [homeId], (err2, result) => {
-      if (err2) return res.status(500).json({ error: "Database error" });
-      res.json({ success: true });
+    db.query("DELETE FROM guest_logs WHERE home_id = ?", [homeId], (err) => {
+      // แล้วค่อยลบบ้าน
+      db.query("DELETE FROM home WHERE home_id = ?", [homeId], (err2, result) => {
+        if (err2) return res.status(500).json({ error: "Database error" });
+        res.json({ success: true });
+      });
     });
   });
 });
@@ -1693,7 +1696,22 @@ app.post("/api/score", (req, res) => {
 });
 
 app.get("/api/viewscore", (req, res) => {
-  db.query("SELECT * FROM guest_scores ORDER BY total_score DESC", (err, results) => {
+  const { q, rank } = req.query;
+  let sql = "SELECT * FROM guest_scores WHERE 1";
+  let params = [];
+
+  if (q) {
+    sql += " AND (name LIKE ? OR lname LIKE ?)";
+    params.push(`%${q}%`, `%${q}%`);
+  }
+  if (rank) {
+    sql += " AND rank_id = ?";
+    params.push(rank);
+  }
+
+  sql += " ORDER BY total_score DESC, created_at ASC";
+
+  db.query(sql, params, (err, results) => {
     if (err) return res.status(500).json({ error: "Database error" });
     res.json(results);
   });
@@ -1847,5 +1865,39 @@ app.get("/api/subunit_home", (req, res) => {
   db.query("SELECT * FROM subunit_home ORDER BY id ASC", (err, results) => {
     if (err) return res.status(500).json({ error: "Database error" });
     res.json(results);
+  });
+});
+
+// ดึง users ทั้งหมด
+app.get("/api/users", (req, res) => {
+  db.query("SELECT id, username, role_id FROM users ORDER BY id ASC", (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    res.json(results);
+  });
+});
+
+// แก้ไข user
+app.put("/api/users/:id", (req, res) => {
+  const { username, role_id, password } = req.body;
+  let sql = "UPDATE users SET username = ?, role_id = ? ";
+  let params = [username, role_id];
+  if (password && password.length > 0) {
+    const hash = bcrypt.hashSync(password, 10);
+    sql += ", password = ? ";
+    params.push(hash);
+  }
+  sql += "WHERE id = ?";
+  params.push(req.params.id);
+  db.query(sql, params, (err) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    res.json({ success: true });
+  });
+});
+
+// ลบ user
+app.delete("/api/users/:id", (req, res) => {
+  db.query("DELETE FROM users WHERE id = ?", [req.params.id], (err) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    res.json({ success: true });
   });
 });

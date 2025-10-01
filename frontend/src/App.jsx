@@ -30,6 +30,7 @@ import TwinHomeAllPage from "./pages/typepage/twinhome/all";
 import GenericHomePage from './pages/GenericHomePage';
 import Lobby from "./pages/lobby/lobby.jsx";
 import HomeTypeSelectPage from "./pages/typepage/HomeTypeSelectPage.jsx";
+import ManageUser from "./components/manageuser.jsx"
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(isAuthenticated());
@@ -80,6 +81,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard/>} />
         <Route path="/select-filter" element={<HomeTypeSelectPage />} />
         <Route path="/hometype" element={<HomeTypeSelectPage />} />
+        <Route path="/manageuser" element={<ManageUser />} />
 
       </Routes>
     </BrowserRouter>

@@ -10,6 +10,7 @@ export default function ViewScore() {
   const [selectedRank, setSelectedRank] = useState("");
   const [ranks, setRanks] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [personType, setPersonType] = useState(""); // เพิ่ม state สำหรับประเภทบุคคล
   const itemsPerPage = 10;
 
   // โหลดข้อมูลคะแนน
@@ -21,7 +22,7 @@ export default function ViewScore() {
   // โหลดข้อมูลยศสำหรับ filter
   useEffect(() => {
     axios.get("http://localhost:3001/api/ranks")
-      .then(res => setRanks(res.data.map(r => r.name)))
+      .then(res => setRanks(res.data)) // เก็บทั้ง id และ name
       .catch(() => setRanks([]));
   }, []);
 
@@ -41,18 +42,54 @@ export default function ViewScore() {
       .finally(() => setLoading(false));
   };
 
+  // ฟังก์ชันหา name จาก rank_id
+  const getRankName = (item) => {
+    if (item.title) return item.title;
+    const found = ranks.find(r => r.id === item.rank_id);
+    return found ? found.name : item.rank_id || "-";
+  };
+
+  // ฟังก์ชันแบ่งประเภทบุคคล
+  const getPersonType = (item) => {
+    if (item.rank_id >= 1 && item.rank_id <= 6) return "สัญญาบัตร";
+    if (item.rank_id >= 7 && item.rank_id <= 12) return "จ่า";
+    if (["นาย", "นาง", "นางสาว"].includes(item.title)) return "ลูกจ้าง";
+    return "";
+  };
+
+  // กรองข้อมูลตามประเภทบุคคล
+  const filteredScores = scores.filter(item => {
+    if (!personType) return true;
+    return getPersonType(item) === personType;
+  });
+
   // Pagination logic
-  const paginatedScores = scores.slice(
+  const paginatedScores = filteredScores.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  const totalPages = Math.ceil(scores.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredScores.length / itemsPerPage);
 
   const handleSearch = e => {
     e.preventDefault();
     setCurrentPage(1);
     fetchScores();
   };
+
+  function formatThaiDate(dateString) {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    const months = [
+      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+      "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear() + 543;
+    const hour = date.getHours().toString().padStart(2, "0");
+    const minute = date.getMinutes().toString().padStart(2, "0");
+    return `${day} ${month} ${year} ${hour}:${minute} น.`;
+  }
 
   return (
     <div className="search-bg dashboard-container">
@@ -68,16 +105,17 @@ export default function ViewScore() {
             onChange={e => setKeyword(e.target.value)}
             className="search-input"
           />
+          {/* เพิ่ม dropdown ประเภทบุคคล */}
           <select
-            value={selectedRank}
-            onChange={e => setSelectedRank(e.target.value)}
+            value={personType}
+            onChange={e => { setPersonType(e.target.value); setCurrentPage(1); }}
             className="search-input"
             style={{ maxWidth: 200 }}
           >
-            <option value="">ทุกยศ</option>
-            {ranks.map(rank => (
-              <option key={rank} value={rank}>{rank}</option>
-            ))}
+            <option value="">กลุ่มยศ</option>
+            <option value="สัญญาบัตร">สัญญาบัตร</option>
+            <option value="จ่า">จ่า</option>
+            <option value="ลูกจ้าง">ลูกจ้าง</option>
           </select>
           <button
             type="submit"
@@ -88,10 +126,10 @@ export default function ViewScore() {
           </button>
         </form>
         <div className="search-results">
-          {scores.length === 0 && !loading && (
+          {filteredScores.length === 0 && !loading && (
             <div className="search-no-data">ไม่มีข้อมูลผู้ลงคะแนน</div>
           )}
-          {scores.length > 0 && (
+          {filteredScores.length > 0 && (
             <>
               <table className="search-table">
                 <thead>
@@ -102,17 +140,19 @@ export default function ViewScore() {
                     <th>นามสกุล</th>
                     <th>เบอร์โทร</th>
                     <th>คะแนนรวม</th>
+                    <th>วันและเวลาที่ลงคะแนน</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedScores.map((item, idx) => (
                     <tr key={item.id}>
                       <td>{(currentPage - 1) * itemsPerPage + idx + 1}</td>
-                      <td>{item.title || item.rank_id || "-"}</td>
+                      <td>{getRankName(item)}</td>
                       <td>{item.name}</td>
                       <td>{item.lname}</td>
                       <td>{item.phone}</td>
                       <td>{item.total_score}</td>
+                       <td>{formatThaiDate(item.created_at)}</td>
                     </tr>
                   ))}
                 </tbody>
