@@ -89,9 +89,9 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
         setMovingGuest(null);
         setMoveReason("");
         toast.success("บันทึกประวัติการออกเรียบร้อยแล้ว!");
-        // setTimeout(() => {
-        //   window.location.reload();
-        // }, 1200);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200);
       });
   };
 
