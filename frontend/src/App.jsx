@@ -31,6 +31,7 @@ import GenericHomePage from './pages/GenericHomePage';
 import Lobby from "./pages/lobby/lobby.jsx";
 import HomeTypeSelectPage from "./pages/typepage/HomeTypeSelectPage.jsx";
 import ManageUser from "./components/manageuser.jsx"
+import GuestHistory from "./components/guest/guesthistory.jsx";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(isAuthenticated());
@@ -82,6 +83,7 @@ function App() {
         <Route path="/select-filter" element={<HomeTypeSelectPage />} />
         <Route path="/hometype" element={<HomeTypeSelectPage />} />
         <Route path="/manageuser" element={<ManageUser />} />
+        <Route path="/guesthistory/:home_id" element={<GuestHistory />} />
 
       </Routes>
     </BrowserRouter>

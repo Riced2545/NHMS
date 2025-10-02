@@ -180,15 +180,16 @@ db.query(`
     FOREIGN KEY (rank_id) REFERENCES ranks(id)
   )`);
 
-  db.query(`CREATE TABLE IF NOT EXISTS guest_logs (
+
+db.query(`CREATE TABLE IF NOT EXISTS guest_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    guest_id INT,
-    home_id INT,
+    guest_id INT NULL,
+    home_id INT NULL,
     action VARCHAR(50),         -- เช่น "add", "edit", "delete"
     detail TEXT,                -- รายละเอียดเพิ่มเติม
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (guest_id) REFERENCES guest(id),
-    FOREIGN KEY (home_id) REFERENCES home(home_id)
+    FOREIGN KEY (guest_id) REFERENCES guest(id) ON DELETE SET NULL,
+    FOREIGN KEY (home_id) REFERENCES home(home_id) ON DELETE SET NULL
   )`);
   // ---------- ข้อมูลเริ่มต้น ----------
   db.query("INSERT IGNORE INTO home_types (name) VALUES ('บ้านพักแฝด'), ('บ้านพักเรือนแถว'),('แฟลตสัญญาบัตร'),('บ้านพักลูกจ้าง')", (err) => {
@@ -304,6 +305,21 @@ db.query(`
     FOREIGN KEY (home_type_id) REFERENCES home_types(id)
   )
 `);
+
+db.query(`CREATE TABLE IF NOT EXISTS guest_history (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guest_id INT NULL,                -- อ้างอิงถึง guest ที่ออก
+  rank_id INT NULL,                 -- อ้างอิงถึงยศจาก ranks
+  name VARCHAR(255),                -- ชื่อผู้พัก
+  lname VARCHAR(255),               -- นามสกุล
+  home_id INT NULL,                 -- บ้านที่เคยอยู่
+  home_address VARCHAR(255),        -- บ้านเลขที่
+  reason TEXT,                      -- เหตุผลการออก
+  moved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- วันที่ออก
+  FOREIGN KEY (guest_id) REFERENCES guest(id) ON DELETE SET NULL,
+  FOREIGN KEY (rank_id) REFERENCES ranks(id) ON DELETE SET NULL,
+  FOREIGN KEY (home_id) REFERENCES home(home_id) ON DELETE SET NULL
+)`);
 
 // ...สร้างตารางอื่นๆ...
 
@@ -1899,5 +1915,72 @@ app.delete("/api/users/:id", (req, res) => {
   db.query("DELETE FROM users WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).json({ error: "Database error" });
     res.json({ success: true });
+  });
+});
+
+app.post("/api/guest_history", (req, res) => {
+  const { guest_id, name, home_id, home_address, reason } = req.body;
+  db.query(
+
+    "INSERT INTO guest_history (guest_id, rank_id, name, lname, home_id, home_address, reason, moved_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
+    [guest_id, guest.rank_id, guest.name, guest.lname, home_id, home_address, reason],
+    (err) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json({ success: true });
+    }
+  );
+});
+
+app.post("/api/guest_move_out", (req, res) => {
+  const { guest_id, rank_id, name, home_id, home_address, reason } = req.body;
+
+  db.query("SELECT * FROM guest WHERE id = ?", [guest_id], (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    if (results.length === 0) return res.status(404).json({ error: "Guest not found" });
+
+    const guest = results[0];
+
+    db.query(
+      "INSERT INTO guest_history (guest_id, rank_id, name, lname, home_id, home_address, reason, moved_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
+      [
+        guest_id,
+        guest.rank_id, // ใช้จาก guest ในฐานข้อมูล
+        guest.name,
+        guest.lname,
+        home_id,
+        home_address,
+        reason
+      ],
+      (err2) => {
+        if (err2) {
+          console.log("Insert guest_history error:", err2); // เพิ่ม log
+          return res.status(500).json({ error: "Database error" });
+        }
+
+        db.query("DELETE FROM guest WHERE id = ?", [guest_id], (err3) => {
+          if (err3) return res.status(500).json({ error: "Database error" });
+          res.json({ success: true });
+        });
+      }
+    );
+  });
+});
+
+app.get("/api/guest_history", (req, res) => {
+  const { home_id } = req.query;
+  let sql = `
+    SELECT gh.*, COALESCE(r.name, '-') AS rank_display
+    FROM guest_history gh
+    LEFT JOIN ranks r ON gh.rank_id = r.id
+  `;
+  let params = [];
+  if (home_id) {
+    sql += " WHERE gh.home_id = ?";
+    params.push(home_id);
+  }
+  sql += " ORDER BY gh.moved_at DESC";
+  db.query(sql, params, (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    res.json(results);
   });
 });

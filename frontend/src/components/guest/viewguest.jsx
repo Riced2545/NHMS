@@ -174,7 +174,8 @@ export default function ViewGuest() {
         <div style={{
           padding: '16px 32px 0 32px',
           display: 'flex',
-          alignItems: 'center'
+          alignItems: 'center',
+          gap: 12
         }}>
           <button
             onClick={() => navigate(-1)}
@@ -198,6 +199,23 @@ export default function ViewGuest() {
           >
             <span style={{ fontSize: '16px' }}>←</span>
             ย้อนกลับ
+          </button>
+          {/* เพิ่มปุ่มดูประวัติ */}
+          <button
+            onClick={() => navigate(`/guesthistory/${home_id}`)}
+            style={{
+              background: "#22c55e",
+              color: "white",
+              border: "none",
+              padding: "10px 16px",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "500",
+              marginLeft: "8px"
+            }}
+          >
+            🕑 ดูประวัติผู้เข้าพัก
           </button>
         </div>
 

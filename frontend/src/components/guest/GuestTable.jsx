@@ -5,12 +5,16 @@ import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import './guest.css';
 import { useState, useEffect } from "react";
 import EditGuestModal from "./Editguest/editguest";
+import { toast } from "react-toastify";
 
 export default function GuestTable({ guests = [], showAddress, showType, onEdit, onDelete, selectedIds, setSelectedIds, onSaved }) {
   const navigate = useNavigate();
   const role_id = localStorage.getItem("role_id");
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedGuestId, setSelectedGuestId] = useState(null);
+  const [moveModalOpen, setMoveModalOpen] = useState(false);
+  const [moveReason, setMoveReason] = useState("");
+  const [movingGuest, setMovingGuest] = useState(null);
 
   // เรียงลำดับให้ผู้ถือสิทธิ์ขึ้นก่อน
   const sortedGuests = [...guests].sort((a, b) => {
@@ -59,6 +63,36 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
     } else {
       setSelectedIds(sortedGuests.map(g => g.id));
     }
+  };
+
+  const handleMove = (guest) => {
+    setMovingGuest(guest);
+    setMoveReason("");
+    setMoveModalOpen(true);
+  };
+
+  const handleMoveConfirm = () => {
+    fetch("http://localhost:3001/api/guest_move_out", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        guest_id: movingGuest.id,
+        rank_id: movingGuest.rank_id, // เพิ่มบรรทัดนี้
+        name: formatGuestName(movingGuest),
+        home_id: movingGuest.home_id,
+        home_address: movingGuest.Address,
+        reason: moveReason
+      })
+    }).then(res => res.json())
+      .then((result) => {
+        setMoveModalOpen(false);
+        setMovingGuest(null);
+        setMoveReason("");
+        toast.success("บันทึกประวัติการออกเรียบร้อยแล้ว!");
+        // setTimeout(() => {
+        //   window.location.reload();
+        // }, 1200);
+      });
   };
 
   return (
@@ -156,6 +190,22 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
                           ลบ
                         </button>
                       )}
+                      {role_id === "1" && (
+                        <button
+                          className="btn-move"
+                          onClick={() => handleMove(g)}
+                          style={{
+                            marginLeft: 4,
+                            background: "#f59e0b",
+                            color: "#fff",
+                            borderRadius: 6,
+                            padding: "4px 10px",
+                            border: "none"
+                          }}
+                        >
+                          🚚 ย้ายมา
+                        </button>
+                      )}
                       {role_id !== "1" && (
                         <button
                           className="btn-detail"
@@ -178,6 +228,41 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
         guestId={selectedGuestId}
         onSaved={onSaved}
       />
+
+      {/* Modal สำหรับกรอกเหตุผลการออก */}
+      {moveModalOpen && (
+        <div className="modal-bg">
+          <div className="modal-content">
+            <h3>ระบุเหตุผลการออกจากบ้าน</h3>
+            <div style={{ marginBottom: 12 }}>
+              <b>ชื่อ:</b> {movingGuest && formatGuestName(movingGuest)}
+              <br />
+              <b>บ้านเลขที่:</b> {movingGuest && movingGuest.Address}
+            </div>
+            <textarea
+              value={moveReason}
+              onChange={e => setMoveReason(e.target.value)}
+              placeholder="กรอกเหตุผลการออก เช่น ย้ายบ้าน, เกษียณ, ฯลฯ"
+              style={{ width: "100%", minHeight: 60, marginBottom: 16 }}
+            />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={handleMoveConfirm}
+                disabled={!moveReason.trim()}
+                style={{ background: "#22c55e", color: "#fff", borderRadius: 6, padding: "6px 18px", border: "none" }}
+              >
+                บันทึก
+              </button>
+              <button
+                onClick={() => setMoveModalOpen(false)}
+                style={{ background: "#ef4444", color: "#fff", borderRadius: 6, padding: "6px 18px", border: "none" }}
+              >
+                ยกเลิก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
