@@ -89,7 +89,7 @@ export default function GuestHistory() {
                   <td>{item.rank_display}</td>
                   <td>{item.name}</td>
                   <td>{item.lname}</td>
-                  <td>{item.reason}</td>
+                  <td>{item.move_status_name}</td>
                   <td>{formatThaiDate(item.moved_at)}</td>
                 </tr>
               ))

@@ -13,8 +13,11 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedGuestId, setSelectedGuestId] = useState(null);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
+  const [moveStatusOptions, setMoveStatusOptions] = useState([]);
+  const [moveStatusId, setMoveStatusId] = useState("");
   const [moveReason, setMoveReason] = useState("");
   const [movingGuest, setMovingGuest] = useState(null);
+  const [showOtherInput, setShowOtherInput] = useState(false);
 
   // เรียงลำดับให้ผู้ถือสิทธิ์ขึ้นก่อน
   const sortedGuests = [...guests].sort((a, b) => {
@@ -65,29 +68,58 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
     }
   };
 
+  useEffect(() => {
+    // โหลดเหตุผลการออกจาก move_status
+    fetch("http://localhost:3001/api/move_status")
+      .then(res => res.json())
+      .then(data => setMoveStatusOptions(data));
+  }, []);
+
   const handleMove = (guest) => {
     setMovingGuest(guest);
+    setMoveStatusId("");
     setMoveReason("");
+    setShowOtherInput(false);
     setMoveModalOpen(true);
   };
 
-  const handleMoveConfirm = () => {
+  const handleMoveConfirm = async () => {
+    let finalMoveStatusId = moveStatusId;
+
+    // ถ้าเลือก "อื่นๆ" และกรอกเหตุผลใหม่ ให้เพิ่มใน move_status ก่อน
+    if (moveStatusId === "other" && moveReason.trim()) {
+      const res = await fetch("http://localhost:3001/api/move_status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: moveReason.trim() })
+      });
+      const result = await res.json();
+      if (result.success && result.id) {
+        finalMoveStatusId = result.id;
+      } else {
+        toast.error("เพิ่มเหตุผลใหม่ไม่สำเร็จ");
+        return;
+      }
+    }
+
     fetch("http://localhost:3001/api/guest_move_out", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         guest_id: movingGuest.id,
-        rank_id: movingGuest.rank_id, // เพิ่มบรรทัดนี้
+        rank_id: movingGuest.rank_id,
         name: formatGuestName(movingGuest),
         home_id: movingGuest.home_id,
         home_address: movingGuest.Address,
-        reason: moveReason
+        move_status_id: finalMoveStatusId
       })
     }).then(res => res.json())
       .then((result) => {
         setMoveModalOpen(false);
         setMovingGuest(null);
+        setMoveStatusId("");
         setMoveReason("");
+        setShowOtherInput(false);
         toast.success("บันทึกประวัติการออกเรียบร้อยแล้ว!");
         setTimeout(() => {
           window.location.reload();
@@ -203,7 +235,7 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
                             border: "none"
                           }}
                         >
-                          🚚 ย้ายมา
+                          🚚 ย้ายออก
                         </button>
                       )}
                       {role_id !== "1" && (
@@ -239,22 +271,105 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
               <br />
               <b>บ้านเลขที่:</b> {movingGuest && movingGuest.Address}
             </div>
-            <textarea
-              value={moveReason}
-              onChange={e => setMoveReason(e.target.value)}
-              placeholder="กรอกเหตุผลการออก เช่น ย้ายบ้าน, เกษียณ, ฯลฯ"
-              style={{ width: "100%", minHeight: 60, marginBottom: 16 }}
-            />
-            <div style={{ display: "flex", gap: 8 }}>
+            <select
+              value={moveStatusId}
+              onChange={e => setMoveStatusId(e.target.value)}
+              style={{
+                width: "100%",
+                minWidth: "400px",
+                fontSize: "18px",
+                marginBottom: 12,
+                padding: "12px",
+                borderRadius: "8px",
+                border: "1px solid #ccc"
+              }}
+              disabled={showOtherInput}
+            >
+              <option value="">-- เลือกเหตุผล --</option>
+              {moveStatusOptions.map(opt => (
+                <option key={opt.id} value={opt.id}>{opt.name}</option>
+              ))}
+            </select>
+            <button
+              style={{
+                marginLeft: 8,
+                background: "#e0e7ef",
+                color: "#333",
+                borderRadius: 6,
+                padding: "6px 18px",
+                border: "none"
+              }}
+              onClick={() => {
+                setShowOtherInput(true);
+                setMoveStatusId("");
+              }}
+              disabled={showOtherInput}
+            >
+              เพิ่มเหตุผลใหม่
+            </button>
+            {showOtherInput && (
+              <div style={{ marginTop: 16 }}>
+                <input
+                  type="text"
+                  value={moveReason}
+                  onChange={e => setMoveReason(e.target.value)}
+                  placeholder="ชื่อเหตุผลใหม่ เช่น ย้ายออก, ย้ายไปต่างจังหวัด"
+                  style={{ width: "100%", marginBottom: 8, padding: "8px", borderRadius: 6, border: "1px solid #ccc" }}
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={async () => {
+                      if (!moveReason.trim()) return;
+                      // เพิ่มเหตุผลใหม่
+                      const res = await fetch("http://localhost:3001/api/move_status", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ name: moveReason.trim() })
+                      });
+                      const result = await res.json();
+                      if (result.success && result.id) {
+                        setMoveStatusOptions(prev => [...prev, { id: result.id, name: moveReason.trim() }]);
+                        setMoveStatusId(result.id);
+                        setShowOtherInput(false);
+                        setMoveReason("");
+                        toast.success("เพิ่มเหตุผลใหม่สำเร็จ");
+                      } else {
+                        toast.error("เพิ่มเหตุผลใหม่ไม่สำเร็จ");
+                      }
+                    }}
+                    disabled={!moveReason.trim()}
+                    style={{ background: "#22c55e", color: "#fff", borderRadius: 6, padding: "6px 18px", border: "none" }}
+                  >
+                    บันทึก
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowOtherInput(false);
+                      setMoveReason("");
+                    }}
+                    style={{ background: "#ef4444", color: "#fff", borderRadius: 6, padding: "6px 18px", border: "none" }}
+                  >
+                    ยกเลิก
+                  </button>
+                </div>
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
               <button
                 onClick={handleMoveConfirm}
-                disabled={!moveReason.trim()}
+                disabled={
+                  !moveStatusId
+                }
                 style={{ background: "#22c55e", color: "#fff", borderRadius: 6, padding: "6px 18px", border: "none" }}
               >
-                บันทึก
+                บันทึกการออก
               </button>
               <button
-                onClick={() => setMoveModalOpen(false)}
+                onClick={() => {
+                  setMoveModalOpen(false);
+                  setShowOtherInput(false);
+                  setMoveReason("");
+                }}
                 style={{ background: "#ef4444", color: "#fff", borderRadius: 6, padding: "6px 18px", border: "none" }}
               >
                 ยกเลิก

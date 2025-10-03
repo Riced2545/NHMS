@@ -650,7 +650,7 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
 
               <div className="form-row-horizontal">
                 <div className="form-field">
-                 <label>ตำแหน่งงาน <span className="required">*</span></label>
+                 <label>สถานที่ทำงาน <span className="required">*</span></label>
                 <input 
                   type="text" 
                   name="pos" 
@@ -852,12 +852,12 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
 
               <div className="form-row-horizontal">
                 <div className="form-field">
-                  <label>ตำแหน่งงาน <span className="required">*</span></label>
+                  <label>ตำแหน่งงาน <span className="required"></span></label>
                   <input 
                     type="text" 
                     value={familyForms[currentFamilyIndex]?.pos || ""}
                     onChange={(e) => handleFamilyFormChange(currentFamilyIndex, 'pos', e.target.value)}
-                    required 
+                    
                   />
                 </div>
                 
@@ -896,38 +896,8 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
                 </div>
               </div>
 
-              <div className="form-row-horizontal">
-                <div className="form-field">
-                  <label>รายได้ <span className="required">*</span></label>
-                  <input 
-                    type="number" 
-                    value={familyForms[currentFamilyIndex]?.income || ""}
-                    onChange={(e) => handleFamilyFormChange(currentFamilyIndex, 'income', e.target.value)}
-                    required 
-                  />
-                </div>
-                
-                <div className="form-field">
-                  <label>เบอร์โทรศัพท์ <span className="required">*</span></label>
-                  <input 
-                    type="text" 
-                    value={familyForms[currentFamilyIndex]?.phone || ""}
-                    onChange={(e) => handleFamilyFormChange(currentFamilyIndex, 'phone', e.target.value)}
-                    required 
-                  />
-                </div>
-              </div>
 
               <div className="form-row-horizontal">
-                <div className="form-field">
-                  <label>เบอร์โทรที่ทำงาน <span className="required">*</span></label>
-                  <input 
-                    type="text" 
-                    value={familyForms[currentFamilyIndex]?.job_phone || ""}
-                    onChange={(e) => handleFamilyFormChange(currentFamilyIndex, 'job_phone', e.target.value)}
-                    required 
-                  />
-                </div>
                 <div className="form-field">
                   {/* สำหรับ balance layout */}
                 </div>

@@ -340,6 +340,40 @@
   box-shadow: 0 0 8px 2px #ef4444;
 }
 
+/* Modal Styles */
+.modal-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 40px 32px;    /* เพิ่ม padding */
+  min-width: 700px;      /* ขยาย min-width */
+  max-width: 1100px;     /* ขยาย max-width */
+  width: 85vw;           /* ขยาย width */
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  margin: auto;
+}
+
+/* Responsive for small screens */
+@media (max-width: 700px) {
+  .modal-content {
+    min-width: unset;
+    width: 98vw;
+    padding: 16px 4px;
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .search-table {

@@ -86,9 +86,7 @@ export default function ViewScore() {
     const day = date.getDate();
     const month = months[date.getMonth()];
     const year = date.getFullYear() + 543;
-    const hour = date.getHours().toString().padStart(2, "0");
-    const minute = date.getMinutes().toString().padStart(2, "0");
-    return `${day} ${month} ${year} ${hour}:${minute} น.`;
+    return `${day} ${month} ${year}`;
   }
 
   return (
@@ -140,6 +138,7 @@ export default function ViewScore() {
                     <th>นามสกุล</th>
                     <th>เบอร์โทร</th>
                     <th>คะแนนรวม</th>
+                    <th>รายละเอียดการให้คะแนน</th> {/* เพิ่มคอลัมน์นี้ */}
                     <th>วันและเวลาที่ลงคะแนน</th>
                   </tr>
                 </thead>
@@ -152,7 +151,8 @@ export default function ViewScore() {
                       <td>{item.lname}</td>
                       <td>{item.phone}</td>
                       <td>{item.total_score}</td>
-                       <td>{formatThaiDate(item.created_at)}</td>
+                      <td>{item.details || "-"}</td> {/* แสดงรายละเอียด */}
+                      <td>{formatThaiDate(item.created_at)}</td>
                     </tr>
                   ))}
                 </tbody>

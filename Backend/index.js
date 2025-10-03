@@ -314,11 +314,12 @@ db.query(`CREATE TABLE IF NOT EXISTS guest_history (
   lname VARCHAR(255),               -- นามสกุล
   home_id INT NULL,                 -- บ้านที่เคยอยู่
   home_address VARCHAR(255),        -- บ้านเลขที่
-  reason TEXT,                      -- เหตุผลการออก
+  move_status_id INT NULL,          -- สถานะการออก (เช่น เกษียณ, คืนบ้าน ฯลฯ)
   moved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- วันที่ออก
   FOREIGN KEY (guest_id) REFERENCES guest(id) ON DELETE SET NULL,
   FOREIGN KEY (rank_id) REFERENCES ranks(id) ON DELETE SET NULL,
-  FOREIGN KEY (home_id) REFERENCES home(home_id) ON DELETE SET NULL
+  FOREIGN KEY (home_id) REFERENCES home(home_id) ON DELETE SET NULL,
+  FOREIGN KEY (move_status_id) REFERENCES move_status(id) ON DELETE SET NULL
 )`);
 
 // ...สร้างตารางอื่นๆ...
@@ -377,13 +378,13 @@ db.query("SELECT * FROM home_types", (err, types) => {
     lname VARCHAR(255),
     phone INT(10),
     total_score INT,
+    details TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`);
 });
 
 
-// สร้างตาราง home_types2
-
+// สร้างตาราง subunit_home
 db.query(`
   CREATE TABLE IF NOT EXISTS subunit_home (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -392,6 +393,97 @@ db.query(`
   )
 `);
 
+// สร้างตาราง move_status
+db.query(`
+  CREATE TABLE IF NOT EXISTS move_status (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE
+  )
+`);
+
+db.query(`INSERT IGNORE INTO move_status (name) VALUES 
+  ('เกษียณ'),('คืนบ้าน')
+`, (err) => {
+  if (err) console.log("Warning: Failed to insert default move_status");
+  else console.log("✅ Default move_status created");
+});
+
+// สร้างตาราง score_criteria
+db.query(`
+  CREATE TABLE IF NOT EXISTS score_criteria (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    label VARCHAR(255) NOT NULL UNIQUE,
+    ordering INT DEFAULT 0
+  )
+`);
+
+//Insert ข้อมูล criteria
+db.query(`INSERT IGNORE INTO score_criteria (label, ordering) VALUES
+('ลักษณะการพักอาศัย', 1),
+('เป็นผู้มีสิทธิ์เบิกค่าเช่าบ้าน', 2),
+('ผู้ขอมีรายได้ทั้งหมด (เงินเดือน)', 3),
+('สถานภาพผู้ขอและคู่สมรส', 4),
+('จำนวนบุตรทั้งหมด', 5),
+('จำนวนบุตรที่อยู่ระหว่างศึกษา', 6),
+('จำนวนบุตรคูณกับระดับการศึกษา', 7),
+('การเจ็บป่วยที่ส่งผลต่อการดำเนินชีวิตอย่างชัดเจน', 8),
+('จำนวนบุตรที่อยู่ระหว่างศึกษา', 9)
+`, (err) => {
+  if (err) console.log("Warning: Failed to insert default score_criteria");
+  else console.log("✅ Default score_criteria created");
+});
+
+//สร้างตาราง options (ตัวเลือกแต่ละหัวข้อ)
+db.query(`
+  CREATE TABLE IF NOT EXISTS score_options (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    criteria_id INT NOT NULL,
+    label VARCHAR(255) NOT NULL,
+    score INT NOT NULL,
+    ordering INT DEFAULT 0,
+    FOREIGN KEY (criteria_id) REFERENCES score_criteria(id),
+    UNIQUE(criteria_id, label)
+  )
+`);
+
+db.query(`INSERT IGNORE INTO score_options (criteria_id, label, score, ordering) VALUES
+(1, 'บ้านบิดามารดา', 2, 1),
+(1, 'เช่าบ้าน', 5, 2),
+
+(2, 'มีสิทธิ์', 3, 1),
+
+(3, 'มากกว่า 50,000 บาท', 1, 1),
+(3, '30,000 - 50,000 บาท', 2, 2),
+(3, '15,000 - 30,000 บาท', 3, 3),
+(3, 'ต่ำกว่า 15,000 บาท', 5, 4),
+
+(4, 'โสด สมรถแยกพื้นที่ขอ/แยกกันอยู่', 1, 1),
+(4, 'โสด อุปการะบิดา - มารดา', 2, 2),
+(4, 'สมรสอยู่ด้วยกัน', 3, 3),
+(4, 'สมรสอยู่ด้วยกัน อุปการะบิดา - มารดา', 5, 4),
+
+(5, 'ไม่มีบุตร', 1, 1),
+(5, '1 คน', 2, 2),
+(5, '2 คน', 3, 3),
+(5, 'มากกว่า 2 คน', 5, 4),
+
+(6, 'อนุบาล', 1, 1),
+(6, 'ประถม', 2, 2),
+(6, 'มัธยม', 3, 3),
+(6, 'อุดมศึกษา', 5, 4),
+
+(7, 'น้อยกว่า 30 กม.', 1, 1),
+(7, '30 - 60 กม.', 3, 2),
+(7, '60 กม.ขึ้นไป', 5, 3),
+
+(8, 'เจ้าของสิทธิ', 2, 1),
+(8, 'บิดา - มารดา', 5, 2),
+
+(9, 'ไม่มีบุตร', 1, 1),
+(9, '1 คน', 2, 2),
+(9, 'มากกว่า 1 คน', 5, 3);
+`, (err) => {
+});
 
 
 
@@ -1695,15 +1787,13 @@ app.get("/api/guests/:id", (req, res) => {
 
 // เพิ่ม endpoint สำหรับรับคะแนนและข้อมูลส่วนตัว
 app.post("/api/score", (req, res) => {
-  const { rank_id, title, name, lname, phone, total_score } = req.body;
-
+  const { rank_id, title, name, lname, phone, total_score, details } = req.body; // ใช้ details
   db.query(
-    "INSERT INTO guest_scores (rank_id, title, name, lname, phone, total_score) VALUES (?, ?, ?, ?, ?, ?)",
-    [rank_id, title, name, lname, phone, total_score],
-   
+    "INSERT INTO guest_scores (rank_id, title, name, lname, phone, total_score, details) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    [rank_id, title, name, lname, phone, total_score, details],
     (err, result) => {
       if (err) {
-        console.error(err); // ดู error ใน console
+        console.error(err);
         return res.status(500).json({ error: "Database error" });
       }
       res.json({ success: true });
@@ -1932,7 +2022,7 @@ app.post("/api/guest_history", (req, res) => {
 });
 
 app.post("/api/guest_move_out", (req, res) => {
-  const { guest_id, rank_id, name, home_id, home_address, reason } = req.body;
+  const { guest_id, rank_id, name, home_id, home_address, move_status_id } = req.body;
 
   db.query("SELECT * FROM guest WHERE id = ?", [guest_id], (err, results) => {
     if (err) return res.status(500).json({ error: "Database error" });
@@ -1941,19 +2031,19 @@ app.post("/api/guest_move_out", (req, res) => {
     const guest = results[0];
 
     db.query(
-      "INSERT INTO guest_history (guest_id, rank_id, name, lname, home_id, home_address, reason, moved_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
+      "INSERT INTO guest_history (guest_id, rank_id, name, lname, home_id, home_address, move_status_id, moved_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
       [
         guest_id,
-        guest.rank_id, // ใช้จาก guest ในฐานข้อมูล
+        guest.rank_id,
         guest.name,
         guest.lname,
         home_id,
         home_address,
-        reason
+        move_status_id
       ],
       (err2) => {
         if (err2) {
-          console.log("Insert guest_history error:", err2); // เพิ่ม log
+          console.log("Insert guest_history error:", err2);
           return res.status(500).json({ error: "Database error" });
         }
 
@@ -1969,9 +2059,10 @@ app.post("/api/guest_move_out", (req, res) => {
 app.get("/api/guest_history", (req, res) => {
   const { home_id } = req.query;
   let sql = `
-    SELECT gh.*, COALESCE(r.name, '-') AS rank_display
+    SELECT gh.*, COALESCE(r.name, '-') AS rank_display, ms.name AS move_status_name
     FROM guest_history gh
     LEFT JOIN ranks r ON gh.rank_id = r.id
+    LEFT JOIN move_status ms ON gh.move_status_id = ms.id
   `;
   let params = [];
   if (home_id) {
@@ -1982,5 +2073,63 @@ app.get("/api/guest_history", (req, res) => {
   db.query(sql, params, (err, results) => {
     if (err) return res.status(500).json({ error: "Database error" });
     res.json(results);
+  });
+});
+
+app.post("/api/move_status", (req, res) => {
+  const { name } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: "กรุณาระบุชื่อเหตุผล" });
+  }
+  db.query(
+    "INSERT INTO move_status (name) VALUES (?)",
+    [name.trim()],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json({ success: true, id: result.insertId });
+    }
+  );
+});
+
+app.get("/api/move_status", (req, res) => {
+  db.query("SELECT * FROM move_status ORDER BY id ASC", (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    res.json(results);
+  });
+});
+
+app.get("/api/score-criteria", (req, res) => {
+  const sql = `
+    SELECT sc.id as criteria_id, sc.label as criteria_label, sc.ordering,
+           so.id as option_id, so.label as option_label, so.score, so.ordering as option_ordering
+    FROM score_criteria sc
+    LEFT JOIN score_options so ON sc.id = so.criteria_id
+    ORDER BY sc.ordering ASC, so.ordering ASC
+  `;
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+
+    // สร้าง criteriaMap เพื่อ grouping options ตาม criteria_id
+    const criteriaMap = {};
+    results.forEach(row => {
+      if (!criteriaMap[row.criteria_id]) {
+        criteriaMap[row.criteria_id] = {
+          label: row.criteria_label,
+          options: []
+        };
+      }
+      // เพิ่ม option เฉพาะที่มี id และยังไม่ซ้ำ
+      if (row.option_id) {
+        const exists = criteriaMap[row.criteria_id].options.some(opt => opt.id === row.option_id);
+        if (!exists) {
+          criteriaMap[row.criteria_id].options.push({
+            id: row.option_id,
+            label: row.option_label,
+            score: row.score
+          });
+        }
+      }
+    });
+    res.json(Object.values(criteriaMap));
   });
 });
