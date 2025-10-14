@@ -83,16 +83,18 @@ export default function GuestHistory() {
             ) : history.length === 0 ? (
               <tr><td colSpan={6}>ไม่มีข้อมูล</td></tr>
             ) : (
-              history.map((item, idx) => (
-                <tr key={item.id}>
-                  <td>{idx + 1}</td>
-                  <td>{item.rank_display}</td>
-                  <td>{item.name}</td>
-                  <td>{item.lname}</td>
-                  <td>{item.move_status_name}</td>
-                  <td>{formatThaiDate(item.moved_at)}</td>
-                </tr>
-              ))
+              [...history]
+                .sort((a, b) => new Date(a.moved_at) - new Date(b.moved_at)) // เรียงจากเก่าไปใหม่
+                .map((item, idx) => (
+                  <tr key={item.id}>
+                    <td>{idx + 1}</td>
+                    <td>{item.rank_display}</td>
+                    <td>{item.name}</td>
+                    <td>{item.lname}</td>
+                    <td>{item.move_status_name}</td>
+                    <td>{formatThaiDate(item.moved_at)}</td>
+                  </tr>
+                ))
             )}
           </tbody>
         </table>

@@ -2,6 +2,16 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom"; // เพิ่มบรรทัดนี้
 
+const buddhistYearNow = new Date().getFullYear() + 543;
+const years_options = [];
+for (let y = buddhistYearNow - 80; y <= buddhistYearNow; y++) {
+  years_options.push(y);
+}
+const months = [
+  "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+  "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+];
+
 export default function ScoreForm() {
 	const [step, setStep] = useState(1);
     const [criteria, setCriteria] = useState([]);
@@ -21,7 +31,10 @@ export default function ScoreForm() {
         university: 0
     });
     // เพิ่ม state
-    const [waitMonth, setWaitMonth] = useState(0);
+    const [requestDate, setRequestDate] = useState(""); // state สำหรับวันที่ขอเข้า
+    const [reqDay, setReqDay] = useState("");
+    const [reqMonth, setReqMonth] = useState("");
+    const [reqYear, setReqYear] = useState("");
     const navigate = useNavigate(); // เพิ่มบรรทัดนี้
 
     // ดึงข้อมูลยศจาก backend
@@ -55,35 +68,41 @@ export default function ScoreForm() {
         setSelected(newSelected);
     };
 
-    const totalScore = selected.reduce((sum, optIdx, criIdx) => {
-      if (criIdx === 6) {
-        // ข้อ 7: คำนวณจาก childrenEdu
-        return sum +
-          (childrenEdu.kinder * 1) +
-          (childrenEdu.primary * 2) +
-          (childrenEdu.secondary * 3) +
-          (childrenEdu.university * 5);
-      }
-      // ข้ออื่น: ใช้คะแนนจาก options
-      const cri = criteria[criIdx];
-      if (!cri || !cri.options || optIdx == null) return sum;
-      return sum + (cri.options[optIdx]?.score || 0);
-    }, 0) + Math.floor(waitMonth / 3); // เพิ่มคะแนนไตรมาส
+    // ฟังก์ชันคำนวณจำนวนเดือนระหว่างวันที่ขอเข้าพักกับวันนี้
+const calcWaitMonth = () => {
+  if (!requestDate) return 0;
+  const start = new Date(requestDate);
+  const end = new Date();
+  let months = (end.getFullYear() - start.getFullYear()) * 12;
+  months += end.getMonth() - start.getMonth();
+  if (end.getDate() < start.getDate()) months--;
+  return Math.max(0, months);
+};
+
+const waitMonth = calcWaitMonth();
+
+const totalScore = selected.reduce((sum, optIdx, criIdx) => {
+  if (criIdx === 6) {
+    // ข้อ 7: คำนวณจาก childrenEdu
+    return sum +
+      (childrenEdu.kinder * 1) +
+      (childrenEdu.primary * 2) +
+      (childrenEdu.secondary * 3) +
+      (childrenEdu.university * 5);
+  }
+  // ข้ออื่น: ใช้คะแนนจาก options
+  const cri = criteria[criIdx];
+  if (!cri || !cri.options || optIdx == null) return sum;
+  return sum + (cri.options[optIdx]?.score || 0);
+}, 0) + Math.floor(waitMonth / 3); // เพิ่มคะแนนไตรมาส
 
     // ขั้นตอนที่ 1: กรอกข้อมูลส่วนตัว
     const handleNext = () => {
-        if (!rankId && !title) return alert("กรุณาเลือกคำนำหน้า/ยศ");
-        if (!name || !lname || !phone) return alert("กรุณากรอกข้อมูลให้ครบ");
         setStep(2);
     };
 
     // ขั้นตอนที่ 2: ส่งข้อมูลไป backend
     const handleSubmit = async () => {
-        // ข้าม index 6 (ข้อที่ 7) เพราะใช้ input number
-        const isMissing = selected.some((s, idx) =>
-    idx !== 6 && idx !== criteria.length - 1 && s === null
-);
-        if (isMissing) return alert("กรุณาให้คะแนนครบทุกข้อ");
         setSaving(true);
 
         try {
@@ -94,7 +113,7 @@ export default function ScoreForm() {
                 lname,
                 phone,
                 total_score: totalScore,
-                details
+                details: requestDate // หรือจะส่งเป็น details ก็ได้
             });
             alert("บันทึกคะแนนสำเร็จ");
             setSelected(Array(criteria.length).fill(null));
@@ -105,7 +124,7 @@ export default function ScoreForm() {
             setPhone("");
             setDetails("");
             setChildrenEdu({ kinder: 0, primary: 0, secondary: 0, university: 0 }); // รีเซตจำนวนบุตรแต่ละระดับ
-            setWaitMonth(0); // รีเซตจำนวนเดือน
+            setRequestDate(""); // รีเซตวันที่ขอเข้า
             setStep(1);
             navigate(-1); // เพิ่มบรรทัดนี้ กลับหน้าก่อนหน้า
         } catch (err) {
@@ -113,6 +132,16 @@ export default function ScoreForm() {
         }
         setSaving(false);
     };
+
+    useEffect(() => {
+  if (reqDay && reqMonth !== "" && reqYear) {
+    const christianYear = parseInt(reqYear) - 543;
+    const reqDateString = `${christianYear}-${String(parseInt(reqMonth) + 1).padStart(2, '0')}-${String(reqDay).padStart(2, '0')}`;
+    setRequestDate(reqDateString);
+  } else {
+    setRequestDate("");
+  }
+}, [reqDay, reqMonth, reqYear]);
 
     return (
         <div className="h-screen w-screen bg-blue-50 flex justify-center items-center p-5">
@@ -220,22 +249,60 @@ export default function ScoreForm() {
                             />
                         </div>
                         <div style={{ marginBottom: 16, display: "flex", alignItems: "center" }}>
-                            <label style={{ fontWeight: "bold", marginRight: 8, minWidth: 180 }}>รายละเอียดการขอเข้าพัก:</label>
-                            <textarea
-                                value={details}
-                                onChange={e => setDetails(e.target.value)}
-                                style={{
-                                    padding: "8px 12px",
-                                    borderRadius: 6,
-                                    border: "1px solid #d1d5db",
-                                    fontSize: "15px",
-                                    width: "60%",
-                                    minHeight: "60px",
-                                    textAlign: "center",      // ข้อความอยู่ตรงกลาง
-                                    resize: "none"            // ไม่ให้ยืดขยาย
-                                }}
-                                placeholder="ระบุรายละเอียดเพิ่มเติม "
-                            />
+                            <label style={{ fontWeight: "bold", marginRight: 8, minWidth: 180 }}>วันที่ขอเข้าพัก:</label>
+                            <div style={{ display: "flex", gap: 8, width: "60%" }}>
+                                <select
+                                  value={reqDay}
+                                  onChange={e => setReqDay(e.target.value)}
+                                  style={{
+                                    height: 48,
+                                    fontSize: 18,
+                                    borderRadius: 8,
+                                    border: "1.5px solid #d1d5db",
+                                    padding: "8px 16px",
+                                    minWidth: 100
+                                  }}
+                                >
+                                  <option value="">วัน</option>
+                                  {[...Array(31)].map((_, i) => (
+                                    <option key={i + 1} value={i + 1}>{i + 1}</option>
+                                  ))}
+                                </select>
+                                <select
+                                  value={reqMonth}
+                                  onChange={e => setReqMonth(e.target.value)}
+                                  style={{
+                                    height: 48,
+                                    fontSize: 18,
+                                    borderRadius: 8,
+                                    border: "1.5px solid #d1d5db",
+                                    padding: "8px 16px",
+                                    minWidth: 120
+                                  }}
+                                >
+                                  <option value="">เดือน</option>
+                                  {months.map((m, i) => (
+                                    <option key={i} value={i}>{m}</option>
+                                  ))}
+                                </select>
+                                <select
+                                  value={reqYear}
+                                  onChange={e => setReqYear(e.target.value)}
+                                  style={{
+                                    height: 48,
+                                    fontSize: 18,
+                                    borderRadius: 8,
+                                    border: "1.5px solid #d1d5db",
+                                    padding: "8px 16px",
+                                    minWidth: 100
+                                  }}
+                                >
+                                  <option value="">ปี</option>
+                                  {years_options.map(y => (
+                                    <option key={y} value={y}>{y}</option>
+                                  ))}
+                                </select>
+                              </div>
                         </div>
                         <div style={{ textAlign: "center", marginTop: 24 }}>
                             <button
@@ -416,15 +483,14 @@ export default function ScoreForm() {
                         {/* ข้อ 9: คะแนนไตรมาส (แยกนอก map) */}
                         <div style={{ marginBottom: 32 }}>
     <div style={{ fontWeight: "500", marginBottom: 15, fontSize: "16px" }}>
-        {criteria.length + 1}. คะแนนไตรมาส (นับจากวันที่คณะกรรมการพิจารณาเข้าลำดับครั้งแรก 3 เดือน = 1 คะแนน)
+        {criteria.length + 1}. คะแนนไตรมาส (นับจากวันที่ขอเข้าพัก 3 เดือน = 1 คะแนน)
     </div>
     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
         <label style={{ fontWeight: "bold" }}>จำนวนเดือน:</label>
         <input
             type="number"
-            min={0}
             value={waitMonth}
-            onChange={e => setWaitMonth(+e.target.value)}
+            readOnly
             style={{
                 width: 100,
                 height: 48,
@@ -432,7 +498,8 @@ export default function ScoreForm() {
                 borderRadius: 8,
                 border: "1.5px solid #a5b4fc",
                 padding: "8px 16px",
-                boxSizing: "border-box"
+                boxSizing: "border-box",
+                background: "#f3f4f6"
             }}
         />
         <span style={{ fontWeight: "bold", color: "#0284c7" }}>

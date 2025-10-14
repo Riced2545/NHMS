@@ -18,6 +18,20 @@ export default function ExcelDownloadButton() {
       .catch(() => setGuests([]));
   }, []);
 
+  function formatThaiDate(dateString) {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date)) return dateString;
+    const months = [
+      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+      "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear() + 543;
+    return `${day} ${month} ${year}`;
+  }
+
   const exportToExcel = () => {
     if (!homes.length) return alert("ไม่มีข้อมูลบ้าน");
 
@@ -31,17 +45,56 @@ export default function ExcelDownloadButton() {
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
 
-    // Sheet Guest
-    const guestData = guests.map(g => ({
-      "ยศ/คำนำหน้า": g.rank || g.title || "",
-      "เลขที่บ้าน": g.Address,
-      "ชื่อ": g.name,
-      "นามสกุล": g.lname,
-      "เบอร์โทร": g.phone || "",
-      "วันเกิด": g.dob || "",
-      "สถานะ": g.is_right_holder ? "ผู้ถือสิทธิ" : "สมาชิกครอบครัว"
-    }));
+    // Sheet Guest (แสดงเฉพาะผู้ถือสิทธิ)
+    const guestData = guests
+      .filter(g => g.is_right_holder)
+      .map(g => {
+        // หา home ที่ตรงกับ guest
+        const home = homes.find(h => h.Address === g.Address);
+        return {
+          "ประเภทบ้าน": g.hType || "",
+          "เลขที่บ้าน": g.Address,
+          "ยศ/คำนำหน้า": g.rank || g.title || "",
+          "ชื่อพื้นที่/แถว/อาคาร": home?.unit_name || "",
+          "ชื่อ": g.name,
+          "นามสกุล": g.lname,
+          "เบอร์โทร": g.phone || "",
+          "วันเกิด": formatThaiDate(g.dob),
+          "สถานะ": "ผู้ถือสิทธิ"
+        };
+      });
     const wsGuest = XLSX.utils.json_to_sheet(guestData);
+
+    // กำหนดความกว้างคอลัมน์
+    ws['!cols'] = [
+      { wch: 12 }, // เลขที่บ้าน
+      { wch: 12 }, // ประเภทบ้าน
+      { wch: 10 }, // สถานะ
+      { wch: 18 }, // ชื่อพื้นที่/แถว/อาคาร
+      { wch: 12 }, // จำนวนผู้พัก
+    ];
+    wsGuest['!cols'] = [
+      { wch: 14 }, // ยศ/คำนำหน้า
+      { wch: 12 }, // ประเภทบ้าน
+      { wch: 12 }, // เลขที่บ้าน
+      { wch: 18 }, // ชื่อพื้นที่/แถว/อาคาร
+      { wch: 12 }, // ชื่อ
+      { wch: 14 }, // นามสกุล
+      { wch: 14 }, // เบอร์โทร
+      { wch: 14 }, // วันเกิด
+      { wch: 12 }, // สถานะ
+    ];
+
+    // ใส่ header bold (ใช้ cell style)
+    function boldHeader(ws) {
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
+        if (cell) cell.s = { font: { bold: true } };
+      }
+    }
+    boldHeader(ws);
+    boldHeader(wsGuest);
 
     // สร้าง workbook และเพิ่มทั้ง 2 sheet
     const wb = XLSX.utils.book_new();

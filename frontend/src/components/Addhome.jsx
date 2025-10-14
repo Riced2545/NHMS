@@ -41,24 +41,41 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess }) {
     e.preventDefault();
     setLoading(true);
     try {
-      let start = parseInt(addressStart);
-      let end = parseInt(addressEnd) || start;
+      // แยกเลขที่บ้านกรณีมี "/"
+      let prefix = "";
+      let start = addressStart;
+      let end = addressEnd || addressStart;
+
+      if (addressStart.includes("/")) {
+        [prefix, start] = addressStart.split("/");
+        start = parseInt(start);
+        if (addressEnd && addressEnd.includes("/")) {
+          [, end] = addressEnd.split("/");
+          end = parseInt(end);
+        } else {
+          end = parseInt(end);
+        }
+      } else {
+        start = parseInt(addressStart);
+        end = parseInt(addressEnd) || start;
+      }
+
       if (!start || start < 1 || end < start) {
         toast.error("กรุณากรอกเลขที่บ้านเริ่มต้นและสุดท้ายให้ถูกต้อง");
         setLoading(false);
         return;
       }
+
       let addresses = [];
       for (let i = start; i <= end; i++) {
-        addresses.push(i.toString());
+        addresses.push(prefix ? `${prefix}/${i}` : i.toString());
       }
 
       // สถานะ default เป็น "ไม่มีผู้พักอาศัย" (2)
       const statusId = "2";
-
       const formData = new FormData();
       formData.append("home_type_id", form.home_type_id);
-      formData.append("home_unit_id", form.home_unit_id); // ส่ง home_unit_id ไป backend
+      formData.append("home_unit_id", form.home_unit_id);
       formData.append("status_id", statusId);
       if (image) formData.append("image", image);
       formData.append("addresses", JSON.stringify(addresses));
@@ -151,7 +168,7 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess }) {
               เลขที่บ้าน <span style={{ color: "#ef4444" }}>*</span>
             </label>
             <input
-              type="number"
+              type="text"
               min="1"
               placeholder="เริ่มต้น เช่น 101"
               value={addressStart}
@@ -167,7 +184,7 @@ export default function AddHomeModal({ isOpen, onClose, onSuccess }) {
             />
             <span style={{ alignSelf: "center" }}>ถึง</span>
             <input
-              type="number"
+              type="text"
               min={addressStart || 1}
               placeholder="สิ้นสุด (ถ้าเพิ่มหลายหลัง)"
               value={addressEnd}

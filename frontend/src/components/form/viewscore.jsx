@@ -135,7 +135,7 @@ export default function ViewScore() {
             >
               <option value="">กลุ่มยศ</option>
               <option value="สัญญาบัตร">สัญญาบัตร</option>
-              <option value="จ่า">จ่า</option>
+              <option value="จ่า">ประทวน</option>
               <option value="ลูกจ้าง">ลูกจ้าง</option>
             </select>
             <button
@@ -180,8 +180,7 @@ export default function ViewScore() {
                     <th>นามสกุล</th>
                     <th>เบอร์โทร</th>
                     <th>คะแนนรวม</th>
-                    <th>รายละเอียดการขอเข้าพัก</th>
-                    <th>วันและเวลาที่ลงคะแนน</th>
+                    <th>วันที่ขอลงคะแนน</th>
                     <th>รออนุมัติ</th> {/* เพิ่มคอลัมน์ปุ่ม */}
                   </tr>
                 </thead>
@@ -194,8 +193,12 @@ export default function ViewScore() {
                       <td>{item.lname}</td>
                       <td>{item.phone}</td>
                       <td>{item.total_score}</td>
-                      <td>{item.details || "-"}</td>
-                      <td>{formatThaiDate(item.created_at)}</td>
+                      <td>
+                        {/* ถ้า details เป็นวันที่ ให้แสดงแบบไทย, ถ้าไม่ใช่แสดงข้อความเดิม */}
+                        {item.details && /^\d{4}-\d{2}-\d{2}/.test(item.details)
+                          ? formatThaiDate(item.details)
+                          : (item.details || "-")}
+                      </td>
                       <td>
                         <button
                           style={{

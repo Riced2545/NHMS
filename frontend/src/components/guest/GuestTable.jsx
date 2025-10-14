@@ -221,16 +221,7 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
                           ✏️แก้ไข
                         </button>
                       )}
-                      {/* {role_id === "1" && onDelete && (
-                        <button
-                          className="btn-delete"
-                          onClick={() => onDelete(g)}
-                        >
-                          <FontAwesomeIcon icon={faTimes} className="btn-icon" />
-                          ลบ
-                        </button>
-                      )} */}
-                      {role_id === "1" && (
+                      {role_id === "1" && g.is_right_holder ? (
                         <button
                           className="btn-move"
                           onClick={() => handleMove(g)}
@@ -245,7 +236,7 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
                         >
                           🚚 ย้ายออก
                         </button>
-                      )}
+                      ) : null}
                       {role_id !== "1" && (
                         <button
                           className="btn-detail"

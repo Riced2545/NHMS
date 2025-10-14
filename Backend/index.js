@@ -173,8 +173,8 @@ db.query(`
     dob DATE,
     pos VARCHAR(255),
     income INT,
-    phone INT(10),
-    job_phone INT(10),
+    phone INT(11),
+    job_phone INT(11),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (home_id) REFERENCES home(home_id),
     FOREIGN KEY (rank_id) REFERENCES ranks(id)
@@ -204,8 +204,18 @@ db.query(`CREATE TABLE IF NOT EXISTS guest_logs (
 
   // เพิ่มข้อมูลเริ่มต้นในตาราง ranks และ home_eligibility
   db.query(`INSERT IGNORE INTO ranks (name) VALUES 
-    ('นาวาเอก'), ('นาวาโท'), ('นาวาตรี'), ('เรือเอก'), ('เรือโท'), ('เรือตรี'),('พันจ่าเอก'), ('พันจ่าโท'), ('พันจ่าตรี'),
-    ('จ่าเอก'), ('จ่าโท'), ('จ่าตรี'),('นาย'),('นาง'),('นางสาว')
+   ('นาวาเอก'), ('นาวาเอกหญิง'),
+    ('นาวาโท'), ('นาวาโทหญิง'),
+    ('นาวาตรี'), ('นาวาตรีหญิง'),
+    ('เรือเอก'), ('เรือเอกหญิง'),
+    ('เรือโท'), ('เรือโทหญิง'),
+    ('เรือตรี'), ('เรือตรีหญิง'),
+    ('พันจ่าเอก'), ('พันจ่าเอกหญิง'),
+    ('พันจ่าโท'), ('พันจ่าโทหญิง'),
+    ('พันจ่าตรี'), ('พันจ่าตรีหญิง'),
+    ('จ่าเอก'), ('จ่าเอกหญิง'),
+    ('จ่าโท'), ('จ่าโทหญิง'),
+    ('จ่าตรี'), ('จ่าตรีหญิง'),('นาย'),('นาง'),('นางสาว')
   `);
 
   // ตรวจสอบว่ามีข้อมูลใน ranks แล้วหรือไม่
@@ -376,7 +386,7 @@ db.query("SELECT * FROM home_types", (err, types) => {
     title VARCHAR(50),
     name VARCHAR(255),
     lname VARCHAR(255),
-    phone INT(10),
+    phone INT(11),
     total_score INT,
     details TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
