@@ -83,9 +83,9 @@ export default function Navbar() {
           <li
             style={{
               cursor: "pointer",
-              borderBottom: isActive("/dashboard") ? "3px solid #fff" : "none",
-              fontWeight: isActive("/dashboard") ? "bold" : "normal",
-              color: isActive("/dashboard") ? "#ffe066" : "#fff",
+              borderBottom: isActive("/") ? "3px solid #fff" : "none",
+              fontWeight: isActive("/") ? "bold" : "normal",
+              color: isActive("/") ? "#ffe066" : "#fff",
             }}
             onClick={() => navigate("/")}
           >

@@ -427,17 +427,19 @@ db.query(`
   )
 `);
 
+db.query(`ALTER TABLE score_criteria ADD COLUMN IF NOT EXISTS formula_json TEXT`);
+
 //Insert ข้อมูล criteria
-db.query(`INSERT IGNORE INTO score_criteria (label, ordering) VALUES
-('ลักษณะการพักอาศัย', 1),
-('เป็นผู้มีสิทธิ์เบิกค่าเช่าบ้าน', 2),
-('ผู้ขอมีรายได้ทั้งหมด (เงินเดือน)', 3),
-('สถานภาพผู้ขอและคู่สมรส', 4),
-('จำนวนบุตรทั้งหมด', 5),
-('จำนวนบุตรที่อยู่ระหว่างศึกษา', 6),
-('จำนวนบุตรคูณกับระดับการศึกษา', 7),
-('การเจ็บป่วยที่ส่งผลต่อการดำเนินชีวิตอย่างชัดเจน', 8),
-('จำนวนบุตรที่อยู่ระหว่างศึกษา', 9)
+db.query(`INSERT IGNORE INTO score_criteria (id, label, ordering, formula_json) VALUES
+(1, 'ลักษณะการพักอาศัย', 1, NULL),
+(2, 'เป็นผู้มีสิทธิ์เบิกค่าเช่าบ้าน', 2, NULL),
+(3, 'ผู้ขอมีรายได้ทั้งหมด (เงินเดือน)', 3, NULL),
+(4, 'สถานภาพผู้ขอและคู่สมรส', 4, NULL),
+(5, 'จำนวนบุตรทั้งหมด', 5, NULL),
+(6, 'จำนวนบุตรที่อยู่ระหว่างศึกษา', 6, NULL),
+(7, 'จำนวนบุตรคูณกับระดับการศึกษา', 7, '{"kinder":1,"primary":2,"secondary":3,"university":5}'),
+(8, 'การเจ็บป่วยที่ส่งผลต่อการดำเนินชีวิตอย่างชัดเจน', 8, NULL),
+(9, 'คะแนนไตรมาส', 9, '{"month":1}')
 `, (err) => {
   if (err) console.log("Warning: Failed to insert default score_criteria");
   else console.log("✅ Default score_criteria created");
@@ -484,11 +486,7 @@ db.query(`INSERT IGNORE INTO score_options (criteria_id, label, score, ordering)
 
 
 (8, 'เจ้าของสิทธิ', 2, 1),
-(8, 'บิดา - มารดา', 5, 2),
-
-(9, 'ไม่มีบุตร', 1, 1),
-(9, '1 คน', 2, 2),
-(9, 'มากกว่า 1 คน', 5, 3);
+(8, 'บิดา - มารดา', 5, 2)
 `, (err) => {
 });
 
@@ -2158,6 +2156,82 @@ app.delete("/api/delete_family/:home_id/:right_holder_id", (req, res) => {
     (err, result) => {
       if (err) return res.status(500).json({ error: "Database error" });
       res.json({ success: true, deleted: result.affectedRows });
+    }
+  );
+});
+
+
+
+app.get("/api/score-criteria", (req, res) => {
+  const sql = `
+    SELECT sc.id as criteria_id, sc.label as criteria_label, sc.ordering,
+           so.id as option_id, so.label as option_label, so.score, so.ordering as option_ordering
+    FROM score_criteria sc
+    LEFT JOIN score_options so ON sc.id = so.criteria_id
+    ORDER BY sc.ordering ASC, so.ordering ASC
+  `;
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+
+    // สร้าง criteriaMap เพื่อ grouping options ตาม criteria_id
+    const criteriaMap = {};
+    results.forEach(row => {
+      if (!criteriaMap[row.criteria_id]) {
+        criteriaMap[row.criteria_id] = {
+          id: row.criteria_id, // เพิ่ม id
+          label: row.criteria_label,
+          ordering: row.ordering, // เพิ่ม ordering
+          options: []
+        };
+      }
+      // เพิ่ม option เฉพาะที่มี id และยังไม่ซ้ำ
+      if (row.option_id) {
+        const exists = criteriaMap[row.criteria_id].options.some(opt => opt.id === row.option_id);
+        if (!exists) {
+          criteriaMap[row.criteria_id].options.push({
+            id: row.option_id,
+            label: row.option_label,
+            score: row.score
+          });
+        }
+      }
+    });
+    res.json(Object.values(criteriaMap));
+  });
+});
+
+app.put("/api/score-criteria/:id", (req, res) => {
+  const { label } = req.body;
+  db.query(
+    "UPDATE score_criteria SET label = ? WHERE id = ?",
+    [label, req.params.id],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json({ success: true });
+    }
+  );
+});
+
+app.put("/api/score-options/:id", (req, res) => {
+  const { label, score } = req.body;
+  db.query(
+    "UPDATE score_options SET label = ?, score = ? WHERE id = ?",
+    [label, score, req.params.id],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json({ success: true });
+    }
+  );
+});
+
+app.post("/api/score-options", (req, res) => {
+  const { criteria_id, label, score } = req.body;
+  db.query(
+    "INSERT INTO score_options (criteria_id, label, score) VALUES (?, ?, ?)",
+    [criteria_id, label, score],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json({ success: true, id: result.insertId });
     }
   );
 });

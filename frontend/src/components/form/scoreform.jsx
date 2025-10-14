@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom"; // เพิ่มบรรทัดนี้
+import { useNavigate, Link } from "react-router-dom"; // เพิ่มบรรทัดนี้
 
 const buddhistYearNow = new Date().getFullYear() + 543;
 const years_options = [];
@@ -83,20 +83,26 @@ const waitMonth = calcWaitMonth();
 
 const totalScore = selected.reduce((sum, optIdx, criIdx) => {
   if (criIdx === 6) {
-    // ข้อ 7: คำนวณจาก childrenEdu
+    const cri = criteria[criIdx];
+    // ป้องกันกรณี formula เป็น undefined
+    const f = cri?.formula || { kinder: 1, primary: 2, secondary: 3, university: 5 };
     return sum +
-      (childrenEdu.kinder * 1) +
-      (childrenEdu.primary * 2) +
-      (childrenEdu.secondary * 3) +
-      (childrenEdu.university * 5);
+      (childrenEdu.kinder * (f.kinder || 1)) +
+      (childrenEdu.primary * (f.primary || 2)) +
+      (childrenEdu.secondary * (f.secondary || 3)) +
+      (childrenEdu.university * (f.university || 5));
   }
-  // ข้ออื่น: ใช้คะแนนจาก options
   const cri = criteria[criIdx];
   if (!cri || !cri.options || optIdx == null) return sum;
   return sum + (cri.options[optIdx]?.score || 0);
-}, 0) + Math.floor(waitMonth / 3); // เพิ่มคะแนนไตรมาส
+}, 0)
++ (
+  criteria[8]?.formula?.month
+    ? waitMonth * criteria[8].formula.month
+    : Math.floor(waitMonth / 3)
+);
 
-    // ขั้นตอนที่ 1: กรอกข้อมูลส่วนตัว
+// ขั้นตอนที่ 1: กรอกข้อมูลส่วนตัว
     const handleNext = () => {
         setStep(2);
     };
@@ -164,6 +170,9 @@ const totalScore = selected.reduce((sum, optIdx, criIdx) => {
                         padding: "20px 30px",
                         background: "#ffffff",
                         borderBottom: "1px solid #e0e7ff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between"
                     }}
                 >
                     <h2
@@ -176,6 +185,23 @@ const totalScore = selected.reduce((sum, optIdx, criIdx) => {
                     >
                         แบบฟอร์มให้คะแนนการเข้าพัก
                     </h2>
+                    {/* ปุ่มแก้ไขแบบฟอร์ม/เกณฑ์ */}
+                    <Link
+                        to="/edit-criteria"
+                        style={{
+                            background: "#f59e42",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "8px 18px",
+                            fontSize: "15px",
+                            fontWeight: "bold",
+                            textDecoration: "none",
+                            marginLeft: 12
+                        }}
+                    >
+                        แก้ไขแบบฟอร์ม/เกณฑ์
+                    </Link>
                 </div>
 
                 {/* Step 1: ข้อมูลส่วนตัว */}
