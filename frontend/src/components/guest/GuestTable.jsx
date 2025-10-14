@@ -221,7 +221,7 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
                           ✏️แก้ไข
                         </button>
                       )}
-                      {role_id === "1" && onDelete && (
+                      {/* {role_id === "1" && onDelete && (
                         <button
                           className="btn-delete"
                           onClick={() => onDelete(g)}
@@ -229,7 +229,7 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
                           <FontAwesomeIcon icon={faTimes} className="btn-icon" />
                           ลบ
                         </button>
-                      )}
+                      )} */}
                       {role_id === "1" && (
                         <button
                           className="btn-move"
