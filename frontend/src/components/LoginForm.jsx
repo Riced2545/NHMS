@@ -17,7 +17,7 @@ export default function LoginForm({ onLogin }) {
         localStorage.setItem("role_id", res.data.role_id); // เพิ่มบรรทัดนี้
         localStorage.setItem("username", res.data.username); // เพิ่มบรรทัดนี้
         onLogin();
-        window.location.href = "/dashboard"; // หรือ window.location.reload();
+        window.location.href = "/"; // หรือ window.location.reload();
       } else {
         setError("Login failed: " + (res.data.error || "รหัสไม่ถูกต้อง"));
       }

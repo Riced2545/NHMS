@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom"; // เพิ่มบรรทัดนี้
 
 export default function ScoreForm() {
 	const [step, setStep] = useState(1);
@@ -21,6 +22,7 @@ export default function ScoreForm() {
     });
     // เพิ่ม state
     const [waitMonth, setWaitMonth] = useState(0);
+    const navigate = useNavigate(); // เพิ่มบรรทัดนี้
 
     // ดึงข้อมูลยศจาก backend
     useEffect(() => {
@@ -105,6 +107,7 @@ export default function ScoreForm() {
             setChildrenEdu({ kinder: 0, primary: 0, secondary: 0, university: 0 }); // รีเซตจำนวนบุตรแต่ละระดับ
             setWaitMonth(0); // รีเซตจำนวนเดือน
             setStep(1);
+            navigate(-1); // เพิ่มบรรทัดนี้ กลับหน้าก่อนหน้า
         } catch (err) {
             alert("เกิดข้อผิดพลาดในการบันทึก");
         }
@@ -216,8 +219,8 @@ export default function ScoreForm() {
                                 placeholder="เบอร์โทรศัพท์"
                             />
                         </div>
-                        <div style={{ marginBottom: 16 }}>
-                            <label style={{ fontWeight: "bold", marginRight: 8 }}>รายละเอียดการให้คะแนน:</label>
+                        <div style={{ marginBottom: 16, display: "flex", alignItems: "center" }}>
+                            <label style={{ fontWeight: "bold", marginRight: 8, minWidth: 180 }}>รายละเอียดการขอเข้าพัก:</label>
                             <textarea
                                 value={details}
                                 onChange={e => setDetails(e.target.value)}
@@ -227,9 +230,11 @@ export default function ScoreForm() {
                                     border: "1px solid #d1d5db",
                                     fontSize: "15px",
                                     width: "60%",
-                                    minHeight: "60px"
+                                    minHeight: "60px",
+                                    textAlign: "center",      // ข้อความอยู่ตรงกลาง
+                                    resize: "none"            // ไม่ให้ยืดขยาย
                                 }}
-                                placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)"
+                                placeholder="ระบุรายละเอียดเพิ่มเติม "
                             />
                         </div>
                         <div style={{ textAlign: "center", marginTop: 24 }}>

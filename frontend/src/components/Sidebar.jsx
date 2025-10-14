@@ -10,6 +10,15 @@ export default function Navbar() {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
+  // เพิ่มส่วนนี้เพื่อ redirect ถ้าไม่ได้ login
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    // ถ้าไม่มี token และไม่ได้อยู่ที่หน้า login หรือ register ให้ redirect
+    if (!token && location.pathname !== "/login" && location.pathname !== "/register") {
+      navigate("/login");
+    }
+  }, [location, navigate]);
+  
   // Debug - ดูว่า username มีค่าอะไร
   useEffect(() => {
     console.log("Current username from localStorage:", username);
@@ -78,7 +87,7 @@ export default function Navbar() {
               fontWeight: isActive("/dashboard") ? "bold" : "normal",
               color: isActive("/dashboard") ? "#ffe066" : "#fff",
             }}
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate("/")}
           >
             หน้าหลัก
           </li>
