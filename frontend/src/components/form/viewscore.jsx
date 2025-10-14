@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom"; // เพิ่ม import นี้
 import Navbar from "../Sidebar";
 import "../Search/Search.css"; // เพิ่มบรรทัดนี้ ถ้ายังไม่ได้ import
 
@@ -12,6 +13,7 @@ export default function ViewScore() {
   const [currentPage, setCurrentPage] = useState(1);
   const [personType, setPersonType] = useState(""); // เพิ่ม state สำหรับประเภทบุคคล
   const itemsPerPage = 10;
+  const navigate = useNavigate(); // เพิ่ม hook นี้
 
   // โหลดข้อมูลคะแนน
   useEffect(() => {
@@ -76,6 +78,16 @@ export default function ViewScore() {
     fetchScores();
   };
 
+  const handleApprove = async (id) => {
+    if (!window.confirm("ยืนยันอนุมัติและลบข้อมูลนี้?")) return;
+    try {
+      await axios.delete(`http://localhost:3001/api/viewscore/${id}`);
+      setScores(scores => scores.filter(item => item.id !== id));
+    } catch {
+      alert("เกิดข้อผิดพลาดในการลบข้อมูล");
+    }
+  };
+
   function formatThaiDate(dateString) {
     if (!dateString) return "-";
     const date = new Date(dateString);
@@ -94,35 +106,65 @@ export default function ViewScore() {
       <Navbar />
       <div className="search-container">
         <h2 className="search-title">รายชื่อผู้ลงคะแนน</h2>
-        {/* ฟอร์มค้นหาและ filter */}
-        <form onSubmit={handleSearch} className="search-form" style={{ gap: 16 }}>
-          <input
-            type="text"
-            placeholder="ค้นหาด้วยชื่อหรือนามสกุล"
-            value={keyword}
-            onChange={e => setKeyword(e.target.value)}
-            className="search-input"
-          />
-          {/* เพิ่ม dropdown ประเภทบุคคล */}
-          <select
-            value={personType}
-            onChange={e => { setPersonType(e.target.value); setCurrentPage(1); }}
-            className="search-input"
-            style={{ maxWidth: 200 }}
+        {/* แถวค้นหา + ปุ่มลงคะแนนเข้าพัก */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          marginBottom: 16
+        }}>
+          {/* ฟอร์มค้นหา */}
+          <form
+            onSubmit={handleSearch}
+            className="search-form"
+            style={{ display: "flex", alignItems: "center", gap: 16, flex: 1 }}
           >
-            <option value="">กลุ่มยศ</option>
-            <option value="สัญญาบัตร">สัญญาบัตร</option>
-            <option value="จ่า">จ่า</option>
-            <option value="ลูกจ้าง">ลูกจ้าง</option>
-          </select>
+            <input
+              type="text"
+              placeholder="ค้นหาด้วยชื่อหรือนามสกุล"
+              value={keyword}
+              onChange={e => setKeyword(e.target.value)}
+              className="search-input"
+            />
+            <select
+              value={personType}
+              onChange={e => { setPersonType(e.target.value); setCurrentPage(1); }}
+              className="search-input"
+              style={{ maxWidth: 200 }}
+            >
+              <option value="">กลุ่มยศ</option>
+              <option value="สัญญาบัตร">สัญญาบัตร</option>
+              <option value="จ่า">จ่า</option>
+              <option value="ลูกจ้าง">ลูกจ้าง</option>
+            </select>
+            <button
+              type="submit"
+              className="search-btn"
+              disabled={loading}
+            >
+              {loading ? "ค้นหา..." : "ค้นหา"}
+            </button>
+          </form>
+          {/* ปุ่มลงคะแนนเข้าพัก */}
           <button
-            type="submit"
-            className="search-btn"
-            disabled={loading}
+            type="button"
+            style={{
+              background: "#2563eb",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              padding: "10px 24px",
+              fontSize: "16px",
+              fontWeight: "bold",
+              cursor: "pointer",
+              whiteSpace: "nowrap"
+            }}
+            onClick={() => navigate("/score")}
           >
-            {loading ? "ค้นหา..." : "ค้นหา"}
+            ลงคะแนนเข้าพัก
           </button>
-        </form>
+        </div>
         <div className="search-results">
           {filteredScores.length === 0 && !loading && (
             <div className="search-no-data">ไม่มีข้อมูลผู้ลงคะแนน</div>
@@ -138,8 +180,9 @@ export default function ViewScore() {
                     <th>นามสกุล</th>
                     <th>เบอร์โทร</th>
                     <th>คะแนนรวม</th>
-                    <th>รายละเอียดการให้คะแนน</th> {/* เพิ่มคอลัมน์นี้ */}
+                    <th>รายละเอียดการให้คะแนน</th>
                     <th>วันและเวลาที่ลงคะแนน</th>
+                    <th>รออนุมัติ</th> {/* เพิ่มคอลัมน์ปุ่ม */}
                   </tr>
                 </thead>
                 <tbody>
@@ -151,8 +194,23 @@ export default function ViewScore() {
                       <td>{item.lname}</td>
                       <td>{item.phone}</td>
                       <td>{item.total_score}</td>
-                      <td>{item.details || "-"}</td> {/* แสดงรายละเอียด */}
+                      <td>{item.details || "-"}</td>
                       <td>{formatThaiDate(item.created_at)}</td>
+                      <td>
+                        <button
+                          style={{
+                            background: "#f59e42",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "6px 16px",
+                            cursor: "pointer"
+                          }}
+                          onClick={() => handleApprove(item.id)}
+                        >
+                          รออนุมัติ
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -170,15 +228,7 @@ export default function ViewScore() {
                   <button
                     key={i + 1}
                     onClick={() => setCurrentPage(i + 1)}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: 6,
-                      border: "1px solid #ccc",
-                      background: currentPage === i + 1 ? "#3b82f6" : "#fff",
-                      color: currentPage === i + 1 ? "#fff" : "#333",
-                      fontWeight: currentPage === i + 1 ? "bold" : "normal",
-                      cursor: "pointer"
-                    }}
+                    style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #ccc", background: currentPage === i + 1 ? "#2563eb" : "#fff", color: currentPage === i + 1 ? "#fff" : "#000", cursor: "pointer" }}
                   >
                     {i + 1}
                   </button>

@@ -472,9 +472,6 @@ db.query(`INSERT IGNORE INTO score_options (criteria_id, label, score, ordering)
 (6, 'มัธยม', 3, 3),
 (6, 'อุดมศึกษา', 5, 4),
 
-(7, 'น้อยกว่า 30 กม.', 1, 1),
-(7, '30 - 60 กม.', 3, 2),
-(7, '60 กม.ขึ้นไป', 5, 3),
 
 (8, 'เจ้าของสิทธิ', 2, 1),
 (8, 'บิดา - มารดา', 5, 2),
@@ -2132,4 +2129,25 @@ app.get("/api/score-criteria", (req, res) => {
     });
     res.json(Object.values(criteriaMap));
   });
+});
+
+app.delete("/api/viewscore/:id", (req, res) => {
+  const id = req.params.id;
+  db.query("DELETE FROM guest_scores WHERE id = ?", [id], (err, result) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    if (result.affectedRows === 0) return res.status(404).json({ error: "ไม่พบข้อมูลคะแนนนี้" });
+    res.json({ success: true });
+  });
+});
+
+app.delete("/api/delete_family/:home_id/:right_holder_id", (req, res) => {
+  const { home_id, right_holder_id } = req.params;
+  db.query(
+    "DELETE FROM guest WHERE home_id = ? AND id != ?",
+    [home_id, right_holder_id],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json({ success: true, deleted: result.affectedRows });
+    }
+  );
 });

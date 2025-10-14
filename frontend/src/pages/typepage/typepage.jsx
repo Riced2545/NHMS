@@ -7,6 +7,7 @@ import "./index.css";
 import "../../components/Search/Search.css";
 import "../../pages/dashboard/Dashboard.css";
 import PDFDownload from "./PDF/pdf.jsx";
+import ExcelDownloadButton from "./PDF/excel.jsx";
 
 const getHomeTypeIcon = (homeTypeName) => {
   switch(homeTypeName) {
@@ -79,6 +80,11 @@ export default function TypePage() {
       <div style={{ display: "flex", minHeight: "calc(100vh - 84px)" }}>
         <Sidebar />
         <div style={{ flex: 1, position: "relative", padding: "32px" }}>
+          {/* ปุ่มดาวน์โหลด Excel */}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 24 }}>
+            <ExcelDownloadButton />
+          </div>
+
           <div style={{
             display: "flex", justifyContent: "center", marginTop: 24, marginBottom: 24,
           }}>

@@ -102,6 +102,14 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
       }
     }
 
+    // 1. ถ้าเป็นผู้ถือสิทธิ์ ให้ลบสมาชิกครอบครัวทั้งหมด (ยกเว้นตัวเอง)
+    if (movingGuest.is_right_holder) {
+      await fetch(`http://localhost:3001/api/delete_family/${movingGuest.home_id}/${movingGuest.id}`, {
+        method: "DELETE"
+      });
+    }
+
+    // 2. ดำเนินการย้ายออกตามปกติ
     fetch("http://localhost:3001/api/guest_move_out", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

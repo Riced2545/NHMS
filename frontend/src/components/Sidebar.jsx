@@ -142,7 +142,7 @@ export default function Navbar() {
           </li>
           )}
           
-          {role_id === "1" && (
+          {/* {role_id === "1" && (
             <li
               style={{
                 cursor: "pointer",
@@ -154,7 +154,7 @@ export default function Navbar() {
             >
               แสดงประวัติการเข้าพัก
             </li>
-          )}
+          )} */}
 
 
         </ul>

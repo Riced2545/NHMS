@@ -13,6 +13,14 @@ export default function ScoreForm() {
     const [phone, setPhone] = useState("");
     const [details, setDetails] = useState(""); // เพิ่ม state สำหรับรายละเอียด
     const [saving, setSaving] = useState(false);
+    const [childrenEdu, setChildrenEdu] = useState({
+        kinder: 0,
+        primary: 0,
+        secondary: 0,
+        university: 0
+    });
+    // เพิ่ม state
+    const [waitMonth, setWaitMonth] = useState(0);
 
     // ดึงข้อมูลยศจาก backend
     useEffect(() => {
@@ -46,11 +54,19 @@ export default function ScoreForm() {
     };
 
     const totalScore = selected.reduce((sum, optIdx, criIdx) => {
-        if (optIdx !== null) {
-            return sum + criteria[criIdx].options[optIdx].score;
-        }
-        return sum;
-    }, 0);
+      if (criIdx === 6) {
+        // ข้อ 7: คำนวณจาก childrenEdu
+        return sum +
+          (childrenEdu.kinder * 1) +
+          (childrenEdu.primary * 2) +
+          (childrenEdu.secondary * 3) +
+          (childrenEdu.university * 5);
+      }
+      // ข้ออื่น: ใช้คะแนนจาก options
+      const cri = criteria[criIdx];
+      if (!cri || !cri.options || optIdx == null) return sum;
+      return sum + (cri.options[optIdx]?.score || 0);
+    }, 0) + Math.floor(waitMonth / 3); // เพิ่มคะแนนไตรมาส
 
     // ขั้นตอนที่ 1: กรอกข้อมูลส่วนตัว
     const handleNext = () => {
@@ -61,7 +77,11 @@ export default function ScoreForm() {
 
     // ขั้นตอนที่ 2: ส่งข้อมูลไป backend
     const handleSubmit = async () => {
-        if (selected.some(s => s === null)) return alert("กรุณาให้คะแนนครบทุกข้อ");
+        // ข้าม index 6 (ข้อที่ 7) เพราะใช้ input number
+        const isMissing = selected.some((s, idx) =>
+    idx !== 6 && idx !== criteria.length - 1 && s === null
+);
+        if (isMissing) return alert("กรุณาให้คะแนนครบทุกข้อ");
         setSaving(true);
 
         try {
@@ -72,7 +92,7 @@ export default function ScoreForm() {
                 lname,
                 phone,
                 total_score: totalScore,
-                details // ส่งรายละเอียดไป backend
+                details
             });
             alert("บันทึกคะแนนสำเร็จ");
             setSelected(Array(criteria.length).fill(null));
@@ -81,7 +101,9 @@ export default function ScoreForm() {
             setName("");
             setLname("");
             setPhone("");
-            setDetails(""); // reset ช่องรายละเอียด
+            setDetails("");
+            setChildrenEdu({ kinder: 0, primary: 0, secondary: 0, university: 0 }); // รีเซตจำนวนบุตรแต่ละระดับ
+            setWaitMonth(0); // รีเซตจำนวนเดือน
             setStep(1);
         } catch (err) {
             alert("เกิดข้อผิดพลาดในการบันทึก");
@@ -234,65 +256,185 @@ export default function ScoreForm() {
                 {/* Step 2: ฟอร์มคะแนน */}
                 {step === 2 && (
                     <div style={{ padding: "20px 30px" }}>
-                        {criteria.map((cri, criIdx) => (
-                            <div key={cri.label} style={{
-                                marginBottom: 20,
-                                paddingBottom: 20,
-                                borderBottom: criIdx < criteria.length - 1 ? "1px solid #e0e7ff" : "none",
-                            }}>
-                                <div style={{
-                                    fontWeight: "500",
-                                    marginBottom: 15,
-                                    fontSize: "16px",
-                                    color: "#1f2937",
-                                    lineHeight: "1.5",
-                                }}>
-                                    {criIdx + 1}. {cri.label}
-                                </div>
-                                <div style={{
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: 10,
-                                }}>
-                                    {cri.options.map((opt, optIdx) => (
-                                        <label key={opt.id} style={{
-                                            cursor: "pointer",
+                        {criteria.map((cri, criIdx) => {
+                            if (criIdx === 6) {
+                                return (
+                                    <div key={cri.label} style={{ marginBottom: 32 }}>
+                                        <div style={{ fontWeight: "500", marginBottom: 15, fontSize: "16px" }}>
+                                            {criIdx + 1}. {cri.label}
+                                        </div>
+                                        <div style={{
                                             display: "flex",
-                                            alignItems: "center",
-                                            padding: "12px 15px",
-                                            background: selected[criIdx] === optIdx ? "#e0f2fe" : "#ffffff",
-                                            border: selected[criIdx] === optIdx ? "2px solid #0284c7" : "1px solid #e5e7eb",
-                                            borderRadius: 6,
-                                            transition: "all 0.2s ease",
-                                            fontSize: "14px",
-                                            color: "#374151",
+                                            gap: 32,
+                                            flexWrap: "wrap",
+                                            marginBottom: 10,
                                         }}>
-                                            <input
-                                                type="radio"
-                                                name={`criteria-${criIdx}`}
-                                                checked={selected[criIdx] === optIdx}
-                                                onChange={() => handleChange(criIdx, optIdx)}
-                                                style={{
-                                                    marginRight: 10,
-                                                    accentColor: "#0284c7",
-                                                }}
-                                            />
-                                            <span style={{ flex: 1 }}>
-                                                {opt.label}
-                                                <span style={{
-                                                    color: "#6b7280",
-                                                    fontWeight: "400",
-                                                    marginLeft: 5,
-                                                    fontSize: "13px",
-                                                }}>
-                                                    ({opt.score} คะแนน)
+                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 180 }}>
+                                                <label style={{ fontWeight: "bold", marginBottom: 6 }}>อนุบาล <span style={{ color: "#0284c7" }}>x 1 คะแนน</span></label>
+                                                <input
+                                                    type="number"
+                                                    min={0}
+                                                    value={childrenEdu.kinder}
+                                                    onChange={e => setChildrenEdu({ ...childrenEdu, kinder: +e.target.value })}
+                                                    style={{
+                                                        width: 100,
+                                                        height: 48,
+                                                        fontSize: 20,
+                                                        borderRadius: 8,
+                                                        border: "1.5px solid #a5b4fc",
+                                                        padding: "8px 16px",
+                                                        boxSizing: "border-box"
+                                                    }}
+                                                />
+                                            </div>
+                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 180 }}>
+                                                <label style={{ fontWeight: "bold", marginBottom: 6 }}>ประถม <span style={{ color: "#0284c7" }}>x 2 คะแนน</span></label>
+                                                <input
+                                                    type="number"
+                                                    min={0}
+                                                    value={childrenEdu.primary}
+                                                    onChange={e => setChildrenEdu({ ...childrenEdu, primary: +e.target.value })}
+                                                    style={{
+                                                        width: 100,
+                                                        height: 48,
+                                                        fontSize: 20,
+                                                        borderRadius: 8,
+                                                        border: "1.5px solid #a5b4fc",
+                                                        padding: "8px 16px",
+                                                        boxSizing: "border-box"
+                                                    }}
+                                                />
+                                            </div>
+                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 180 }}>
+                                                <label style={{ fontWeight: "bold", marginBottom: 6 }}>มัธยม <span style={{ color: "#0284c7" }}>x 3 คะแนน</span></label>
+                                                <input
+                                                    type="number"
+                                                    min={0}
+                                                    value={childrenEdu.secondary}
+                                                    onChange={e => setChildrenEdu({ ...childrenEdu, secondary: +e.target.value })}
+                                                    style={{
+                                                        width: 100,
+                                                        height: 48,
+                                                        fontSize: 20,
+                                                        borderRadius: 8,
+                                                        border: "1.5px solid #a5b4fc",
+                                                        padding: "8px 16px",
+                                                        boxSizing: "border-box"
+                                                    }}
+                                                />
+                                            </div>
+                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 180 }}>
+                                                <label style={{ fontWeight: "bold", marginBottom: 6 }}>อุดมศึกษา <span style={{ color: "#0284c7" }}>x 5 คะแนน</span></label>
+                                                <input
+                                                    type="number"
+                                                    min={0}
+                                                    value={childrenEdu.university}
+                                                    onChange={e => setChildrenEdu({ ...childrenEdu, university: +e.target.value })}
+                                                    style={{
+                                                        width: 100,
+                                                        height: 48,
+                                                        fontSize: 20,
+                                                        borderRadius: 8,
+                                                        border: "1.5px solid #a5b4fc",
+                                                        padding: "8px 16px",
+                                                        boxSizing: "border-box"
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // ข้ออื่น (รวมข้อ 8)
+                            return (
+                                <div key={cri.label} style={{
+                                    marginBottom: 20,
+                                    paddingBottom: 20,
+                                    borderBottom: criIdx < criteria.length - 1 ? "1px solid #e0e7ff" : "none",
+                                }}>
+                                    <div style={{
+                                        fontWeight: "500",
+                                        marginBottom: 15,
+                                        fontSize: "16px",
+                                        color: "#1f2937",
+                                        lineHeight: "1.5",
+                                    }}>
+                                        {criIdx + 1}. {cri.label}
+                                    </div>
+                                    <div style={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 10,
+                                    }}>
+                                        {cri.options.map((opt, optIdx) => (
+                                            <label key={opt.id} style={{
+                                                cursor: "pointer",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                padding: "12px 15px",
+                                                background: selected[criIdx] === optIdx ? "#e0f2fe" : "#ffffff",
+                                                border: selected[criIdx] === optIdx ? "2px solid #0284c7" : "1px solid #e5e7eb",
+                                                borderRadius: 6,
+                                                transition: "all 0.2s ease",
+                                                fontSize: "14px",
+                                                color: "#374151",
+                                            }}>
+                                                <input
+                                                    type="radio"
+                                                    name={`criteria-${criIdx}`}
+                                                    checked={selected[criIdx] === optIdx}
+                                                    onChange={() => handleChange(criIdx, optIdx)}
+                                                    style={{
+                                                        marginRight: 10,
+                                                        accentColor: "#0284c7",
+                                                    }}
+                                                />
+                                                <span style={{ flex: 1 }}>
+                                                    {opt.label}
+                                                    <span style={{
+                                                        color: "#6b7280",
+                                                        fontWeight: "400",
+                                                        marginLeft: 5,
+                                                        fontSize: "13px",
+                                                    }}>
+                                                        ({opt.score} คะแนน)
+                                                    </span>
                                                 </span>
-                                            </span>
-                                        </label>
-                                    ))}
+                                            </label>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
+
+                        {/* ข้อ 9: คะแนนไตรมาส (แยกนอก map) */}
+                        <div style={{ marginBottom: 32 }}>
+    <div style={{ fontWeight: "500", marginBottom: 15, fontSize: "16px" }}>
+        {criteria.length + 1}. คะแนนไตรมาส (นับจากวันที่คณะกรรมการพิจารณาเข้าลำดับครั้งแรก 3 เดือน = 1 คะแนน)
+    </div>
+    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <label style={{ fontWeight: "bold" }}>จำนวนเดือน:</label>
+        <input
+            type="number"
+            min={0}
+            value={waitMonth}
+            onChange={e => setWaitMonth(+e.target.value)}
+            style={{
+                width: 100,
+                height: 48,
+                fontSize: 20,
+                borderRadius: 8,
+                border: "1.5px solid #a5b4fc",
+                padding: "8px 16px",
+                boxSizing: "border-box"
+            }}
+        />
+        <span style={{ fontWeight: "bold", color: "#0284c7" }}>
+            = {Math.floor(waitMonth / 3)} คะแนน
+        </span>
+    </div>
+</div>
 
                         {/* Score Display */}
                         <div style={{

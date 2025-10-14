@@ -384,6 +384,41 @@ const pieColors = filteredRankStats.map(() => getRandomColorFromBase());
             color="#ef4444"
           />
         </div>
+
+        {/* Cards สถิติแยกตามประเภทบ้าน */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "20px",
+          marginBottom: "32px"
+        }}>
+          {typeStats.map((type) => (
+            <div
+              key={type.type}
+              style={{
+                background: "#fff",
+                borderRadius: "16px",
+                padding: "20px",
+                boxShadow: "0 2px 12px #e5e7eb",
+                border: "1.5px solid #3b82f640",
+                textAlign: "center"
+              }}
+            >
+              <div style={{ fontWeight: "bold", fontSize: "18px", color: "#2563eb", marginBottom: 8 }}>
+                {type.type}
+              </div>
+              <div style={{ fontSize: "15px", marginBottom: 4 }}>
+                <span style={{ color: "#10b981", fontWeight: "bold" }}>มีผู้อยู่: {type.occupied}</span>
+              </div>
+              <div style={{ fontSize: "15px", marginBottom: 4 }}>
+                <span style={{ color: "#f59e0b", fontWeight: "bold" }}>ว่าง: {type.vacant}</span>
+              </div>
+              <div style={{ fontSize: "15px", color: "#6b7280" }}>
+                มีทั้งหมด {type.total} หลัง
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
