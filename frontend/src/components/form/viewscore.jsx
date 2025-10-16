@@ -53,8 +53,11 @@ export default function ViewScore() {
 
   // ฟังก์ชันแบ่งประเภทบุคคล
   const getPersonType = (item) => {
-    if (item.rank_id >= 1 && item.rank_id <= 6) return "สัญญาบัตร";
-    if (item.rank_id >= 7 && item.rank_id <= 12) return "จ่า";
+    // กลุ่มสัญญาบัตร: id 1-6 (เช่น นายทหารหญิง, นาวาโท ฯลฯ)
+    if (item.rank_id >= 454 && item.rank_id <= 465) return "สัญญาบัตร";
+    // กลุ่มจ่า: id 7-18 (เช่น จ่าเอก, จ่าโท, จ่าตรีหญิง ฯลฯ)
+    if (item.rank_id >= 466 && item.rank_id <= 477) return "จ่า";
+    // ลูกจ้าง: ถ้า title เป็น นาย, นาง, นางสาว
     if (["นาย", "นาง", "นางสาว"].includes(item.title)) return "ลูกจ้าง";
     return "";
   };
@@ -138,13 +141,6 @@ export default function ViewScore() {
               <option value="จ่า">ประทวน</option>
               <option value="ลูกจ้าง">ลูกจ้าง</option>
             </select>
-            <button
-              type="submit"
-              className="search-btn"
-              disabled={loading}
-            >
-              {loading ? "ค้นหา..." : "ค้นหา"}
-            </button>
           </form>
           {/* ปุ่มลงคะแนนเข้าพัก */}
           <button

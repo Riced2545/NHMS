@@ -198,20 +198,34 @@ const ComprehensiveReportPDF = ({ typeStats, houseStatus, detailData }) => {
     return 'ว่าง';
   };
 
-  // แยกข้อมูลตามประเภทบ้าน
-  const groupByType = () => {
+  // ฟังก์ชันแยกข้อมูลตามประเภทบ้านและ home_unit และเรียงตาม home_type_id
+  const groupByTypeAndUnit = () => {
     if (!detailData || detailData.length === 0) return {};
-    
+
+    // สร้าง array แล้ว sort ก่อน group
+    const sorted = [...detailData].sort((a, b) => {
+      // ถ้าไม่มี home_type_id ให้ถือว่าใหญ่สุด
+      const aType = a.home_type_id ?? 9999;
+      const bType = b.home_type_id ?? 9999;
+      if (aType !== bType) return aType - bType;
+      // ถ้า home_type_id เท่ากัน ให้เรียงตาม home_unit หรือ unit_name
+      const aUnit = (a.home_unit || a.unit_name || '').toString();
+      const bUnit = (b.home_unit || b.unit_name || '').toString();
+      return aUnit.localeCompare(bUnit, 'th');
+    });
+
     const grouped = {};
-    detailData.forEach(item => {
+    sorted.forEach(item => {
       const type = item.hType || 'ไม่ระบุ';
-      if (!grouped[type]) grouped[type] = [];
-      grouped[type].push(item);
+      const unit = item.home_unit || item.unit_name || 'ไม่ระบุ';
+      const key = `${item.home_type_id || 9999}::${type}::${unit}`;
+      if (!grouped[key]) grouped[key] = { type, unit, houses: [] };
+      grouped[key].houses.push(item);
     });
     return grouped;
   };
 
-  const groupedData = groupByType();
+  const groupedData = groupByTypeAndUnit();
   const totalHouses = houseStatus.vacant + houseStatus.occupied;
   const occupancyRate = totalHouses > 0 ? ((houseStatus.occupied / totalHouses) * 100).toFixed(1) : 0;
   const vacancyRate = totalHouses > 0 ? ((houseStatus.vacant / totalHouses) * 100).toFixed(1) : 0;
@@ -275,10 +289,10 @@ const ComprehensiveReportPDF = ({ typeStats, houseStatus, detailData }) => {
       </Page>
 
       {/* หน้าต่อไป: รายละเอียดแยกตามประเภท */}
-      {Object.entries(groupedData).map(([type, houses], typeIndex) => (
-        <Page key={typeIndex} size="A4" style={styles.page}>
+      {Object.values(groupedData).map(({ type, unit, houses }, idx) => (
+        <Page key={idx} size="A4" style={styles.page}>
           <Text style={styles.header}>
-            รายละเอียดผู้อยู่อาศัย - {type}
+            รายละเอียดผู้อยู่อาศัย - {type} (: {unit})
           </Text>
           <Text style={{ textAlign: 'center', fontSize: 16, marginBottom: 20 }}>
             จำนวน: {houses.length} หลัง
@@ -291,7 +305,7 @@ const ComprehensiveReportPDF = ({ typeStats, houseStatus, detailData }) => {
                 <Text style={{ ...styles.cellTextBold, color: '#fff' }}>ลำดับ</Text>
               </View>
               <View style={styles.detailCol2}>
-                <Text style={{ ...styles.cellTextBold, color: '#fff' }}>เลขที่</Text>
+                <Text style={{ ...styles.cellTextBold, color: '#fff' }}>เลขที่บ้าน</Text>
               </View>
               <View style={styles.detailCol3}>
                 <Text style={{ ...styles.cellTextBold, color: '#fff' }}>ยศ ชื่อ-สกุล</Text>
@@ -304,8 +318,28 @@ const ComprehensiveReportPDF = ({ typeStats, houseStatus, detailData }) => {
             {houses.map((house, index) => {
               const residentName = formatResidentName(house);
               const isEmpty = residentName === 'ว่าง';
-              const rowStyle = index % 2 === 0 ? { backgroundColor: '#f3f4f6' } : {};
-              
+
+              // รวมเลขที่บ้านกับ address (ถ้ามี)
+              const houseNumber =
+                house.hNumber ||
+                house.houseNumber ||
+                house.house_number ||
+                house.home_number ||
+                house.number ||
+                '-';
+
+              // address อาจเป็น address, Address, หรือ address_text
+              const addressText =
+                house.address ||
+                house.Address ||
+                house.address_text ||
+                '';
+
+              // ถ้ามีเลขที่บ้านและ address ให้แสดง "เลขที่บ้าน (address)" ถ้าไม่มีเลขที่บ้านให้แสดง address
+              const displayHouseNumber = houseNumber !== '-' && addressText
+                ? `${houseNumber} (${addressText})`
+                : addressText || houseNumber;
+
               return (
                 <View key={index} style={isEmpty ? styles.tableRowEmpty : styles.tableRow}>
                   <View style={styles.detailCol1}>
@@ -313,7 +347,7 @@ const ComprehensiveReportPDF = ({ typeStats, houseStatus, detailData }) => {
                   </View>
                   <View style={styles.detailCol2}>
                     <Text style={styles.cellText}>
-                      {house.hNumber || house.houseNumber || house.house_number || '-'}
+                      {displayHouseNumber}
                     </Text>
                   </View>
                   <View style={styles.detailCol3}>
@@ -333,7 +367,7 @@ const ComprehensiveReportPDF = ({ typeStats, houseStatus, detailData }) => {
 
 
           <Text style={styles.footer}>
-            หน้า {typeIndex + 2}
+            หน้า {idx + 2}
           </Text>
         </Page>
       ))}
@@ -463,7 +497,7 @@ const PDFDownload = ({ typeStats, houseStatus, detailData, reportType = 'summary
           <span>⏳ กำลังสร้าง PDF...</span>
         ) : (
           <span>
-            📄 พิมพ์รายงานภาพรวม
+            📄 ดาวน์โหลด PDF
           </span>
         );
       }}

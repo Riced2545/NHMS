@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Navbar from "../../components/Sidebar";
-import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ResponsiveContainer } from "recharts";
 import "./Dashboard.css";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState({
@@ -23,10 +23,21 @@ export default function Dashboard() {
   const [selectedRank, setSelectedRank] = useState("ทั้งหมด");
   const [homes, setHomes] = useState([]); // เพิ่ม state homes
   const [guests, setGuests] = useState([]); // เพิ่ม state guests
+  const [homeTypes, setHomeTypes] = useState([]);
 
   useEffect(() => {
     fetchDashboardData();
+    fetchHomeTypes();
   }, []);
+
+  const fetchHomeTypes = async () => {
+    try {
+      const res = await axios.get("http://localhost:3001/api/home_types");
+      setHomeTypes(res.data.map(ht => ht.name));
+    } catch (err) {
+      setHomeTypes([]);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -221,7 +232,7 @@ export default function Dashboard() {
   };
 
   // สร้างอาร์เรย์ประเภทบ้าน
-  const homeTypes = ["ทั้งหมด", ...Array.from(new Set(homes.map(h => h.hType || "ไม่ระบุ")))];
+  const allHomeTypes = ["ทั้งหมด", ...Array.from(new Set(homes.map(h => h.hType || "ไม่ระบุ")))];
   // กรอง homes ตามประเภทที่เลือก
   const filteredHomes = selectedType === "ทั้งหมด"
     ? homes
@@ -241,27 +252,13 @@ export default function Dashboard() {
 
   // กรอง typeStats ตามตัวกรอง (ประเภทบ้าน, คำนำหน้า, ยศ)
 const filteredTypeStats = (() => {
-  // สร้างอ็อบเจกต์เก็บสถิติ
-  const typeData = {};
-  filteredGuests.forEach(g => {
-    const type = g.hType || "ไม่ระบุ";
-    if (!typeData[type]) typeData[type] = { total: 0, occupied: 0 };
-    typeData[type].total++;
-    typeData[type].occupied++;
+  return homeTypes.map(type => {
+    const homesOfType = homes.filter(h => (h.hType || "ไม่ระบุ") === type);
+    const total = homesOfType.length;
+    const occupied = homesOfType.filter(h => h.status_id === 1).length;
+    const vacant = total - occupied;
+    return { type, total, occupied, vacant };
   });
-
-  // ดึงข้อมูลบ้านว่างจาก homes ที่ตรงประเภท
-  Object.keys(typeData).forEach(type => {
-    const totalHomesOfType = homes.filter(h => (h.hType || "ไม่ระบุ") === type).length;
-    typeData[type].vacant = totalHomesOfType - typeData[type].occupied;
-  });
-
-  return Object.entries(typeData).map(([type, data]) => ({
-    type,
-    total: data.total,
-    occupied: data.occupied,
-    vacant: data.vacant
-  }));
 })();
 
   // สถิติตามยศ (Pie Chart)
@@ -325,6 +322,20 @@ const pieColors = filteredRankStats.map(() => getRandomColorFromBase());
     );
   }
 
+  // สร้าง array สำหรับแสดงทุกประเภทบ้าน
+  const typeStatsArray = homeTypes.map(typeName => {
+    const found = typeStats.find(t => t.type === typeName);
+    return found
+      ? found
+      : { type: typeName, total: 0, occupied: 0, vacant: 0 };
+  });
+
+  // สร้าง filteredTypeStatsArray สำหรับกราฟและ Card
+const filteredTypeStatsArray = selectedType === "ทั้งหมด"
+  ? typeStatsArray
+  : typeStatsArray.filter(t => t.type === selectedType);
+
+  // ตัวกรองประเภทบ้าน
   return (
     <div style={{ minHeight: "100vh", background: "#fafbff", padding: "0 0 64px 0", width: "100vw", margin: 0, overflow: "hidden" }}>
       <Navbar />
@@ -358,13 +369,7 @@ const pieColors = filteredRankStats.map(() => getRandomColorFromBase());
             value={dashboardData.totalHomes}
             icon="🏘️"
             color="#3b82f6"
-          />
-          <StatCard
-            title="บ้านที่มีผู้อยู่"
-            value={dashboardData.occupiedHomes}
-            icon="🏠"
-            color="#10b981"
-          />
+          />  
           <StatCard
             title="บ้านว่าง"
             value={dashboardData.vacantHomes}
@@ -372,27 +377,56 @@ const pieColors = filteredRankStats.map(() => getRandomColorFromBase());
             color="#f59e0b"
           />
           <StatCard
+            title="บ้านที่มีคนอยู่"
+            value={dashboardData.occupiedHomes}
+            icon="🏠"
+            color="#10b981"
+          />
+          <StatCard
             title="ผู้พักทั้งหมด"
             value={dashboardData.totalGuests}
             icon="👥"
             color="#8b5cf6"
           />
-          <StatCard
+          {/* <StatCard
             title="เกษียณปีนี้"
             value={`${dashboardData.retirementSoon} คน`}
             icon="⏰"
             color="#ef4444"
-          />
+          /> */}
+        </div>
+
+        {/* ตัวกรองประเภทบ้าน */}
+        <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 12 }}>
+          <label htmlFor="type-filter" style={{ fontWeight: "bold", fontSize: 16 }}>ประเภทบ้าน:</label>
+          <select
+            id="type-filter"
+            value={selectedType}
+            onChange={e => setSelectedType(e.target.value)}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 8,
+              border: "1.5px solid #d1d5db",
+              fontSize: "16px",
+              minWidth: 160
+            }}
+          >
+            <option value="ทั้งหมด">ทั้งหมด</option>
+            {homeTypes.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
         </div>
 
         {/* Cards สถิติแยกตามประเภทบ้าน */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "20px",
-          marginBottom: "32px"
-        }}>
-          {typeStats.map((type) => (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: "32px"
+          }}
+        >
+          {filteredTypeStatsArray.map((type) => (
             <div
               key={type.type}
               style={{
@@ -401,23 +435,45 @@ const pieColors = filteredRankStats.map(() => getRandomColorFromBase());
                 padding: "20px",
                 boxShadow: "0 2px 12px #e5e7eb",
                 border: "1.5px solid #3b82f640",
-                textAlign: "center"
+                textAlign: "center",
+                minWidth: 220,
+                maxWidth: 320,
+                width: "100%",
+                margin: "0 8px"
               }}
             >
               <div style={{ fontWeight: "bold", fontSize: "18px", color: "#2563eb", marginBottom: 8 }}>
                 {type.type}
               </div>
               <div style={{ fontSize: "15px", marginBottom: 4 }}>
-                <span style={{ color: "#10b981", fontWeight: "bold" }}>มีผู้อยู่: {type.occupied}</span>
+                <span style={{ color: "#10b981", fontWeight: "bold" }}> มีบ้านทั้งหมด {type.total} หลัง</span>
               </div>
               <div style={{ fontSize: "15px", marginBottom: 4 }}>
-                <span style={{ color: "#f59e0b", fontWeight: "bold" }}>ว่าง: {type.vacant}</span>
-              </div>
-              <div style={{ fontSize: "15px", color: "#6b7280" }}>
-                มีทั้งหมด {type.total} หลัง
+                <span style={{ color: "#f59e0b", fontWeight: "bold" }}>ว่าง : {type.vacant}</span>
               </div>
             </div>
           ))}
+        </div>
+
+        {/* กราฟแท่งแสดงจำนวนบ้านแต่ละประเภท */}
+        <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 2px 12px #e5e7eb", padding: 24, marginBottom: 32, display: "flex", justifyContent: "center" }}>
+          <div style={{ width: filteredTypeStatsArray.length === 1 ? 400 : "100%", maxWidth: "100%" }}>
+            <h3 style={{ fontWeight: "bold", fontSize: 20, color: "#2563eb", marginBottom: 16 }}>
+              กราฟจำนวนบ้านแต่ละประเภท
+            </h3>
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={filteredTypeStatsArray}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="type" fontSize={14} />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="total" name="บ้านทั้งหมด" fill="#3b82f6" />
+                <Bar dataKey="occupied" name="มีผู้อยู่" fill="#10b981" />
+                <Bar dataKey="vacant" name="ว่าง" fill="#f59e0b" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>

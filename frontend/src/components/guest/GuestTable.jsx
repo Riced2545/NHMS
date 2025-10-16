@@ -140,31 +140,35 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
       <table className="search-table">
         <thead>
           <tr>
-            <th>
-              <div
-                className="checkbox-wrapper-13"
-                style={{ userSelect: "none" }}
-                onClick={handleSelectAll}
-                tabIndex={0}
-                onKeyDown={e => { if (e.key === "Enter" || e.key === " ") handleSelectAll(); }}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedIds.length === sortedGuests.length && sortedGuests.length > 0}
-                  readOnly
-                  style={{ pointerEvents: "none" }}
-                />
-                <span style={{ fontSize: 15, color: "#333" }}>เลือกทั้งหมด</span>
-              </div>
-            </th>
+            {role_id !== "2" && (
+              <th>
+                <div
+                  className="checkbox-wrapper-13"
+                  style={{ userSelect: "none" }}
+                  onClick={handleSelectAll}
+                  tabIndex={0}
+                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") handleSelectAll(); }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.length === sortedGuests.length && sortedGuests.length > 0}
+                    readOnly
+                    style={{ pointerEvents: "none" }}
+                  />
+                  <span style={{ fontSize: 15, color: "#333" }}>เลือกทั้งหมด</span>
+                </div>
+              </th>
+            )}
+            <th>ลำดับ</th>
             <th>ชื่อ-นามสกุล</th>
             {showAddress && <th>บ้านเลขที่</th>}
             {showType && <th>ประเภทบ้าน</th>}
-            <th>วันเกิด</th>
-            <th>เบอร์โทรศัพท์</th>
-            <th>เบอร์โทรที่ทำงาน</th>
-            <th>เงินเดือน</th>
-            {((role_id === "1" && (onEdit || onDelete)) || role_id !== "1") && <th>จัดการ</th>}
+            <th>วันที่เข้าพัก</th>
+            {role_id !== "2" && <th>วันเกิด</th>}
+            {role_id !== "2" && <th>เบอร์โทรศัพท์</th>}
+            {role_id !== "2" && <th>เบอร์โทรที่ทำงาน</th>}
+            {role_id !== "2" && <th>เงินเดือน</th>}
+            {role_id === "1" && (onEdit || onDelete) && <th>จัดการ</th>}
           </tr>
         </thead>
         <tbody>
@@ -175,29 +179,32 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
               </td>
             </tr>
           ) : (
-            sortedGuests.map(g => (
+            sortedGuests.map((g, idx) => (
               <tr
                 key={g.id}
                 className={`guest-row ${g.is_right_holder ? 'right-holder-row' : ''}`}
                 title="ดูรายละเอียดบ้าน"
               >
-                <td>
-                  <div
-                    className="checkbox-wrapper-13"
-                    style={{ userSelect: "none" }}
-                    onClick={() => handleSelect(g.id)}
-                    tabIndex={0}
-                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") handleSelect(g.id); }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(g.id)}
-                      readOnly
-                      style={{ pointerEvents: "none" }}
-                    />
-                    <span style={{ fontSize: 15, color: "#333" }}>เลือก</span>
-                  </div>
-                </td>
+                {role_id !== "2" && (
+                  <td>
+                    <div
+                      className="checkbox-wrapper-13"
+                      style={{ userSelect: "none" }}
+                      onClick={() => handleSelect(g.id)}
+                      tabIndex={0}
+                      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") handleSelect(g.id); }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(g.id)}
+                        readOnly
+                        style={{ pointerEvents: "none" }}
+                      />
+                      <span style={{ fontSize: 15, color: "#333" }}>เลือก</span>
+                    </div>
+                  </td>
+                )}
+                <td>{idx + 1}</td>
                 <td className="guest-name-cell">
                   <span className="guest-name">
                     {g.is_right_holder && <span className="right-holder-badge">🗝️</span>}
@@ -206,14 +213,18 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
                 </td>
                 {showAddress && <td className="guest-data-cell">{g.Address}</td>}
                 {showType && <td className="guest-data-cell">{g.hType}</td>}
-                <td className="guest-data-cell">{g.dob ? formatThaiDate(g.dob) : ""}</td>
-                <td className="guest-data-cell">{g.phone || "-"}</td>
-                <td className="guest-data-cell">{g.job_phone || "-"}</td>
-                <td className="guest-data-cell">{g.income || "-"}</td>
-                {((role_id === "1" && (onEdit || onDelete)) || role_id !== "1") && (
+                {/* วันที่เข้า */}
+                <td className="guest-data-cell">
+                  {g.created_at ? formatThaiDate(g.created_at) : "-"}
+                </td>
+                {role_id !== "2" && <td className="guest-data-cell">{g.dob ? formatThaiDate(g.dob) : ""}</td>}
+                {role_id !== "2" && <td className="guest-data-cell">{g.phone || "-"}</td>}
+                {role_id !== "2" && <td className="guest-data-cell">{g.job_phone || "-"}</td>}
+                {role_id !== "2" && <td className="guest-data-cell">{g.income || "-"}</td>}
+                {role_id === "1" && (onEdit || onDelete) && (
                   <td className="action-cell" onClick={e => e.stopPropagation()}>
                     <div className="action-buttons">
-                      {role_id === "1" && onEdit && (
+                      {onEdit && (
                         <button
                           className="btn-edit"
                           onClick={() => handleEdit(g)}
@@ -221,7 +232,8 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
                           ✏️แก้ไข
                         </button>
                       )}
-                      {role_id === "1" && g.is_right_holder ? (
+                      {/* แสดงปุ่มย้ายออกเฉพาะผู้ถือสิทธิ์เท่านั้น */}
+                      {g.is_right_holder ? (
                         <button
                           className="btn-move"
                           onClick={() => handleMove(g)}
@@ -237,14 +249,6 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
                           🚚 ย้ายออก
                         </button>
                       ) : null}
-                      {role_id !== "1" && (
-                        <button
-                          className="btn-detail"
-                          onClick={() => g.home_id && navigate(`/viewhome/${g.home_id}`)}
-                        >
-                          📋 รายละเอียด
-                        </button>
-                      )}
                     </div>
                   </td>
                 )}

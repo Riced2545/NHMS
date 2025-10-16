@@ -116,7 +116,7 @@ export default function GenericHomePage() {
       boxShadow: "0 2px 8px rgba(59,130,246,0.12)"
     }}
   >
-    + เพิ่มบ้าน
+    + เพิ่มบ้านพัก
   </button>
 </div>
           <ToastContainer />
@@ -297,7 +297,7 @@ export default function GenericHomePage() {
           }}
           onClick={() => setShowAddGuestHomeId(home.home_id)}
         >
-          เพิ่มเข้าพัก
+         เพิ่มเข้าพัก
         </button>
         <button
           style={{
@@ -329,7 +329,7 @@ export default function GenericHomePage() {
           }}
           onClick={() => setShowEditHomeId(home.home_id)}
         >
-          แก้ไข
+          แก้ไขบ้าน
         </button>
       </div>
     </div>

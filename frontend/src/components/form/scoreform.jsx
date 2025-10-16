@@ -151,6 +151,8 @@ const totalScore = selected.reduce((sum, optIdx, criIdx) => {
 
     return (
         <div className="h-screen w-screen bg-blue-50 flex justify-center items-center p-5">
+    
+
             <div
                 style={{
                     maxWidth: 600,
@@ -162,6 +164,7 @@ const totalScore = selected.reduce((sum, optIdx, criIdx) => {
                     border: "1px solid #e0e7ff",
                     maxHeight: "calc(100vh - 4rem)",
                     overflowY: "auto",
+                    position: "relative"
                 }}
             >
                 {/* Header */}
@@ -185,23 +188,6 @@ const totalScore = selected.reduce((sum, optIdx, criIdx) => {
                     >
                         แบบฟอร์มให้คะแนนการเข้าพัก
                     </h2>
-                    {/* ปุ่มแก้ไขแบบฟอร์ม/เกณฑ์ */}
-                    <Link
-                        to="/edit-criteria"
-                        style={{
-                            background: "#f59e42",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: 6,
-                            padding: "8px 18px",
-                            fontSize: "15px",
-                            fontWeight: "bold",
-                            textDecoration: "none",
-                            marginLeft: 12
-                        }}
-                    >
-                        แก้ไขแบบฟอร์ม/เกณฑ์
-                    </Link>
                 </div>
 
                 {/* Step 1: ข้อมูลส่วนตัว */}
@@ -346,6 +332,23 @@ const totalScore = selected.reduce((sum, optIdx, criIdx) => {
                                 onClick={handleNext}
                             >
                                 ถัดไป
+                            </button>
+                            <button
+                                type="button"
+                                style={{
+                                    marginLeft: 16,
+                                    background: "#e5e7eb",
+                                    color: "#374151",
+                                    border: "none",
+                                    padding: "12px 30px",
+                                    borderRadius: 6,
+                                    fontSize: "16px",
+                                    fontWeight: "500",
+                                    cursor: "pointer"
+                                }}
+                                onClick={() => navigate(-1)}
+                            >
+                                ยกเลิก
                             </button>
                         </div>
                     </div>

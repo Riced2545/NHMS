@@ -650,13 +650,13 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
 
               <div className="form-row-horizontal">
                 <div className="form-field">
-                 <label>สถานที่ทำงาน <span className="required">*</span></label>
+                 <label>สถานที่ทำงาน <span className=""></span></label>
                 <input 
                   type="text" 
                   name="pos" 
                   value={form.pos} 
                   onChange={handleChange} 
-                  required 
+                   
                 />
                 </div>
                 
@@ -688,37 +688,37 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
 
               <div className="form-row-horizontal">
                 <div className="form-field">
-                  <label>รายได้ <span className="required">*</span></label>
+                  <label>รายได้ <span className=""></span></label>
                   <input 
                     type="number" 
                     name="income" 
                     value={form.income} 
                     onChange={handleChange} 
-                    required 
+                     
                   />
                 </div>
                 
                 <div className="form-field">
-                  <label>เบอร์โทรศัพท์ <span className="required">*</span></label>
+                  <label>เบอร์โทรศัพท์ <span className=""></span></label>
                   <input 
                     type="text" 
                     name="phone" 
                     value={form.phone} 
                     onChange={handleChange} 
-                    required 
+                     
                   />
                 </div>
               </div>
 
               <div className="form-row-horizontal">
                 <div className="form-field">
-                  <label>เบอร์โทรที่ทำงาน <span className="required">*</span></label>
+                  <label>เบอร์โทรที่ทำงาน <span className=""></span></label>
                   <input 
                     type="text" 
                     name="job_phone" 
                     value={form.job_phone} 
                     onChange={handleChange} 
-                    required 
+                     
                   />
                 </div>
                 
@@ -851,15 +851,7 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
               </div>
 
               <div className="form-row-horizontal">
-                <div className="form-field">
-                  <label>ตำแหน่งงาน <span className="required"></span></label>
-                  <input 
-                    type="text" 
-                    value={familyForms[currentFamilyIndex]?.pos || ""}
-                    onChange={(e) => handleFamilyFormChange(currentFamilyIndex, 'pos', e.target.value)}
-                    
-                  />
-                </div>
+
                 
                 <div className="form-field">
                   <label>วันเกิด</label>

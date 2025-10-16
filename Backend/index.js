@@ -439,7 +439,6 @@ db.query(`INSERT IGNORE INTO score_criteria (id, label, ordering, formula_json) 
 (6, 'จำนวนบุตรที่อยู่ระหว่างศึกษา', 6, NULL),
 (7, 'จำนวนบุตรคูณกับระดับการศึกษา', 7, '{"kinder":1,"primary":2,"secondary":3,"university":5}'),
 (8, 'การเจ็บป่วยที่ส่งผลต่อการดำเนินชีวิตอย่างชัดเจน', 8, NULL),
-(9, 'คะแนนไตรมาส', 9, '{"month":1}')
 `, (err) => {
   if (err) console.log("Warning: Failed to insert default score_criteria");
   else console.log("✅ Default score_criteria created");
@@ -2234,4 +2233,27 @@ app.post("/api/score-options", (req, res) => {
       res.json({ success: true, id: result.insertId });
     }
   );
+});
+
+
+app.get("/api/pdf-report", (req, res) => {
+  const sql = `
+    SELECT 
+      h.home_id,
+      h.Address AS hNumber,
+      ht.name AS hType,
+      g.name,
+      g.lname,
+      COALESCE(r.name, g.title) AS rank,
+      g.phone
+    FROM home h
+    LEFT JOIN home_types ht ON h.home_type_id = ht.id
+    LEFT JOIN guest g ON g.home_id = h.home_id AND g.is_right_holder = 1
+    LEFT JOIN ranks r ON g.rank_id = r.id
+    ORDER BY ht.id, h.Address
+  `;
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    res.json(results);
+  });
 });

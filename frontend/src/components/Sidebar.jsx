@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import "./index.css";
+import FileDownloadModal from "../pages/typepage/PDF/filedownload";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -8,6 +9,7 @@ export default function Navbar() {
   const role_id = localStorage.getItem("role_id");
   const username = localStorage.getItem("username") || "ผู้ใช้";
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const dropdownRef = useRef(null);
 
   // เพิ่มส่วนนี้เพื่อ redirect ถ้าไม่ได้ login
@@ -165,7 +167,20 @@ export default function Navbar() {
             </li>
           )} */}
 
-
+          {/* ดาวน์โหลดไฟล์ */}
+          {role_id === "1" && (
+          <li
+            style={{
+              cursor: "pointer",
+              borderBottom: showDownloadModal ? "3px solid #fff" : "none",
+              fontWeight: showDownloadModal ? "bold" : "normal",
+              color: showDownloadModal ? "#ffe066" : "#fff",
+            }}
+            onClick={() => setShowDownloadModal(true)}
+          >
+            ดาวน์โหลดไฟล์
+          </li>
+           )}
         </ul>
 
         {/* User Profile Dropdown */}
@@ -294,6 +309,9 @@ export default function Navbar() {
           )}
         </div>
       </div>
+
+      {/* Download Modal */}
+      <FileDownloadModal open={showDownloadModal} onClose={() => setShowDownloadModal(false)} />
     </nav>
   );
 }

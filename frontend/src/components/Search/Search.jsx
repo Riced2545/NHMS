@@ -26,8 +26,9 @@ export default function Search() {
   // โหลดผู้ถือสิทธิ์เมื่อเปิดหน้า
   useEffect(() => {
     fetchRightHolders();
+    setCurrentPage(1);
     // eslint-disable-next-line
-  }, []);
+  }, [keyword, selectedType]);
 
   const fetchRightHolders = () => {
     setLoading(true);
@@ -197,7 +198,7 @@ export default function Search() {
       <Navbar />
       <div className="search-container">
         <h2 className="search-title">ค้นหาผู้ถือสิทธิ์</h2>
-        <form onSubmit={handleSearch} className="search-form" style={{ gap: 16 }}>
+        <form className="search-form" style={{ gap: 16 }}>
           <input
             type="text"
             placeholder="ค้นหาด้วยชื่อหรือนามสกุลผู้ถือสิทธิ์"
@@ -218,13 +219,7 @@ export default function Search() {
               </option>
             ))}
           </select>
-          <button
-            type="submit"
-            className="search-btn"
-            disabled={loading}
-          >
-            {loading ? "ค้นหา..." : "ค้นหา"}
-          </button>
+          {/* สามารถลบปุ่มค้นหาออกได้เลย */}
         </form>
         <div className="search-results">
           {results.length === 0 && !loading && (
