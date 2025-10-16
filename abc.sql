@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 14, 2025 at 08:40 AM
+-- Generation Time: Oct 16, 2025 at 09:48 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -44,13 +44,6 @@ CREATE TABLE `guest` (
   `image_url` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `guest`
---
-
-INSERT INTO `guest` (`id`, `home_id`, `rank_id`, `name`, `lname`, `dob`, `pos`, `income`, `phone`, `job_phone`, `created_at`, `is_right_holder`, `title`, `image_url`) VALUES
-(13, 1, 454, 'พพ', 'พพ', '1965-06-19', 'ำ', 2, '0899391075', '2', '2025-10-14 04:37:20', 1, NULL, NULL);
-
 -- --------------------------------------------------------
 
 --
@@ -74,11 +67,12 @@ CREATE TABLE `guest_history` (
 --
 
 INSERT INTO `guest_history` (`id`, `guest_id`, `rank_id`, `name`, `lname`, `home_id`, `home_address`, `move_status_id`, `moved_at`) VALUES
-(1, NULL, NULL, 'สุพรรณี', 'วงค์งาม', 1, '1', 45, '2025-10-12 19:15:27'),
-(2, NULL, NULL, 'สุพรรณี', 'วงค์งาม', 1, '1', 1, '2025-10-13 07:06:53'),
-(3, NULL, NULL, 'ภูวดล', 'พานทอง', 2, '2', 2, '2025-10-13 07:10:26'),
-(4, NULL, NULL, 'ภูวดล', 'พานทอง', 1, '1', 1, '2025-10-14 02:15:47'),
-(5, NULL, NULL, 'ภูวดล', 'พานทอง', 14, '1', 45, '2025-10-14 03:01:01');
+(1, NULL, NULL, 'สุพรรณี', 'วงค์งาม', NULL, '1', 45, '2025-10-12 19:15:27'),
+(2, NULL, NULL, 'สุพรรณี', 'วงค์งาม', NULL, '1', 1, '2025-10-13 07:06:53'),
+(3, NULL, NULL, 'ภูวดล', 'พานทอง', NULL, '2', 2, '2025-10-13 07:10:26'),
+(4, NULL, NULL, 'ภูวดล', 'พานทอง', NULL, '1', 1, '2025-10-14 02:15:47'),
+(6, NULL, 454, 'ภูวดล', 'พานทอง', NULL, '2', 2, '2025-10-14 08:01:30'),
+(7, NULL, 454, 'ภูวดล', 'พานทอง', NULL, '1', 1, '2025-10-16 02:23:14');
 
 -- --------------------------------------------------------
 
@@ -105,22 +99,18 @@ CREATE TABLE `guest_logs` (
 --
 
 INSERT INTO `guest_logs` (`id`, `guest_id`, `home_id`, `action`, `detail`, `created_at`, `rank_name`, `name`, `lname`, `home_address`, `home_type_name`) VALUES
-(1, NULL, 1, 'add', 'เพิ่มผู้พักอาศัย: ยศทหาร สุพรรณี วงค์งาม (ผู้ถือสิทธิ) เข้าพักบ้านเลขที่ 1', '2025-10-12 19:13:27', NULL, NULL, NULL, NULL, NULL),
-(3, NULL, 1, 'delete', 'ลบผู้พักอาศัย: fff fgff dd จากบ้านเลขที่ 1 (บ้านพักแฝด)', '2025-10-13 06:50:50', 'fff', 'fgff', 'dd', '1', 'บ้านพักแฝด'),
-(4, NULL, 1, 'add', 'เพิ่มผู้พักอาศัย: ยศทหาร สุพรรณี วงค์งาม (ผู้ถือสิทธิ) เข้าพักบ้านเลขที่ 1', '2025-10-13 06:51:23', NULL, NULL, NULL, NULL, NULL),
-(5, NULL, 1, 'add', 'เพิ่มผู้พักอาศัย: พพ พพ พพ (สมาชิกครอบครัว) เข้าพักบ้านเลขที่ 1', '2025-10-13 06:51:23', NULL, NULL, NULL, NULL, NULL),
-(6, NULL, 2, 'add', 'เพิ่มผู้พักอาศัย: ยศทหาร ภูวดล พานทอง (ผู้ถือสิทธิ) เข้าพักบ้านเลขที่ 2', '2025-10-13 07:10:20', NULL, NULL, NULL, NULL, NULL),
-(7, NULL, 2, 'add', 'เพิ่มผู้พักอาศัย: - - - (สมาชิกครอบครัว) เข้าพักบ้านเลขที่ 2', '2025-10-13 07:10:20', NULL, NULL, NULL, NULL, NULL),
-(8, NULL, 1, 'add', 'เพิ่มผู้พักอาศัย: ยศทหาร ภูวดล พานทอง (ผู้ถือสิทธิ) เข้าพักบ้านเลขที่ 1', '2025-10-13 17:52:06', NULL, NULL, NULL, NULL, NULL),
-(9, NULL, 1, 'edit', 'แก้ไขข้อมูลผู้พักอาศัย ภูวดล พานทอง (บ้านเลขที่ 1) (ไม่มีการเปลี่ยนแปลง)', '2025-10-13 23:58:05', NULL, NULL, NULL, NULL, NULL),
-(10, NULL, 14, 'add', 'เพิ่มผู้พักอาศัย: ยศทหาร ภูวดล พานทอง (ผู้ถือสิทธิ) เข้าพักบ้านเลขที่ 1', '2025-10-14 02:48:37', NULL, NULL, NULL, NULL, NULL),
-(11, NULL, 14, 'add', 'เพิ่มผู้พักอาศัย: เด็กชาย สน พานทอง (สมาชิกครอบครัว) เข้าพักบ้านเลขที่ 1', '2025-10-14 02:49:03', NULL, NULL, NULL, NULL, NULL),
-(12, NULL, 14, 'edit', 'แก้ไขข้อมูลผู้พักอาศัย สน พานทอง (บ้านเลขที่ 1): ยศ: null → นาย', '2025-10-14 02:49:23', NULL, NULL, NULL, NULL, NULL),
-(13, NULL, 14, 'add', 'เพิ่มผู้พักอาศัย: ยศทหาร ภูวดล พานทอง (ผู้ถือสิทธิ) เข้าพักบ้านเลขที่ 1', '2025-10-14 03:01:20', NULL, NULL, NULL, NULL, NULL),
-(14, NULL, 14, 'add', 'เพิ่มผู้พักอาศัย: เด็กชาย สน พานทอง (สมาชิกครอบครัว) เข้าพักบ้านเลขที่ 1', '2025-10-14 03:01:38', NULL, NULL, NULL, NULL, NULL),
-(15, NULL, 15, 'add', 'เพิ่มผู้พักอาศัย: ยศทหาร เพ็ญพรรณ ชื่นฤทัย (ผู้ถือสิทธิ) เข้าพักบ้านเลขที่ 504', '2025-10-14 03:10:01', NULL, NULL, NULL, NULL, NULL),
-(16, 13, 1, 'add', 'เพิ่มผู้พักอาศัย: ยศทหาร พพ พพ (ผู้ถือสิทธิ) เข้าพักบ้านเลขที่ 1', '2025-10-14 04:37:20', NULL, NULL, NULL, NULL, NULL),
-(17, 13, 1, 'edit', 'แก้ไขข้อมูลผู้พักอาศัย พพ พพ (บ้านเลขที่ 1) (ไม่มีการเปลี่ยนแปลง)', '2025-10-14 06:32:42', NULL, NULL, NULL, NULL, NULL);
+(10, NULL, NULL, 'add', 'เพิ่มผู้พักอาศัย: ยศทหาร ภูวดล พานทอง (ผู้ถือสิทธิ) เข้าพักบ้านเลขที่ 1', '2025-10-14 02:48:37', NULL, NULL, NULL, NULL, NULL),
+(11, NULL, NULL, 'add', 'เพิ่มผู้พักอาศัย: เด็กชาย สน พานทอง (สมาชิกครอบครัว) เข้าพักบ้านเลขที่ 1', '2025-10-14 02:49:03', NULL, NULL, NULL, NULL, NULL),
+(12, NULL, NULL, 'edit', 'แก้ไขข้อมูลผู้พักอาศัย สน พานทอง (บ้านเลขที่ 1): ยศ: null → นาย', '2025-10-14 02:49:23', NULL, NULL, NULL, NULL, NULL),
+(13, NULL, NULL, 'add', 'เพิ่มผู้พักอาศัย: ยศทหาร ภูวดล พานทอง (ผู้ถือสิทธิ) เข้าพักบ้านเลขที่ 1', '2025-10-14 03:01:20', NULL, NULL, NULL, NULL, NULL),
+(14, NULL, NULL, 'add', 'เพิ่มผู้พักอาศัย: เด็กชาย สน พานทอง (สมาชิกครอบครัว) เข้าพักบ้านเลขที่ 1', '2025-10-14 03:01:38', NULL, NULL, NULL, NULL, NULL),
+(29, NULL, NULL, 'delete', 'ลบผู้พักอาศัย: นาย ภูวดล พานทอง จากบ้านเลขที่ 1 (บ้านเดี่ยว)', '2025-10-16 02:07:00', 'นาย', 'ภูวดล', 'พานทอง', '1', 'บ้านเดี่ยว'),
+(34, NULL, NULL, 'delete', 'ลบผู้พักอาศัย: พันจ่าโท พพ พพ จากบ้านเลขที่ 1 (คอนโด)', '2025-10-16 02:07:35', 'พันจ่าโท', 'พพ', 'พพ', '1', 'คอนโด'),
+(54, NULL, NULL, 'delete', 'ลบผู้พักอาศัย: นาย ภูวดล พานทอง จากบ้านเลขที่ 101 (คอนโด)', '2025-10-16 07:35:25', 'นาย', 'ภูวดล', 'พานทอง', '101', 'คอนโด'),
+(55, NULL, NULL, 'delete', 'ลบผู้พักอาศัย: เด็กชาย ภูวดล พานทอง จากบ้านเลขที่ 101 (คอนโด)', '2025-10-16 07:35:25', 'เด็กชาย', 'ภูวดล', 'พานทอง', '101', 'คอนโด'),
+(56, NULL, NULL, 'add', 'เพิ่มผู้พักอาศัย: ยศทหาร ภูวดล พานทอง (ผู้ถือสิทธิ) เข้าพักบ้านเลขที่ 101', '2025-10-16 07:35:58', NULL, NULL, NULL, NULL, NULL),
+(57, NULL, NULL, 'add', 'เพิ่มผู้พักอาศัย: เด็กชาย สน พานทอง (สมาชิกครอบครัว) เข้าพักบ้านเลขที่ 101', '2025-10-16 07:35:58', NULL, NULL, NULL, NULL, NULL),
+(58, NULL, NULL, 'delete', 'ลบผู้พักอาศัย: นาวาเอก somchai mantis จากบ้านเลขที่ 1 (บ้านเดี่ยว)', '2025-10-16 07:36:56', 'นาวาเอก', 'somchai', 'mantis', '1', 'บ้านเดี่ยว');
 
 -- --------------------------------------------------------
 
@@ -145,11 +135,12 @@ CREATE TABLE `guest_scores` (
 --
 
 INSERT INTO `guest_scores` (`id`, `rank_id`, `title`, `name`, `lname`, `phone`, `total_score`, `details`, `created_at`) VALUES
-(1, 13, 'นาย', 'เพน', 'ไไ', 22, 31, NULL, '2025-10-03 08:08:00'),
 (3, 1, '', 'ก', 'ำไ', 0, 20, 'ไไไ', '2025-10-12 08:31:56'),
 (8, 3, '', 'd', 'd', 0, 13, 'd', '2025-10-14 02:06:19'),
 (9, 13, 'นาย', 'สุรบด', 'หลี', 0, 14, 'เข้าหน่อย\n', '2025-10-14 02:08:15'),
-(12, 478, 'นาย', 'ภูวดล', 'พานทอง', 0, 1, '2025-04-23', '2025-10-14 04:27:42');
+(12, 478, 'นาย', 'ภูวดล', 'พานทอง', 0, 1, '2025-04-23', '2025-10-14 04:27:42'),
+(14, 456, '', 'ภูวดล', 'พานทอง', 0, 19, '2025-01-20', '2025-10-14 08:03:04'),
+(16, 470, '', 'ภูวดล', 'พานทอง', 928129552, 13, '2025-02-23', '2025-10-16 07:39:46');
 
 -- --------------------------------------------------------
 
@@ -173,23 +164,12 @@ CREATE TABLE `home` (
 --
 
 INSERT INTO `home` (`home_id`, `home_type_id`, `Address`, `status_id`, `subunit_id`, `image`, `created_at`, `home_unit_id`) VALUES
-(1, 1, '1', 1, NULL, '1760296421227.jpg', '2025-10-12 19:12:59', 1),
-(2, 1, '2', 1, NULL, NULL, '2025-10-12 19:12:59', 1),
-(3, 1, '3', 2, NULL, NULL, '2025-10-12 19:12:59', 1),
-(4, 1, '4', 2, NULL, NULL, '2025-10-12 19:12:59', 1),
-(5, 1, '5', 2, NULL, NULL, '2025-10-12 19:12:59', 1),
-(6, 1, '6', 2, NULL, NULL, '2025-10-12 19:12:59', 1),
-(7, 2, '1', 2, NULL, NULL, '2025-10-13 07:31:39', 3),
-(8, 3, '1', 2, NULL, NULL, '2025-10-13 07:31:49', 17),
-(9, 179, '1', 2, NULL, NULL, '2025-10-13 07:31:59', 24),
-(14, 221, '1', 1, NULL, NULL, '2025-10-14 02:48:14', 30),
-(15, 3, '504/30', 1, NULL, NULL, '2025-10-14 03:08:55', 17),
-(34, 3, '504/35', 2, NULL, NULL, '2025-10-14 03:22:57', 18),
-(35, 3, '504/36', 2, NULL, NULL, '2025-10-14 03:22:57', 18),
-(36, 3, '504/37', 2, NULL, NULL, '2025-10-14 03:22:57', 18),
-(37, 3, '504/38', 2, NULL, NULL, '2025-10-14 03:22:57', 18),
-(38, 3, '504/39', 2, NULL, NULL, '2025-10-14 03:22:57', 18),
-(39, 3, '504/40', 2, NULL, NULL, '2025-10-14 03:22:57', 18);
+(45, 3, '504/29', 2, NULL, NULL, '2025-10-16 04:36:14', 17),
+(46, 3, '504/30', 2, NULL, NULL, '2025-10-16 04:36:14', 17),
+(47, 3, '504/31', 2, NULL, NULL, '2025-10-16 04:36:15', 17),
+(48, 3, '504/32', 2, NULL, NULL, '2025-10-16 04:36:15', 17),
+(49, 3, '504/33', 2, NULL, NULL, '2025-10-16 04:36:15', 17),
+(50, 3, '504/34', 2, NULL, NULL, '2025-10-16 04:36:15', 17);
 
 -- --------------------------------------------------------
 
@@ -226,9 +206,7 @@ INSERT INTO `home_types` (`id`, `name`, `description`, `max_capacity`, `subunit_
 (1, 'บ้านพักแฝด', 'บ้านพักแฝด', 2, 'พื้นที่', '2025-10-03 07:49:02'),
 (2, 'บ้านพักเรือนแถว', 'บ้านพักเรือนแถว', 14, 'แถว', '2025-10-03 07:49:02'),
 (3, 'แฟลตสัญญาบัตร', 'แฟลตสัญญาบัตร', 4, 'ชั้น', '2025-10-03 07:49:02'),
-(4, 'บ้านพักลูกจ้าง', 'บ้านพักลูกจ้าง', 2, 'อาคาร', '2025-10-03 07:49:02'),
-(179, 'คอนโด', '', 3, 'ตึก', '2025-10-12 19:18:53'),
-(221, 'บ้านเดี่ยว', '', 3, 'อาคาร', '2025-10-14 02:48:05');
+(4, 'บ้านพักลูกจ้าง', 'บ้านพักลูกจ้าง', 2, 'อาคาร', '2025-10-03 07:49:02');
 
 -- --------------------------------------------------------
 
@@ -270,13 +248,7 @@ INSERT INTO `home_units` (`id`, `home_type_id`, `unit_number`, `unit_name`, `sub
 (19, 3, 3, 'ชั้น 3', NULL),
 (20, 3, 4, 'ชั้น 4', NULL),
 (21, 4, 1, 'อาคาร 1', NULL),
-(22, 4, 2, 'อาคาร 2', NULL),
-(23, 179, 1, 'ตึก 1', NULL),
-(24, 179, 2, 'ตึก 2', NULL),
-(25, 179, 3, 'ตึก 3', NULL),
-(29, 221, 1, 'อาคาร 1', NULL),
-(30, 221, 2, 'อาคาร 2', NULL),
-(31, 221, 3, 'อาคาร 3', NULL);
+(22, 4, 2, 'อาคาร 2', NULL);
 
 -- --------------------------------------------------------
 
@@ -370,22 +342,23 @@ INSERT INTO `roles` (`id`, `name`) VALUES
 CREATE TABLE `score_criteria` (
   `id` int(11) NOT NULL,
   `label` varchar(255) NOT NULL,
-  `ordering` int(11) DEFAULT 0
+  `ordering` int(11) DEFAULT 0,
+  `formula_json` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `score_criteria`
 --
 
-INSERT INTO `score_criteria` (`id`, `label`, `ordering`) VALUES
-(1, 'ลักษณะการพักอาศัย', 1),
-(2, 'เป็นผู้มีสิทธิ์เบิกค่าเช่าบ้าน', 2),
-(3, 'ผู้ขอมีรายได้ทั้งหมด (เงินเดือน)', 3),
-(4, 'สถานภาพผู้ขอและคู่สมรส', 4),
-(5, 'จำนวนบุตรทั้งหมด', 5),
-(6, 'จำนวนบุตรที่อยู่ระหว่างศึกษา', 6),
-(7, 'จำนวนบุตรคูณกับระดับการศึกษา', 7),
-(8, 'การเจ็บป่วยที่ส่งผลต่อการดำเนินชีวิตอย่างชัดเจน', 8);
+INSERT INTO `score_criteria` (`id`, `label`, `ordering`, `formula_json`) VALUES
+(1, 'ลักษณะการพักอาศัย', 1, NULL),
+(2, 'เป็นผู้มีสิทธิ์เบิกค่าเช่าบ้าน', 2, NULL),
+(3, 'ผู้ขอมีรายได้ทั้งหมด (เงินเดือน)', 3, NULL),
+(4, 'สถานภาพผู้ขอและคู่สมรส', 4, NULL),
+(5, 'จำนวนบุตรทั้งหมด', 5, NULL),
+(6, 'จำนวนบุตรที่อยู่ระหว่างศึกษา', 6, NULL),
+(7, 'จำนวนบุตรคูณกับระดับการศึกษา', 7, NULL),
+(8, 'การเจ็บป่วยที่ส่งผลต่อการดำเนินชีวิตอย่างชัดเจน', 8, NULL);
 
 -- --------------------------------------------------------
 
@@ -406,27 +379,27 @@ CREATE TABLE `score_options` (
 --
 
 INSERT INTO `score_options` (`id`, `criteria_id`, `label`, `score`, `ordering`) VALUES
-(1, 1, 'บ้านบิดามารดา', 2, 1),
-(2, 1, 'เช่าบ้าน', 5, 2),
-(3, 2, 'มีสิทธิ์', 3, 1),
-(4, 3, 'มากกว่า 50,000 บาท', 1, 1),
-(5, 3, '30,000 - 50,000 บาท', 2, 2),
-(6, 3, '15,000 - 30,000 บาท', 3, 3),
-(7, 3, 'ต่ำกว่า 15,000 บาท', 5, 4),
-(8, 4, 'โสด สมรถแยกพื้นที่ขอ/แยกกันอยู่', 1, 1),
-(9, 4, 'โสด อุปการะบิดา - มารดา', 2, 2),
-(10, 4, 'สมรสอยู่ด้วยกัน', 3, 3),
-(11, 4, 'สมรสอยู่ด้วยกัน อุปการะบิดา - มารดา', 5, 4),
-(12, 5, 'ไม่มีบุตร', 1, 1),
-(13, 5, '1 คน', 2, 2),
-(14, 5, '2 คน', 3, 3),
-(15, 5, 'มากกว่า 2 คน', 5, 4),
-(16, 6, 'อนุบาล', 1, 1),
-(17, 6, 'ประถม', 2, 2),
-(18, 6, 'มัธยม', 3, 3),
-(19, 6, 'อุดมศึกษา', 5, 4),
-(23, 8, 'เจ้าของสิทธิ', 2, 1),
-(24, 8, 'บิดา - มารดา', 5, 2);
+(1521, 1, 'บ้านบิดามารดา', 2, 1),
+(1522, 1, 'เช่าบ้าน', 5, 2),
+(1523, 2, 'มีสิทธิ์', 3, 1),
+(1524, 3, 'มากกว่า 50,000 บาท', 1, 1),
+(1525, 3, '30,000 - 50,000 บาท', 2, 2),
+(1526, 3, '15,000 - 30,000 บาท', 3, 3),
+(1527, 3, 'ต่ำกว่า 15,000 บาท', 5, 4),
+(1528, 4, 'โสด สมรถแยกพื้นที่ขอ/แยกกันอยู่', 1, 1),
+(1529, 4, 'โสด อุปการะบิดา - มารดา', 2, 2),
+(1530, 4, 'สมรสอยู่ด้วยกัน', 3, 3),
+(1531, 4, 'สมรสอยู่ด้วยกัน อุปการะบิดา - มารดา', 5, 4),
+(1532, 5, 'ไม่มีบุตร', 1, 1),
+(1533, 5, '1 คน', 2, 2),
+(1534, 5, '2 คน', 3, 3),
+(1535, 5, 'มากกว่า 2 คน', 5, 4),
+(1536, 6, 'อนุบาล', 1, 1),
+(1537, 6, 'ประถม', 2, 2),
+(1538, 6, 'มัธยม', 3, 3),
+(1539, 6, 'อุดมศึกษา', 5, 4),
+(1540, 8, 'เจ้าของสิทธิ', 2, 1),
+(1541, 8, 'บิดา - มารดา', 5, 2);
 
 -- --------------------------------------------------------
 
@@ -491,8 +464,8 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `username`, `password`, `role_id`, `created_at`) VALUES
 (1, 'admin', '$2b$10$nz2O..9XDHHCUot5a.RUNO7DFN/tx9K1/tDmj5NSqsDu7yYMFUnje', 1, '2025-10-03 07:49:03'),
-(2, 'Poom', '$2b$10$yuXUXM1pyi3pFhLCp8vZOOIUpAMLJk35YVr9LPtMLpKLsx0T1l0oq', 2, '2025-10-12 19:23:23'),
-(4, 'Poom2545', '$2b$10$SaRRLuIJ5sJpN0Jp6OL8tuYJn9fQjSL98bFVR9y6Zos1zr/IoyMKq', 2, '2025-10-14 02:03:01');
+(2, 'Poom', '$2b$10$rrI9nlQzQBGYtmgI5q4Vce6cseuZHEDPozcNRGj1dCHQquXgPlYq2', 2, '2025-10-12 19:23:23'),
+(5, 'ooo', '$2b$10$iZJ3G09atl1cafmm1ex4G.H/W0NC72IqQSY8ZZfnviBUOpqzqS4WC', 2, '2025-10-16 07:43:11');
 
 --
 -- Indexes for dumped tables
@@ -626,31 +599,31 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `guest`
 --
 ALTER TABLE `guest`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `guest_history`
 --
 ALTER TABLE `guest_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `guest_logs`
 --
 ALTER TABLE `guest_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
 
 --
 -- AUTO_INCREMENT for table `guest_scores`
 --
 ALTER TABLE `guest_scores`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `home`
 --
 ALTER TABLE `home`
-  MODIFY `home_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `home_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
 
 --
 -- AUTO_INCREMENT for table `home_eligibility`
@@ -662,25 +635,25 @@ ALTER TABLE `home_eligibility`
 -- AUTO_INCREMENT for table `home_types`
 --
 ALTER TABLE `home_types`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=310;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=650;
 
 --
 -- AUTO_INCREMENT for table `home_units`
 --
 ALTER TABLE `home_units`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT for table `move_status`
 --
 ALTER TABLE `move_status`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=77;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=161;
 
 --
 -- AUTO_INCREMENT for table `ranks`
 --
 ALTER TABLE `ranks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=589;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1698;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -692,31 +665,31 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `score_criteria`
 --
 ALTER TABLE `score_criteria`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=312;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=493;
 
 --
 -- AUTO_INCREMENT for table `score_options`
 --
 ALTER TABLE `score_options`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=877;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1690;
 
 --
 -- AUTO_INCREMENT for table `status`
 --
 ALTER TABLE `status`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=109;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=234;
 
 --
 -- AUTO_INCREMENT for table `subunit_home`
 --
 ALTER TABLE `subunit_home`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=147;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=313;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- Constraints for dumped tables
