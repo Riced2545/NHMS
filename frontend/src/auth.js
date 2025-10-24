@@ -1,7 +1,8 @@
 let users = ["testuser"];
 
 export const isAuthenticated = () => {
-  return localStorage.getItem("user") !== null;
+  // ตรวจสอบ token ก่อน ถ้ามี token ถือว่า logged in
+  return !!localStorage.getItem("token") || localStorage.getItem("user") !== null;
 };
 
 export const login = (username) => {
@@ -14,6 +15,9 @@ export const login = (username) => {
 
 export const logout = () => {
   localStorage.removeItem("user");
+  localStorage.removeItem("token");
+  localStorage.removeItem("role_id");
+  localStorage.removeItem("username");
 };
 
 export const register = (username) => {
