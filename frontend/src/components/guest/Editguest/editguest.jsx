@@ -21,8 +21,12 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
     "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
     "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
   ];
-  const currentYear = new Date().getFullYear() + 543;
-  const years_options = Array.from({ length: 80 }, (_, i) => (currentYear - 80 + i).toString()); // ปีปัจจุบันถึง 80 ปีถัดไป
+  // เหมือน Addguest: สร้างปี พ.ศ. ตั้งแต่ (ปีปัจจุบัน - 80) ถึง ปีปัจจุบัน (รวมปีปัจจุบัน)
+  const buddhistYearNow = new Date().getFullYear() + 543;
+  const years_options = [];
+  for (let y = buddhistYearNow - 80; y <= buddhistYearNow; y++) {
+    years_options.push(String(y));
+  }
 
   const [dobParts, setDobParts] = useState({ day: "", month: "", year: "" });
   const [moveInParts, setMoveInParts] = useState({ day: "", month: "", year: "" }); // state สำหรับวันที่เข้าพัก
