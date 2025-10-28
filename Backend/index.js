@@ -872,7 +872,17 @@ app.get("/api/guests/home/:home_id", (req, res) => {
 
 // แก้ไขข้อมูล guest
 app.put("/api/guests/:id", (req, res) => {
-  const { rank_id, name, lname, phone, job_phone, dob } = req.body; // เพิ่ม dob
+  const { rank_id, name, lname, phone, job_phone, dob, move_in_date } = req.body; // เพิ่ม move_in_date
+
+  // ฟังก์ชันช่วยแปลง พ.ศ. -> ค.ศ. และคืนค่าเป็น YYYY-MM-DD หรือ null
+  function toISODate(input) {
+    if (!input) return null;
+    const d = new Date(input);
+    if (isNaN(d.getTime())) return input; // ถ้าไม่แปลงได้ ให้ส่งตรงๆ (รองรับ already ISO)
+    if (d.getFullYear() > 2100) d.setFullYear(d.getFullYear() - 543);
+    return d.toISOString().split("T")[0];
+  }
+
   // ดึงข้อมูลเดิมก่อนแก้ไข
   db.query(
     `SELECT guest.*, ranks.name as old_rank_name, home.Address 
@@ -886,13 +896,18 @@ app.put("/api/guests/:id", (req, res) => {
         return res.status(404).json({ error: "Guest not found" });
       }
       const oldGuest = oldData[0];
-      // อัพเดทข้อมูล (เพิ่ม dob)
+
+      // แปลงวันที่ถ้าจำเป็น
+      const convertedDob = toISODate(dob);
+      const convertedMoveIn = toISODate(move_in_date);
+
+      // อัพเดทข้อมูล (เพิ่ม move_in_date)
       db.query(
-        "UPDATE guest SET rank_id=?, name=?, lname=?, phone=?, job_phone=?, dob=? WHERE id=?",
-        [rank_id, name, lname, phone, job_phone, dob, req.params.id],
+        "UPDATE guest SET rank_id=?, name=?, lname=?, phone=?, job_phone=?, dob=?, move_in_date=? WHERE id=?",
+        [rank_id, name, lname, phone, job_phone, convertedDob, convertedMoveIn, req.params.id],
         (err, result) => {
           if (err) return res.status(500).json({ error: "Database error" });
-          
+
           // ดึงข้อมูลใหม่หลังแก้ไข
           db.query(
             `SELECT guest.*, ranks.name as new_rank_name, home.Address 
@@ -905,36 +920,43 @@ app.put("/api/guests/:id", (req, res) => {
               if (err2 || newData.length === 0) {
                 return res.json({ success: true });
               }
-              
+
               const newGuest = newData[0];
-              
-              // สร้างรายละเอียดการเปลี่ยนแปลง
+
+              // สร้างรายละเอียดการเปลี่ยนแปลง (รวม move_in_date)
               let changes = [];
-              
+
               if (oldGuest.old_rank_name !== newGuest.new_rank_name) {
-                changes.push(`ยศ: ${oldGuest.old_rank_name} → ${newGuest.new_rank_name}`);
+                changes.push(`ยศ: ${oldGuest.old_rank_name || '-'} → ${newGuest.new_rank_name || '-'}`);
               }
-              
               if (oldGuest.name !== newGuest.name) {
-                changes.push(`ชื่อ: ${oldGuest.name} → ${newGuest.name}`);
+                changes.push(`ชื่อ: ${oldGuest.name || '-'} → ${newGuest.name || '-'}`);
               }
-              
               if (oldGuest.lname !== newGuest.lname) {
-                changes.push(`นามสกุล: ${oldGuest.lname} → ${newGuest.lname}`);
+                changes.push(`นามสกุล: ${oldGuest.lname || '-'} → ${newGuest.lname || '-'}`);
               }
-              
-              if (oldGuest.phone !== newGuest.phone) {
-                changes.push(`เบอร์โทร: ${oldGuest.phone} → ${newGuest.phone}`);
+              if ((oldGuest.phone || "") !== (newGuest.phone || "")) {
+                changes.push(`เบอร์โทร: ${oldGuest.phone || '-'} → ${newGuest.phone || '-'}`);
               }
-              
-              if (oldGuest.job_phone !== newGuest.job_phone) {
-                changes.push(`เบอร์งาน: ${oldGuest.job_phone} → ${newGuest.job_phone}`);
+              if ((oldGuest.job_phone || "") !== (newGuest.job_phone || "")) {
+                changes.push(`เบอร์งาน: ${oldGuest.job_phone || '-'} → ${newGuest.job_phone || '-'}`);
               }
-              
-              const detail = changes.length > 0 
+              // เปรียบเทียบ move_in_date (เก็บเป็น YYYY-MM-DD หรือ NULL)
+              const oldMove = oldGuest.move_in_date ? String(oldGuest.move_in_date) : "";
+              const newMove = newGuest.move_in_date ? String(newGuest.move_in_date) : "";
+              if (oldMove !== newMove) {
+                changes.push(`วันที่เข้าพัก: ${oldMove || '-'} → ${newMove || '-'}`);
+              }
+              // เปรียบเทียบ dob ด้วย (ถ้าต้องการ)
+              const oldDob = oldGuest.dob ? String(oldGuest.dob) : "";
+              const newDob = newGuest.dob ? String(newGuest.dob) : "";
+              if (oldDob !== newDob) {
+                changes.push(`วันเกิด: ${oldDob || '-'} → ${newDob || '-'}`);
+              }
+
+              const detail = changes.length > 0
                 ? `แก้ไขข้อมูลผู้พักอาศัย ${newGuest.name} ${newGuest.lname} (บ้านเลขที่ ${newGuest.Address}): ${changes.join(', ')}`
                 : `แก้ไขข้อมูลผู้พักอาศัย ${newGuest.name} ${newGuest.lname} (บ้านเลขที่ ${newGuest.Address}) (ไม่มีการเปลี่ยนแปลง)`;
-
 
               // บันทึก audit log
               db.query(
@@ -943,12 +965,9 @@ app.put("/api/guests/:id", (req, res) => {
                 (logErr) => {
                   if (logErr) {
                     console.error("Error logging guest edit:", logErr);
-                  } else {
-                    console.log("Guest edit audit log saved successfully");
                   }
-                  
-                  res.json({ 
-                    success: true, 
+                  res.json({
+                    success: true,
                     changes: changes,
                     message: "แก้ไขข้อมูลผู้พักอาศัยสำเร็จ"
                   });

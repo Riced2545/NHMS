@@ -9,6 +9,7 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
     name: "",
     lname: "",
     dob: "",
+    move_in_date: "", // เพิ่ม field สำหรับวันที่เข้าพัก
     phone: "",
     job_phone: ""
   });
@@ -24,6 +25,7 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
   const years_options = Array.from({ length: 80 }, (_, i) => (currentYear - 80 + i).toString()); // ปีปัจจุบันถึง 80 ปีถัดไป
 
   const [dobParts, setDobParts] = useState({ day: "", month: "", year: "" });
+  const [moveInParts, setMoveInParts] = useState({ day: "", month: "", year: "" }); // state สำหรับวันที่เข้าพัก
 
   useEffect(() => {
     if (!open) return;
@@ -31,15 +33,18 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
     axios.get(`http://localhost:3001/api/guests/${guestId}`)
       .then(res => {
         const dob = res.data.dob ? formatThaiDate(res.data.dob) : "";
+        const moveIn = res.data.move_in_date ? formatThaiDate(res.data.move_in_date) : "";
         setForm({
           rank_id: res.data.rank_id || "",
           name: res.data.name || "",
           lname: res.data.lname || "",
           dob,
+          move_in_date: moveIn, // ใส่ค่าเริ่มต้น
           phone: res.data.phone || "",
           job_phone: res.data.job_phone || ""
         });
         setDobParts(splitThaiDate(dob));
+        setMoveInParts(splitThaiDate(moveIn)); // แยกเป็น parts
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -58,13 +63,22 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
     setForm({ ...form, dob: joinThaiDate(newDob.day, newDob.month, newDob.year) });
   };
 
+  // ฟังก์ชันจัดการการเปลี่ยนวันที่เข้าพัก
+  const handleMoveInChange = e => {
+    const { name, value } = e.target;
+    const newMove = { ...moveInParts, [name]: value };
+    setMoveInParts(newMove);
+    setForm({ ...form, move_in_date: joinThaiDate(newMove.day, newMove.month, newMove.year) });
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
     try {
-      const { dob, ...dataToSend } = form;
+      const { dob, move_in_date, ...dataToSend } = form;
       await axios.put(`http://localhost:3001/api/guests/${guestId}`, {
         ...dataToSend,
-        dob: parseThaiDate(dob)
+        dob: parseThaiDate(dob),
+        move_in_date: parseThaiDate(move_in_date) // ส่งวันที่เข้าพักไปด้วย
       });
       toast.success("บันทึกข้อมูลสำเร็จ!", { position: "top-right" });
       if (onSaved) onSaved();
@@ -156,7 +170,7 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
                   name="day"
                   value={dobParts.day}
                   onChange={handleDobChange}
-                  required
+                  
                   style={inputStyle}
                 >
                   <option value="">วัน</option>
@@ -166,7 +180,7 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
                   name="month"
                   value={dobParts.month}
                   onChange={handleDobChange}
-                  required
+                  
                   style={inputStyle}
                 >
                   <option value="">เดือน</option>
@@ -178,7 +192,7 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
                   name="year"
                   value={dobParts.year}
                   onChange={handleDobChange}
-                  required
+                  
                   style={inputStyle}
                 >
                   <option value="">ปี</option>
@@ -186,6 +200,43 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
                 </select>
               </div>
             </div>
+
+            {/* เพิ่มฟิลด์ วันที่เข้าพัก */}
+            <div style={{ marginBottom: 16 }}>
+              <label>วันที่เข้าพัก</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <select
+                  name="day"
+                  value={moveInParts.day}
+                  onChange={handleMoveInChange}
+                  style={inputStyle}
+                >
+                  <option value="">วัน</option>
+                  {days.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <select
+                  name="month"
+                  value={moveInParts.month}
+                  onChange={handleMoveInChange}
+                  style={inputStyle}
+                >
+                  <option value="">เดือน</option>
+                  {thaiMonths.map((m, idx) => (
+                    <option key={idx + 1} value={(idx + 1).toString().padStart(2, "0")}>{m}</option>
+                  ))}
+                </select>
+                <select
+                  name="year"
+                  value={moveInParts.year}
+                  onChange={handleMoveInChange}
+                  style={inputStyle}
+                >
+                  <option value="">ปี</option>
+                  {years_options.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+            </div>
+
             <div style={{ marginBottom: 16 }}>
               <label>เบอร์โทรศัพท์</label>
               <input

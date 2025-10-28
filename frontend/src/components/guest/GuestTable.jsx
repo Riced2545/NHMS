@@ -26,6 +26,14 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
     return a.id - b.id;
   });
 
+  // สร้าง map ของวันที่เข้าพักจากผู้ถือสิทธิ์ตาม home_id
+  const moveInByHome = {};
+  guests.forEach(g => {
+    if (g.is_right_holder && g.move_in_date) {
+      moveInByHome[g.home_id] = g.move_in_date;
+    }
+  });
+
   // ฟังก์ชันสำหรับแสดงชื่อเต็ม
   const formatGuestName = (guest) => {
     const parts = [];
@@ -215,7 +223,10 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
                 {showType && <td className="guest-data-cell">{g.hType}</td>}
                 {/* วันที่เข้า */}
                 <td className="guest-data-cell">
-                  {g.move_in_date ? formatThaiDate(g.move_in_date) : "-"}
+                  {(() => {
+                    const displayMove = g.move_in_date || moveInByHome[g.home_id];
+                    return displayMove ? formatThaiDate(displayMove) : "-";
+                  })()}
                 </td>
                 {role_id !== "2" && <td className="guest-data-cell">{g.dob ? formatThaiDate(g.dob) : ""}</td>}
                 {role_id !== "2" && <td className="guest-data-cell">{g.phone || "-"}</td>}
