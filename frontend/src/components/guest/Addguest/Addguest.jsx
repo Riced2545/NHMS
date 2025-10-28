@@ -26,6 +26,7 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
     name: "",
     lname: "",
     dob: "",
+    move_in_date: "", // เพิ่มตรงนี้
     pos: "",
     income: "",
     phone: "",
@@ -44,11 +45,16 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
 
-  // สำหรับวัน เดือน ปี ของสมาชิกครอบครัว
+  // เพิ่ม state สำหรับวันที่เข้าพัก (แยกเป็น วัน/เดือน/ปี เหมือนวันเกิด)
+  const [moveInDay, setMoveInDay] = useState("");
+  const [moveInMonth, setMoveInMonth] = useState("");
+  const [moveInYear, setMoveInYear] = useState("");
+  
+  // state สำหรับวันเดือนปีของสมาชิกครอบครัว (ที่ถูกเรียกใน resetModal และ form)
   const [familyDays, setFamilyDays] = useState([]);
   const [familyMonths, setFamilyMonths] = useState([]);
   const [familyYears, setFamilyYears] = useState([]);
-
+  
   // สร้าง options สำหรับปี พ.ศ.
   const buddhistYearNow = new Date().getFullYear() + 543;
   const years_options = [];
@@ -156,6 +162,7 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
       name: "",
       lname: "",
       dob: "",
+      move_in_date: "", // เพิ่มตรงนี้
       pos: "",
       income: "",
       phone: "",
@@ -170,6 +177,10 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
     setFamilyDays([]);
     setFamilyMonths([]);
     setFamilyYears([]);
+    // รีเซ็ต move-in date selectors
+    setMoveInDay("");
+    setMoveInMonth("");
+    setMoveInYear("");
   };
 
   // ฟังก์ชันอื่นๆ เหมือนเดิม...
@@ -239,7 +250,15 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
     } else {
       setRightHolderData({ ...form });
     }
-    
+
+    // ใหม่: รวมวันที่เข้าพักจาก selectors เป็น move_in_date (แปลง พ.ศ. -> ค.ศ. ถาจำเป็น)
+    if (moveInDay && moveInMonth !== "" && moveInYear) {
+      const miYear = parseInt(moveInYear) - 543;
+      const moveInString = `${miYear}-${String(parseInt(moveInMonth) + 1).padStart(2, '0')}-${String(moveInDay).padStart(2, '0')}`;
+      setForm(prev => ({ ...prev, move_in_date: moveInString }));
+      setRightHolderData(prev => ({ ...prev, move_in_date: moveInString }));
+    }
+
     setStep("family_count");
     toast.success("บันทึกข้อมูลผู้ถือสิทธิแล้ว");
   };
@@ -298,6 +317,12 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
     try {
       let guestData = { ...rightHolderData };
       
+      // ถ้า user ใส่วันที่เข้าพักผ่าน selectors แต่ยังไม่ถูกเซ็ตใน rightHolderData
+      if (!guestData.move_in_date && moveInDay && moveInMonth !== "" && moveInYear) {
+        const miYear = parseInt(moveInYear) - 543;
+        guestData.move_in_date = `${miYear}-${String(parseInt(moveInMonth) + 1).padStart(2, '0')}-${String(moveInDay).padStart(2, '0')}`;
+      }
+      
       if (rightHolderData.image) {
         console.log("📷 Uploading image:", rightHolderData.image.name);
         
@@ -320,7 +345,8 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
       
       await axios.post("http://localhost:3001/api/guests", {
         ...guestData,
-        home_id: Number(guestData.home_id)
+        home_id: Number(guestData.home_id),
+        move_in_date: guestData.move_in_date || null
       });
       
       toast.success("บันทึกข้อมูลผู้ถือสิทธิสำเร็จ!");
@@ -649,17 +675,34 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
               </div>
 
               <div className="form-row-horizontal">
+
+
                 <div className="form-field">
-                 <label>สถานที่ทำงาน <span className=""></span></label>
-                <input 
-                  type="text" 
-                  name="pos" 
-                  value={form.pos} 
-                  onChange={handleChange} 
-                   
-                />
+                <label>วันที่เข้าพัก</label>
+                {/* เปลี่ยนจาก input type="date" เป็น selectors แบบเดียวกับวันเกิด */}
+                <div className="date-select-horizontal">
+                  <select value={moveInDay} onChange={e => setMoveInDay(e.target.value)}>
+                    <option value="">วัน</option>
+                    {[...Array(31)].map((_, i) => {
+                      const d = i + 1;
+                      return <option key={d} value={d}>{d}</option>;
+                    })}
+                  </select>
+                  <select value={moveInMonth} onChange={e => setMoveInMonth(e.target.value)}>
+                    <option value="">เดือน</option>
+                    {months.map((m, i) => {
+                      return <option key={i} value={i}>{m}</option>;
+                    })}
+                  </select>
+                  <select value={moveInYear} onChange={e => setMoveInYear(e.target.value)}>
+                    <option value="">ปี</option>
+                    {years_options.map((y) => {
+                      return <option key={y} value={y}>{y}</option>;
+                    })}
+                  </select>
                 </div>
-                
+              </div>
+              
                 <div className="form-field">
                   <label>วันเกิด</label>
                   <div className="date-select-horizontal">
@@ -721,11 +764,23 @@ export default function AddGuestModal({ isOpen, onClose, homeId, onUpdate }) {
                      
                   />
                 </div>
+                <div className="form-field">
+                 <label>สถานที่ทำงาน <span className=""></span></label>
+                <input 
+                  type="text" 
+                  name="pos" 
+                  value={form.pos} 
+                  onChange={handleChange} 
+                   
+                />
+                </div>
                 
                 <div className="form-field">
                 {/* สำหรับ balance layout */}
                 </div>
               </div>
+
+              
 
               <div className="modal-actions-horizontal">
                 <button type="button" className="btn-cancel" onClick={onClose}>

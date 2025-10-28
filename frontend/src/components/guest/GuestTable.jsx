@@ -215,7 +215,7 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
                 {showType && <td className="guest-data-cell">{g.hType}</td>}
                 {/* วันที่เข้า */}
                 <td className="guest-data-cell">
-                  {g.created_at ? formatThaiDate(g.created_at) : "-"}
+                  {g.move_in_date ? formatThaiDate(g.move_in_date) : "-"}
                 </td>
                 {role_id !== "2" && <td className="guest-data-cell">{g.dob ? formatThaiDate(g.dob) : ""}</td>}
                 {role_id !== "2" && <td className="guest-data-cell">{g.phone || "-"}</td>}

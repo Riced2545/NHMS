@@ -1191,10 +1191,36 @@ app.get("/api/retirement", (req, res) => {
 
 // เพิ่ม API สำหรับเพิ่มผู้พักอาศัย
 app.post("/api/guests", (req, res) => {
-  const { home_id, rank_id, name, lname, dob, pos, income, phone, job_phone, is_right_holder, image_url } = req.body;
+  // เพิ่ม move_in_date ในการรับค่าจาก body
+  const { home_id, rank_id, name, lname, dob, move_in_date, pos, income, phone, job_phone, is_right_holder, image_url } = req.body;
   
-  console.log("Adding guest:", req.body);
+  console.log("Adding guest (legacy handler):", req.body);
   
+  // แปลง dob และ move_in_date ถ้ามาเป็น พ.ศ. หรือรูปแบบอื่นที่ new Date() จัดการได้
+  let convertedDob = null;
+  if (dob) {
+    const d = new Date(dob);
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      if (y > 2100) d.setFullYear(y - 543);
+      convertedDob = d.toISOString().split('T')[0];
+    } else {
+      convertedDob = dob;
+    }
+  }
+
+  let convertedMoveIn = null;
+  if (move_in_date) {
+    const m = new Date(move_in_date);
+    if (!isNaN(m.getTime())) {
+      const my = m.getFullYear();
+      if (my > 2100) m.setFullYear(my - 543);
+      convertedMoveIn = m.toISOString().split('T')[0];
+    } else {
+      convertedMoveIn = move_in_date;
+    }
+  }
+
   // ตรวจสอบว่ามีบ้านหรือไม่
   db.query("SELECT Address FROM home WHERE home_id = ?", [home_id], (err, homeResults) => {
     if (err) {
@@ -1247,9 +1273,10 @@ app.post("/api/guests", (req, res) => {
         title = titleMap[rank_id] || rank_id;
       }
       
+      // เพิ่มคอลัมน์ move_in_date ใน INSERT และใช้ค่า convertedMoveIn
       const sql = `
-        INSERT INTO guest (home_id, rank_id, title, name, lname, dob, pos, income, phone, job_phone, is_right_holder, image_url) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO guest (home_id, rank_id, title, name, lname, dob, move_in_date, pos, income, phone, job_phone, is_right_holder, image_url) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
       db.query(sql, [
@@ -1258,13 +1285,14 @@ app.post("/api/guests", (req, res) => {
         title,
         name, 
         lname, 
-        dob || null, 
-        pos, 
+        convertedDob || null,
+        convertedMoveIn || null,
+        pos || null, 
         income || 0, 
-        phone, 
-        job_phone, 
-        is_right_holder || false,
-        image_url || null  // เพิ่มบรรทัดนี้
+        phone || null, 
+        job_phone || null, 
+        is_right_holder ? 1 : 0,
+        image_url || null
       ], (err, result) => {
         if (err) {
           console.error("Database error:", err);
@@ -1277,10 +1305,11 @@ app.post("/api/guests", (req, res) => {
             console.error("Error updating home status:", updateErr);
           }
           
-          // บันทึก log
+          // บันทึก log (รวมวันที่เข้าพักถ้ามี)
           const statusText = is_right_holder ? "ผู้ถือสิทธิ" : "สมาชิกครอบครัว";
           const displayRank = title || "ยศทหาร";
-          const logDetail = `เพิ่มผู้พักอาศัย: ${displayRank} ${name} ${lname} (${statusText}) เข้าพักบ้านเลขที่ ${homeAddress}`;
+          const moveInText = convertedMoveIn ? ` วันที่เข้าพัก: ${convertedMoveIn}` : "";
+          const logDetail = `เพิ่มผู้พักอาศัย: ${displayRank} ${name} ${lname} (${statusText}) เข้าพักบ้านเลขที่ ${homeAddress}${moveInText}`;
           
           db.query(
             "INSERT INTO guest_logs (guest_id, home_id, action, detail, created_at) VALUES (?, ?, ?, ?, NOW())",
