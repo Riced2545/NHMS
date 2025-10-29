@@ -167,7 +167,7 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
                 </div>
               </th>
             )}
-            <th>ลำดับ</th>
+         
             <th>ชื่อ-นามสกุล</th>
             {showAddress && <th>บ้านเลขที่</th>}
             {showType && <th>ประเภทบ้าน</th>}
@@ -175,6 +175,7 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
             {role_id !== "2" && <th>วันเกิด</th>}
             {role_id !== "2" && <th>เบอร์โทรศัพท์</th>}
             {role_id !== "2" && <th>เบอร์โทรที่ทำงาน</th>}
+           {role_id !== "2" && <th>สถานที่ทำงาน</th>}
             {role_id !== "2" && <th>เงินเดือน</th>}
             {role_id === "1" && (onEdit || onDelete) && <th>จัดการ</th>}
           </tr>
@@ -212,7 +213,8 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
                     </div>
                   </td>
                 )}
-                <td>{idx + 1}</td>
+            
+            {/* ลำดับ ถูกเอาออกแล้ว */}
                 <td className="guest-name-cell">
                   <span className="guest-name">
                     {g.is_right_holder && <span className="right-holder-badge">🗝️</span>}
@@ -231,6 +233,7 @@ export default function GuestTable({ guests = [], showAddress, showType, onEdit,
                 {role_id !== "2" && <td className="guest-data-cell">{g.dob ? formatThaiDate(g.dob) : ""}</td>}
                 {role_id !== "2" && <td className="guest-data-cell">{g.phone || "-"}</td>}
                 {role_id !== "2" && <td className="guest-data-cell">{g.job_phone || "-"}</td>}
+                {role_id !== "2" && <td className="guest-data-cell">{g.pos || "-"}</td>}
                 {role_id !== "2" && <td className="guest-data-cell">{g.income || "-"}</td>}
                 {role_id === "1" && (onEdit || onDelete) && (
                   <td className="action-cell" onClick={e => e.stopPropagation()}>

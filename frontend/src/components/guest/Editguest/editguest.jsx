@@ -11,7 +11,9 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
     dob: "",
     move_in_date: "", // เพิ่ม field สำหรับวันที่เข้าพัก
     phone: "",
-    job_phone: ""
+    job_phone: "",
+    pos: "",
+    income: ""
   });
   const [loading, setLoading] = useState(true);
   const [ranks, setRanks] = useState([]);
@@ -45,7 +47,9 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
           dob,
           move_in_date: moveIn, // ใส่ค่าเริ่มต้น
           phone: res.data.phone || "",
-          job_phone: res.data.job_phone || ""
+          job_phone: res.data.job_phone || "",
+          pos: res.data.pos || "",
+          income: res.data.income || ""
         });
         setDobParts(splitThaiDate(dob));
         setMoveInParts(splitThaiDate(moveIn)); // แยกเป็น parts
@@ -108,10 +112,14 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
         background: "#fff",
         borderRadius: 18,
         boxShadow: "0 4px 24px #e5e7eb",
-        padding: "32px 32px 24px 32px",
+        // ทำให้ modal ข้างในเลื่อนเมื่อเนื้อหายาว
+        padding: "24px 24px 20px 24px",
         width: "100%",
         maxWidth: 420,
-        position: "relative"
+        position: "relative",
+        boxSizing: "border-box",
+        maxHeight: "80vh",
+        overflowY: "auto"
       }}>
         <button
           onClick={onClose}
@@ -257,6 +265,28 @@ export default function EditGuestModal({ open, onClose, guestId, onSaved }) {
                 type="text"
                 name="job_phone"
                 value={form.job_phone}
+                onChange={handleChange}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label>สถานที่ทำงาน</label>
+              <input
+                type="text"
+                name="pos"
+                value={form.pos}
+                onChange={handleChange}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label>เงินเดือน</label>
+              <input
+                type="number"
+                name="income"
+                value={form.income}
                 onChange={handleChange}
                 style={inputStyle}
               />

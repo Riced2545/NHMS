@@ -204,6 +204,8 @@ db.query(`CREATE TABLE IF NOT EXISTS guest_logs (
 
   // เพิ่มข้อมูลเริ่มต้นในตาราง ranks และ home_eligibility
   db.query(`INSERT IGNORE INTO ranks (name) VALUES 
+    ('พลเรือโท'), ('พลเรือโทหญิง'),
+    ('พลเรือตรี'), ('พลเรือตรีหญิง'),
    ('นาวาเอก'), ('นาวาเอกหญิง'),
     ('นาวาโท'), ('นาวาโทหญิง'),
     ('นาวาตรี'), ('นาวาตรีหญิง'),
@@ -380,6 +382,15 @@ db.query("SELECT * FROM home_types", (err, types) => {
     }
   });
 
+  // เพิ่มคอลัมน์ move_in_date ในตาราง guest
+  db.query(`ALTER TABLE guest ADD COLUMN IF NOT EXISTS move_in_date DATE`, (err) => {
+    if (err && !err.message.includes('Duplicate column')) {
+      console.error("Error adding move_in_date column:", err);
+    } else {
+      console.log("✅ move_in_date column ready");
+    }
+  });
+  
   db.query(`CREATE TABLE IF NOT EXISTS guest_scores (
     id INT AUTO_INCREMENT PRIMARY KEY,
     rank_id INT,
@@ -872,7 +883,7 @@ app.get("/api/guests/home/:home_id", (req, res) => {
 
 // แก้ไขข้อมูล guest
 app.put("/api/guests/:id", (req, res) => {
-  const { rank_id, name, lname, phone, job_phone, dob, move_in_date } = req.body; // เพิ่ม move_in_date
+  const { rank_id, name, lname, phone, job_phone, pos, income, dob, move_in_date } = req.body; // เพิ่ม pos & income และ move_in_date
 
   // ฟังก์ชันช่วยแปลง พ.ศ. -> ค.ศ. และคืนค่าเป็น YYYY-MM-DD หรือ null
   function toISODate(input) {
@@ -903,8 +914,8 @@ app.put("/api/guests/:id", (req, res) => {
 
       // อัพเดทข้อมูล (เพิ่ม move_in_date)
       db.query(
-        "UPDATE guest SET rank_id=?, name=?, lname=?, phone=?, job_phone=?, dob=?, move_in_date=? WHERE id=?",
-        [rank_id, name, lname, phone, job_phone, convertedDob, convertedMoveIn, req.params.id],
+        "UPDATE guest SET rank_id=?, name=?, lname=?, phone=?, job_phone=?, pos=?, income=?, dob=?, move_in_date=? WHERE id=?",
+        [rank_id, name, lname, phone, job_phone, pos || null, income || null, convertedDob, convertedMoveIn, req.params.id],
         (err, result) => {
           if (err) return res.status(500).json({ error: "Database error" });
 
@@ -940,6 +951,12 @@ app.put("/api/guests/:id", (req, res) => {
               }
               if ((oldGuest.job_phone || "") !== (newGuest.job_phone || "")) {
                 changes.push(`เบอร์งาน: ${oldGuest.job_phone || '-'} → ${newGuest.job_phone || '-'}`);
+              }
+              if ((oldGuest.pos || "") !== (newGuest.pos || "")) {
+                changes.push(`สถานที่ทำงาน: ${oldGuest.pos || '-'} → ${newGuest.pos || '-'}`);
+              }
+              if ((String(oldGuest.income || "") ) !== (String(newGuest.income || ""))) {
+                changes.push(`เงินเดือน: ${oldGuest.income || '-'} → ${newGuest.income || '-'}`);
               }
               // เปรียบเทียบ move_in_date (เก็บเป็น YYYY-MM-DD หรือ NULL)
               const oldMove = oldGuest.move_in_date ? String(oldGuest.move_in_date) : "";
