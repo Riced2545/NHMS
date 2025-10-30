@@ -2322,3 +2322,35 @@ app.get("/api/pdf-report", (req, res) => {
     res.json(results);
   });
 });
+
+app.post("/api/upload", upload.single("image"), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+  const filename = req.file.filename || (req.file.path && path.basename(req.file.path));
+  const imageUrl = `/uploads/${filename}`;
+  return res.json({ success: true, imageUrl, filename });
+});
+
+// อัปเดตรูปผู้พักเฉพาะฟิลด์ image_url (ไม่แตะข้อมูลอื่น)
+app.put("/api/guests/:id/image", (req, res) => {
+  const guestId = req.params.id;
+  const { imageUrl } = req.body;
+  if (!imageUrl) return res.status(400).json({ error: "imageUrl is required" });
+
+  db.query("UPDATE guest SET image_url = ? WHERE id = ?", [imageUrl, guestId], (err, result) => {
+    if (err) {
+      console.error("Error updating guest image:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    if (result.affectedRows === 0) return res.status(404).json({ error: "Guest not found" });
+
+    // บันทึก log แบบง่าย
+    db.query(
+      "INSERT INTO guest_logs (guest_id, home_id, action, detail) VALUES (?, NULL, ?, ?)",
+      [guestId, "update_image", `อัปเดตรูปผู้พัก (guest id: ${guestId})`],
+      (logErr) => {
+        if (logErr) console.error("Error logging image update:", logErr);
+        return res.json({ success: true, imageUrl });
+      }
+    );
+  });
+});

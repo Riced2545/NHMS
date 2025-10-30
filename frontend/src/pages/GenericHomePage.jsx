@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../components/Sidebar";
@@ -6,7 +6,7 @@ import Sidebar from "./typepage/Sidebars";
 import EditHomeModal from "../pages/component/EditHome";
 import AddGuestModal from "../components/guest/Addguest/Addguest";
 import AddHomeModal from "../components/Addhome";
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "../styles/home.css";
 import "./typepage/ca.css";
@@ -27,6 +27,8 @@ export default function GenericHomePage() {
   const [showEditHomeId, setShowEditHomeId] = useState(null);
   const [guestsByHome, setGuestsByHome] = useState({});
   const [sidebarReload, setSidebarReload] = useState(Date.now());
+  const fileInputRef = useRef(null);
+  const [uploadGuestId, setUploadGuestId] = useState(null);
 
   // ย้ายฟังก์ชัน fetchData ออกมาไว้ตรงนี้
   const fetchData = async () => {
@@ -76,6 +78,49 @@ export default function GenericHomePage() {
     }
     fetchGuests();
   }, [homes]);
+
+  const handleAvatarClick = (guestId) => {
+    setUploadGuestId(guestId);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = null;
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file || !uploadGuestId) return;
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const upRes = await axios.post("http://localhost:3001/api/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+
+      // backend ของคุณ คืน imageUrl
+      const imageUrl = upRes.data.imageUrl || upRes.data.image_url || (upRes.data.filename ? `/uploads/${upRes.data.filename}` : null);
+      if (!imageUrl) {
+        toast.error("อัปโหลดไฟล์ไม่สำเร็จ");
+        return;
+      }
+
+      // เรียก endpoint ใหม่ที่อัปเดตเฉพาะ image_url
+      await axios.put(`http://localhost:3001/api/guests/${uploadGuestId}/image`, { imageUrl });
+
+      toast.success("อัปโหลดรูปสำเร็จ");
+      // รีเฟรชข้อมูลบ้าน/guest
+      await fetchData();
+      setSidebarReload(Date.now());
+    } catch (err) {
+      console.error(err);
+      toast.error("เกิดข้อผิดพลาดระหว่างอัปโหลด");
+    } finally {
+      setUploadGuestId(null);
+      if (fileInputRef.current) fileInputRef.current.value = null;
+    }
+  };
 
   return (
     <div style={{ 
@@ -220,37 +265,43 @@ export default function GenericHomePage() {
             gap: 18,
             border: "2px solid #38bdf8"
           }}>
-            {rightHolder.image_url ? (
-              <img  
-                src={`http://localhost:3001${rightHolder.image_url}`}
-                alt="ผู้ถือสิทธิ"
-                style={{
+            <div
+              onClick={() => handleAvatarClick(rightHolder.id)}
+              title="คลิกเพื่ออัปโหลดรูปผู้ถือสิทธิ"
+              style={{ cursor: "pointer", display: "flex", alignItems: "center", marginRight: 12 }}
+            >
+              {rightHolder.image_url ? (
+                <img  
+                  src={`http://localhost:3001${rightHolder.image_url}`}
+                  alt="ผู้ถือสิทธิ"
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: "2px solid #38bdf8",
+                    marginRight: 12
+                  }}
+                />
+              ) : (
+                <div style={{
                   width: 56,
                   height: 56,
                   borderRadius: "50%",
-                  objectFit: "cover",
+                  background: "#374151",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 32,
+                  fontWeight: "bold",
                   border: "2px solid #38bdf8",
                   marginRight: 12
-                }}
-              />
-            ) : (
-              <div style={{
-                width: 56,
-                height: 56,
-                borderRadius: "50%",
-                background: "#374151",
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 32,
-                fontWeight: "bold",
-                border: "2px solid #38bdf8",
-                marginRight: 12
-              }}>
-                👤
-              </div>
-            )}
+                }}>
+                  👤
+                </div>
+              )}
+            </div>
             <div>
               <div style={{ fontWeight: "bold", fontSize: "20px" }}>
                 {rightHolder.name} {rightHolder.lname}
@@ -361,6 +412,13 @@ export default function GenericHomePage() {
           onUpdate={fetchData} // ส่งฟังก์ชัน fetchData มาด้วย
         />
       )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
     </div>
   );
 }

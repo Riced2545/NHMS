@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import PDFDownload from "./pdf";
 import ExcelDownloadButton from "./excel";
+import ScoreExcel from "./scoreexcel";
+import { generateScorePdf } from "./scorepdf";
 
 export default function FileDownloadModal({ open, onClose }) {
   const [homes, setHomes] = useState([]);
@@ -92,13 +94,44 @@ export default function FileDownloadModal({ open, onClose }) {
       >
         <h2 style={{ margin: 0, marginBottom: 16, color: "#4B2673" }}>ดาวน์โหลดไฟล์</h2>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <PDFDownload
-            typeStats={typeStats}
-            houseStatus={houseStatus}
-            detailData={detailData}
-            disabled={loading}
-          />
-          <ExcelDownloadButton />
+          {/* ปุ่มดาวน์โหลดหลัก: PDF และ Excel อยู่ชิดกัน */}
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <button
+              onClick={async () => {
+                try {
+                  await generateScorePdf();
+                } catch (e) {
+                  console.error(e);
+                  alert("เกิดข้อผิดพลาดในการสร้าง PDF");
+                }
+              }}
+              disabled={loading}
+              style={{
+                background: "#1f2937",
+                color: "#fff",
+                border: "none",
+                padding: "10px 14px",
+                borderRadius: 8,
+                cursor: loading ? "not-allowed" : "pointer",
+                fontWeight: "600"
+              }}
+            >
+              คะแนนรวมขอเข้าพัก PDF
+            </button>
+
+            <ScoreExcel apiUrl="http://localhost:3001/api/viewscore" />
+          </div>
+
+          {/* รายการดาวน์โหลดอื่น ๆ (คงของเดิมไว้) */}
+<div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+  <PDFDownload
+    typeStats={typeStats}
+    houseStatus={houseStatus}
+    detailData={detailData}
+    disabled={loading}
+  />
+  <ExcelDownloadButton />
+</div>
         </div>
         <button
           onClick={onClose}
