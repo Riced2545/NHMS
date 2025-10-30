@@ -1,22 +1,40 @@
 import React from "react";
 import * as XLSX from "xlsx";
 
-export default function ScoreExcel({ apiUrl = "http://localhost:3001/api/viewscore" }) {
+export default function ScoreExcel({
+  apiUrl = "http://localhost:3001/api/viewscore",
+  ranksApi = "http://localhost:3001/api/ranks"
+}) {
   const exportToExcel = async () => {
     try {
-      const res = await fetch(apiUrl);
-      const rows = await res.json();
+      // ดึงคะแนนและตารางยศพร้อมกัน
+      const [resRows, resRanks] = await Promise.all([
+        fetch(apiUrl),
+        fetch(ranksApi).catch(() => ({ json: async () => [] })) // ไม่ล้มถ้าไม่มี API ยศ
+      ]);
+      const rows = await resRows.json();
+      const ranks = await (resRanks.json ? resRanks.json() : []);
 
-      const headers = ["ลำดับ","ยศ","ชื่อ-นามสกุล","เบอร์โทร","คะแนนรวม","วันที่/รายละเอียด"];
+      // สร้าง map จาก rank_id -> ชื่อยศ
+      const rankMap = {};
+      (ranks || []).forEach(r => {
+        rankMap[r.id] = r.name || r.title || r.rank_name || r.label || r.rank || "";
+      });
+
+      const headers = ["ลำดับ", "ยศ", "ชื่อ-นามสกุล", "เบอร์โทร", "คะแนนรวม", "วันที่/รายละเอียด"];
       const data = (rows && rows.length ? rows : []).map((r, i) => {
         const dateOrDetail = r.details
           ? (/^\d{4}-\d{2}-\d{2}/.test(String(r.details).trim())
               ? formatDate(String(r.details).trim())
               : String(r.details))
           : "";
+
+        // แสดงยศจาก rankMap หากมี (priority: rankMap -> title -> rank)
+        const rankText = (r.rank_id ? rankMap[r.rank_id] : "") || r.title || r.rank || "";
+
         return {
           "ลำดับ": i + 1,
-          "ยศ": r.rank || r.title || "",
+          "ยศ": rankText,
           "ชื่อ-นามสกุล": `${r.name || ""} ${r.lname || ""}`.trim(),
           "เบอร์โทร": r.phone || "",
           "คะแนนรวม": r.total_score ?? "",
@@ -39,13 +57,13 @@ export default function ScoreExcel({ apiUrl = "http://localhost:3001/api/viewsco
 
       // แปลงความยาวตัวอักษรเป็น wch (character width) และกำหนดขอบเขต
       ws['!cols'] = maxLens.map(n => {
-        const wch = Math.min(Math.max(n + 2, 10), 50); // padding + min/max
+        const wch = Math.min(Math.max(n + 2, 10), 100); // เพิ่มขอบบนสุดให้ยาวขึ้นสำหรับชื่อยาว
         return { wch };
       });
 
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "คะแนนรวม");
-      const filename = `คะแนนรวม_${new Date().toISOString().slice(0,10)}.xlsx`;
+      const filename = `คะแนนรวม_${new Date().toISOString().slice(0, 10)}.xlsx`;
       XLSX.writeFile(wb, filename);
     } catch (err) {
       console.error("Export Excel error:", err);

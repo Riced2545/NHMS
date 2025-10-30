@@ -5,6 +5,7 @@ import html2canvas from "html2canvas";
 
 export default function ScorePdf() {
   const [rows, setRows] = useState([]);
+  const [rankMap, setRankMap] = useState({}); // เพิ่ม
   const printRef = useRef(null);
 
   useEffect(() => {
@@ -15,6 +16,14 @@ export default function ScorePdf() {
         console.error("Failed to load scores:", e);
         setRows([]);
       });
+
+    // ถ้ามี API สำหรับดึงตารางยศ ให้ดึงมาสร้าง map (rank_id -> name)
+    axios.get("http://localhost:3001/api/ranks")
+      .then(r => {
+        const m = {};
+        (r.data || []).forEach(x => { m[x.id] = x.name || x.title || x.rank_name; });
+        setRankMap(m);
+      }).catch(() => {});
   }, []);
 
   const formatDate = (iso) => {
@@ -156,7 +165,9 @@ export default function ScorePdf() {
                 rows.map((r, idx) => (
                   <tr key={r.id || idx}>
                     <td style={{ ...cellStyle, textAlign: "center", color:"#111", border:"1px solid #111" }}>{idx + 1}</td>
-                    <td style={{ ...cellStyle, color:"#111", border:"1px solid #111" }}>{r.rank || r.title || ""}</td>
+                    <td style={{ ...cellStyle, color:"#111", border:"1px solid #111" }}>
+                      { rankMap[r.rank_id] || r.title || "" }
+                    </td>
                     <td style={{ ...cellStyle, minWidth: 220, color:"#111", border:"1px solid #111" }}>{r.name} {r.lname}</td>
                     <td style={{ ...cellStyle, color:"#111", border:"1px solid #111" }}>{r.phone || ""}</td>
                     <td style={{ ...cellStyle, color:"#111", border:"1px solid #111" }}>{r.total_score ?? ""}</td>

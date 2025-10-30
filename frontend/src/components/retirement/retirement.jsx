@@ -23,6 +23,9 @@ export default function RetirementPage() {
   
   const [homeTypes, setHomeTypes] = useState([]);
 
+  // ปัจจุบันปีสำหรับตัวเลือก (ใช้สร้าง 5 ปีต่อเนื่อง)
+  const currentYear = new Date().getFullYear();
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -273,7 +276,7 @@ const getDaysMessage = (days) => {
                 ))}
               </select>
               
-              {/* กรองตามปีเกษียณ */}
+              {/* กรองตามปีเกษียณ (แสดงเป็น พ.ศ. แต่ value ยังคงเป็นคริสต์ศักราช) */}
               <select
                 value={retirementYearFilter}
                 onChange={e => setRetirementYearFilter(e.target.value)}
@@ -285,8 +288,16 @@ const getDaysMessage = (days) => {
                   minWidth: "160px"
                 }}
               >
-                <option value={new Date().getFullYear()}>🎯 ปีนี้ ({new Date().getFullYear()})</option>
-                <option value={new Date().getFullYear() + 1}>🎯 ปีหน้า ({new Date().getFullYear() + 1})</option>
+                {Array.from({ length: 5 }).map((_, i) => {
+                  const gregorian = currentYear + i;
+                  const buddhist = gregorian + 543;
+                  const label = i === 0
+                    ? `ปี พ.ศ. ${buddhist}`
+                    : i === 1
+                    ? `ปี พ.ศ. ${buddhist}`
+                    : `ปี พ.ศ. ${buddhist}`;
+                  return <option key={gregorian} value={String(gregorian)}>{label}</option>;
+                })}
               </select>
               
               {/* ปุ่มล้างตัวกรอง */}
