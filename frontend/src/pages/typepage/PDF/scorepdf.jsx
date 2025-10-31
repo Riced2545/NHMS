@@ -21,7 +21,11 @@ export default function ScorePdf() {
     axios.get("http://localhost:3001/api/ranks")
       .then(r => {
         const m = {};
-        (r.data || []).forEach(x => { m[x.id] = x.name || x.title || x.rank_name; });
+        (r.data || []).forEach(x => {
+          const val = x.name || x.title || x.rank_name || x.rank || "";
+          m[x.id] = val;
+          m[String(x.id)] = val; // รองรับทั้ง string/number
+        });
         setRankMap(m);
       }).catch(() => {});
   }, []);
@@ -125,7 +129,7 @@ export default function ScorePdf() {
           }}>
             <thead>
               <tr>
-                {["ลำดับ","ยศ","ชื่อ-นามสกุล","เบอร์โทร","คะแนนรวม","วันที่ของคะแนน"].map((h, i) => (
+                {["ลำดับ","ยศ","ชื่อ-นามสกุล","เบอร์โทร","คะแนนรวม","วันที่ลงคะแนน"].map((h, i) => (
                   <th key={i} style={{
                     border: "1px solid #111111",
                     padding: "10px 8px",
@@ -190,11 +194,11 @@ export default function ScorePdf() {
   );
 }
 
-// ฟังก์ชันสร้าง HTML ตารางสำหรับ rows
-function buildTableHtml(rows, formatDate) {
-  const headers = ["ลำดับ","ยศ","ชื่อ-นามสกุล","เบอร์โทร","คะแนนรวม","วันที่ของคะแนน"];
-  const ths = headers.map(h => `<th style="border:1px solid #111;padding:10px 8px;font-weight:600">${h}</th>`).join("");
-  const trs = rows.length === 0
+// ฟังก์ชันสร้าง HTML ตารางสำหรับ rows (รับ rankMap เพื่อแสดงยศ)
+function buildTableHtml(rows, formatDate, rankMap = {}) {
+   const headers = ["ลำดับ","ยศ","ชื่อ-นามสกุล","เบอร์โทร","คะแนนรวม","วันที่ลงคะแนน"];
+   const ths = headers.map(h => `<th style="border:1px solid #111;padding:10px 8px;font-weight:600">${h}</th>`).join("");
+   const trs = rows.length === 0
     ? `<tr>
          <td style="border:1px solid #111;padding:12px">1</td><td style="border:1px solid #111;padding:12px"></td>
          <td style="border:1px solid #111;padding:12px"></td><td style="border:1px solid #111;padding:12px"></td>
@@ -206,9 +210,10 @@ function buildTableHtml(rows, formatDate) {
               ? formatDate(String(r.details).trim())
               : String(r.details))
           : "";
+        const rankText = rankMap[String(r.rank_id)] || rankMap[r.rank_id] || r.title || r.rank || "";
         return `<tr>
           <td style="border:1px solid #111;padding:12px;text-align:center">${idx+1}</td>
-          <td style="border:1px solid #111;padding:12px">${r.rank||r.title||""}</td>
+          <td style="border:1px solid #111;padding:12px">${rankText}</td>
           <td style="border:1px solid #111;padding:12px">${(r.name||"") + " " + (r.lname||"")}</td>
           <td style="border:1px solid #111;padding:12px">${r.phone||""}</td>
           <td style="border:1px solid #111;padding:12px">${r.total_score ?? ""}</td>
@@ -241,10 +246,20 @@ function formatDateLocal(iso) {
 // export ฟังก์ชันให้เรียกโดยตรงจากปุ่ม (ไม่ต้อง mount component)
 export async function generateScorePdf() {
   try {
-    const res = await axios.get("http://localhost:3001/api/viewscore");
-    const rows = res.data || [];
+    const [resRows, resRanks] = await Promise.all([
+      axios.get("http://localhost:3001/api/viewscore"),
+      axios.get("http://localhost:3001/api/ranks").catch(() => ({ data: [] }))
+    ]);
+    const rows = resRows.data || [];
+    const ranks = resRanks.data || [];
+    const rankMapLocal = {};
+    (ranks || []).forEach(x => {
+      const val = x.name || x.title || x.rank_name || x.rank || "";
+      rankMapLocal[x.id] = val;
+      rankMapLocal[String(x.id)] = val;
+    });
 
-    const html = buildTableHtml(rows, formatDateLocal);
+    const html = buildTableHtml(rows, formatDateLocal, rankMapLocal);
 
     // สร้าง element ชั่วคราวใน DOM (นอกหน้าจอ)
     const wrapper = document.createElement("div");

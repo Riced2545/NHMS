@@ -21,7 +21,7 @@ export default function ScoreExcel({
         rankMap[r.id] = r.name || r.title || r.rank_name || r.label || r.rank || "";
       });
 
-      const headers = ["ลำดับ", "ยศ", "ชื่อ-นามสกุล", "เบอร์โทร", "คะแนนรวม", "วันที่/รายละเอียด"];
+      const headers = ["ลำดับ", "ยศ", "ชื่อ-นามสกุล", "เบอร์โทร", "คะแนนรวม", "วันที่ลงคะแนน"];
       const data = (rows && rows.length ? rows : []).map((r, i) => {
         const dateOrDetail = r.details
           ? (/^\d{4}-\d{2}-\d{2}/.test(String(r.details).trim())
@@ -38,7 +38,7 @@ export default function ScoreExcel({
           "ชื่อ-นามสกุล": `${r.name || ""} ${r.lname || ""}`.trim(),
           "เบอร์โทร": r.phone || "",
           "คะแนนรวม": r.total_score ?? "",
-          "วันที่/รายละเอียด": dateOrDetail
+          "วันที่ลงคะแนน": dateOrDetail
         };
       });
 

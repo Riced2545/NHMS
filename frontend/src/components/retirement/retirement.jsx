@@ -173,6 +173,17 @@ const getDaysMessage = (days) => {
   // คำนวณจำนวนหน้าทั้งหมด
   const totalPages = Math.ceil(getFilteredData().length / itemsPerPage);
 
+  // สรุปยอดตามตัวกรอง (ใช้ memo)
+  const aggregated = React.useMemo(() => {
+    const filtered = getFilteredData();
+    const total = filtered.length;
+    const totalMonths = filtered.reduce((s, p) => {
+      const days = calculateDaysToRetirement(p.retirement_date);
+      return s + getMonthsToRetirement(days);
+    }, 0);
+    return { total, totalMonths };
+  }, [retirementData, filters, retirementYearFilter, itemsPerPage, currentYear]);
+  
   // Reset หน้าเมื่อมีการกรอง
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
@@ -234,94 +245,116 @@ const getDaysMessage = (days) => {
             paddingTop: "20px",
             marginTop: "20px"
           }}>
-            {/* บรรทัดแรก - ตัวกรองหลัก */}
-            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "16px" }}>
-              
-              {/* ค้นหาชื่อ */}
-              <input
-                type="text"
-                placeholder="🔍 ค้นหาชื่อ-นามสกุล..."
-                value={filters.searchName}
-                onChange={(e) => handleFilterChange({...filters, searchName: e.target.value})}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: "8px",
-                  border: "2px solid #e5e7eb",
-                  minWidth: "220px",
-                  fontSize: "14px",
-                  outline: "none",
-                  transition: "border-color 0.2s"
-                }}
-                onFocus={(e) => e.target.style.borderColor = "#3b82f6"}
-                onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
-              />
-              
-              {/* กรองตามประเภทบ้าน */}
-              <select
-                value={filters.homeType}
-                onChange={(e) => handleFilterChange({...filters, homeType: e.target.value})}
-                style={{ 
-                  padding: "10px 12px", 
-                  borderRadius: "8px",
-                  border: "2px solid #e5e7eb",
-                  fontSize: "14px",
-                  minWidth: "180px"
-                }}
-              >
-                <option value="">🏠 ทุกประเภทบ้าน</option>
-                {homeTypes.map(ht => (
-                  <option key={ht.name} value={ht.name}>
-                    {ht.name}
-                  </option>
-                ))}
-              </select>
-              
-              {/* กรองตามปีเกษียณ (แสดงเป็น พ.ศ. แต่ value ยังคงเป็นคริสต์ศักราช) */}
-              <select
-                value={retirementYearFilter}
-                onChange={e => setRetirementYearFilter(e.target.value)}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: "8px",
-                  border: "2px solid #e5e7eb",
-                  fontSize: "14px",
-                  minWidth: "160px"
-                }}
-              >
-                {Array.from({ length: 5 }).map((_, i) => {
-                  const gregorian = currentYear + i;
-                  const buddhist = gregorian + 543;
-                  const label = i === 0
-                    ? `ปี พ.ศ. ${buddhist}`
-                    : i === 1
-                    ? `ปี พ.ศ. ${buddhist}`
-                    : `ปี พ.ศ. ${buddhist}`;
-                  return <option key={gregorian} value={String(gregorian)}>{label}</option>;
-                })}
-              </select>
-              
-              {/* ปุ่มล้างตัวกรอง */}
-              <button
-                onClick={() => {
-                  handleFilterChange({timeRange: '', homeType: '', area: '', searchName: ''});
-                  setCurrentPage(1);
-                }}
-                style={{
-                  padding: "10px 16px",
-                  backgroundColor: "#ef4444",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  transition: "background-color 0.2s"
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
-                onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
-              >
-                🗑️ ล้างตัวกรอง
-              </button>
+            {/* บรรทัดแรก - ตัวกรองหลัก (แยก left/right เพื่อวางกล่องสรุปทางขวา) */}
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", flexWrap: "wrap", marginBottom: "16px", alignItems: "center" }}>
+              {/* ซ้าย: ฟิลเตอร์ปกติ */}
+              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+                {/* ค้นหาชื่อ */}
+                <input
+                  type="text"
+                  placeholder="🔍 ค้นหาชื่อ-นามสกุล..."
+                  value={filters.searchName}
+                  onChange={(e) => handleFilterChange({...filters, searchName: e.target.value})}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: "2px solid #e5e7eb",
+                    minWidth: "220px",
+                    fontSize: "14px",
+                    outline: "none",
+                    transition: "border-color 0.2s"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "#3b82f6"}
+                  onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
+                />
+                
+                {/* กรองตามประเภทบ้าน */}
+                <select
+                  value={filters.homeType}
+                  onChange={(e) => handleFilterChange({...filters, homeType: e.target.value})}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: "2px solid #e5e7eb",
+                    fontSize: "14px",
+                    minWidth: "180px"
+                  }}
+                >
+                  <option value="">🏠 ทุกประเภทบ้าน</option>
+                  {homeTypes.map(ht => (
+                    <option key={ht.name} value={ht.name}>
+                      {ht.name}
+                    </option>
+                  ))}
+                </select>
+                
+                {/* กรองตามปีเกษียณ (แสดงเป็น พ.ศ. แต่ value ยังคงเป็นคริสต์ศักราช) */}
+                <select
+                  value={retirementYearFilter}
+                  onChange={e => setRetirementYearFilter(e.target.value)}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: "2px solid #e5e7eb",
+                    fontSize: "14px",
+                    minWidth: "160px"
+                  }}
+                >
+                  {Array.from({ length: 5 }).map((_, i) => {
+                    const gregorian = currentYear + i;
+                    const buddhist = gregorian + 543;
+                    return <option key={gregorian} value={String(gregorian)}>{`ปี พ.ศ. ${buddhist}`}</option>;
+                  })}
+                </select>
+                
+                {/* ปุ่มล้างตัวกรอง */}
+                <button
+                  onClick={() => {
+                    handleFilterChange({timeRange: '', homeType: '', area: '', searchName: ''});
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    padding: "10px 16px",
+                    backgroundColor: "#ef4444",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    transition: "background-color 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
+                >
+                  🗑️ ล้างตัวกรอง
+                </button>
+              </div>
+
+              {/* ขวา: กล่องสรุปเล็ก (วางชิดขวา ตรงกรอบสีแดง) */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "10px 14px",
+                  borderRadius: 10,
+                  minWidth: 110,
+                  height: 80,
+                  boxSizing: "border-box",
+                  backgroundColor: "#ecfdf5",
+                  border: "2px solid #10b981",
+                  boxShadow: "0 4px 8px rgba(16,185,129,0.08)"
+                }}>
+                  <div style={{ fontSize: 28, fontWeight: 800, }}>
+                    {aggregated.total}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#065f46", marginTop: 4 }}>
+                    จำนวนทั้งหมด (คน)
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* บรรทัดสอง - การจัดการหน้าและจำนวนรายการ */}
@@ -622,34 +655,36 @@ const getDaysMessage = (days) => {
                     </div>
 
                     <div style={{
-                      textAlign: "center",
-                      padding: "16px",
-                      backgroundColor: `${getStatusColor(daysToRetirement)}15`,
-                      borderRadius: "12px",
-                      minWidth: "160px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      padding: "12px 14px",
+                      borderRadius: 12,
+                      minWidth: 140,
+                      height: 110,
+                      boxSizing: "border-box",
                       flexShrink: 0,
-                      border: `2px solid ${getStatusColor(daysToRetirement)}`
+                      backgroundColor: `${getStatusColor(daysToRetirement)}22`,
+                      border: `2px solid ${getStatusColor(daysToRetirement)}`,
+                      boxShadow: "0 4px 10px rgba(0,0,0,0.04)"
                     }}>
                       <div style={{
-                        fontSize: "28px",
-                        fontWeight: "bold",
-                        color: getStatusColor(daysToRetirement),
-                        marginBottom: "8px"
+                        fontSize: 34,
+                        lineHeight: 1,
+                        fontWeight: 800,
+                        color: getStatusColor(daysToRetirement)
                       }}>
                         {daysToRetirement}
                       </div>
+
+                      <div style={{ fontSize: 12, color: "#374151" }}>วันที่เหลือ</div>
+
                       <div style={{
-                        fontSize: "12px",
-                        color: getStatusColor(daysToRetirement),
-                        fontWeight: "600",
-                        marginBottom: "4px"
-                      }}>
-                        วันที่เหลือ
-                      </div>
-                      <div style={{
-                        fontSize: "14px",
-                        color: getStatusColor(daysToRetirement),
-                        fontWeight: "bold"
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: getStatusColor(daysToRetirement)
                       }}>
                         {getDaysMessage(daysToRetirement)}
                       </div>
